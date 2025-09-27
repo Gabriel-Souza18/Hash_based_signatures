@@ -24,3 +24,4 @@ e terminar de implementar funções de testes, anotar estatisticas(tempo, memori
 TODO: 
 * Buscar mais strings pra testar<br>
 * Implementar estatisticas- falta calcular memoria
+* Implementar lamport OTS

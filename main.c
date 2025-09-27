@@ -8,7 +8,6 @@
 
 int main(void){
     char hex[SHA256_HEX_SIZE];
-    // Carrega dicionário do arquivo
     DicionarioHash *dict = carregarVetores("Arquivo.txt");
     if (!dict) {
         printf("Erro ao carregar arquivo\n");
@@ -19,9 +18,9 @@ int main(void){
 
     for (int i = 0; i < dict->count; i++) {
         printf("Tamanho da String: %ld\n", strlen(dict->strings[i]));
-        double inicioInMs = (clock()/CLOCKS_PER_SEC)*1e9;
+        double inicioInMs = (clock()/CLOCKS_PER_SEC)*1e6;
         sha256_hex(dict->strings[i], strlen(dict->strings[i]), hex);
-        double fimInMs = (clock()/CLOCKS_PER_SEC)*1e9;
+        double fimInMs = (clock()/CLOCKS_PER_SEC)*1e6;
         if (strcmp(hex, dict->hashes[i]) == 0) {
             printf("[%d] -> hash'%s' (correto)\n", i, dict->hashes[i]);
         } else {
