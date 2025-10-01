@@ -58,5 +58,6 @@
   "C_Cpp_Runner.msvcSecureNoWarnings": false,
   "files.associations": {
     "sha256.h": "c"
-  }
+  },
+  "github.copilot.advanced": {}
 }

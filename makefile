@@ -1,16 +1,18 @@
-NAME = programa
-LIBS = sha256.c dicionario.c
+
+DIR1 = TesteHash/
+DIR2 = LamportOTS/
+LIBS1 = sha256.c ${DIR1}dicionario.c
+LIBS2= sha256.c ${DIR2}utils.c
+
+lamport: ${DIR2}lamport.c ${LIBS2}
+	gcc -o lamport ${DIR2}lamport.c ${LIBS2} -I.
+
+teste: ${DIR1}main.c ${LIBS1}
+	gcc -o testeHash ${DIR1}main.c $(LIBS1) -I.
 
 
-compilar: main.c ${LIBS}
-	gcc -o $(NAME) main.c $(LIBS) -I.
 
-run: 
-	@echo "Executando o programa..."
-	make compilar
-	./$(NAME)
-
-	
 clean: 
 	@echo "Removendo o executável..."
-	rm -f $(NAME)
+	rm -f lamport testeHash
+	@echo "Feito!"

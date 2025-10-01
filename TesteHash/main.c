@@ -8,7 +8,7 @@
 
 int main(void){
     char hex[SHA256_HEX_SIZE];
-    DicionarioHash *dict = carregarVetores("Arquivo.txt");
+    DicionarioHash *dict = carregarVetores("TesteHash/Arquivo.txt");
     if (!dict) {
         printf("Erro ao carregar arquivo\n");
         return 1;
