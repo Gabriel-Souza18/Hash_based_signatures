@@ -19,9 +19,12 @@ e terminar de implementar funções de testes, anotar estatisticas(tempo, memori
 
 
 * 25/09 - Consegui rodar os testes com as strings maiores e ja fiz a medição do tempo que demora pra calcular a hash de cada string, as pequenas não consegui resultados, mas as grandes consegui achar resultados.<br>
+
+** 02/09 - Ja iniciei os testes do LamportOTS, mas ainda falta algumas coisas, tive que reorganizar a pasta, evou ter que refatorar algumas coisas, como mudar nome do utils.c, ou extrair essas fucnçoes, pois tenho que fazer uma funcao pra ler e escrever arquivo, pois vou ter que escrever as chaves.
 ---
 
+
 TODO: 
-* Buscar mais strings pra testar<br>
-* Implementar estatisticas- falta calcular memoria
+* Buscar mais strings pra testar(V)<br>
+* Implementar estatisticas(V)
 * Implementar lamport OTS
