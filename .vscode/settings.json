@@ -57,7 +57,8 @@
   "C_Cpp_Runner.useLinkTimeOptimization": false,
   "C_Cpp_Runner.msvcSecureNoWarnings": false,
   "files.associations": {
-    "sha256.h": "c"
+    "sha256.h": "c",
+    "stdio.h": "c"
   },
   "github.copilot.advanced": {}
 }

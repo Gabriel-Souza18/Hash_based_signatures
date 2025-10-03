@@ -1,95 +1,177 @@
+#include "keys.h"
 #include "utils.h"
-#include "sha256.h"
 
-#include <stdlib.h>
 #include <stdio.h>
-#include<string.h>
+#include <stdlib.h>
+#include <string.h>
+#include <stdbool.h>
 
+// Função para ler chaves públicas de um arquivo
+PublicKeys* lerPkeys(char* caminho){
+    FILE *arquivo = fopen(caminho, "r");
 
+    PublicKeys *pKeys = malloc_Pkeys();
 
-PublicKeys *malloc_Pkeys(){
-    PublicKeys* k = (PublicKeys*)malloc(sizeof(PublicKeys));
-    if (k == NULL) {
-        fprintf(stderr, "Erro ao alocar memória para Public keys\n");
-        exit(EXIT_FAILURE);
-    }
-    for (int i = 0; i < 256; i++) {
-        k->PK0[i] = NULL;
-        k->PK1[i] = NULL;
-    }
-    printf("Memoria Alocada com sucesso\n");
-    return k;
-}
-SecretKeys *malloc_Skeys(){
-    SecretKeys* k = (SecretKeys*)malloc(sizeof(SecretKeys));
-    if (k == NULL) {
-        fprintf(stderr, "Erro ao alocar memória para Secret keys\n");
-        exit(EXIT_FAILURE);
-    }
-    for (int i = 0; i < 256; i++) {
-        k->SK0[i] = NULL;
-        k->SK1[i] = NULL;
-    }
-    printf("Memoria Alocada com sucesso\n");
-    return k;
-
-}
-
-void generateSecretKeys(SecretKeys *keys) {
-    int NUM_MAX = 10000;
-    for (int i = 0; i < 256; i++) {
-        int key0= rand() % NUM_MAX;
-        int key1 = rand() % NUM_MAX;
+    char linha[1024];
+    int indice = 0;
     
-        keys->SK0[i] = (char*)malloc(100 * sizeof(char));
-        keys->SK1[i] = (char*)malloc(100 * sizeof(char));
-        sprintf(keys->SK0[i], "%d", key0);
-        sprintf(keys->SK1[i], "%d", key1);
+    while (fgets(linha, sizeof(linha), arquivo) && indice < 256) {
+
+        linha[strcspn(linha, "\n")] = 0;
+        
+        char *separador = strchr(linha, '|');
+        if (!separador) continue;
+        
+        *separador = '\0';
+        char *pk0 = linha;
+        char *pk1 = separador + 1;
+        
+        pKeys->PK0[indice] = malloc(strlen(pk0) + 1);
+        if (pKeys->PK0[indice]) {
+            strcpy(pKeys->PK0[indice], pk0);
+        }
+        pKeys->PK1[indice] = malloc(strlen(pk1) + 1);
+        if (pKeys->PK1[indice]) {
+            strcpy(pKeys->PK1[indice], pk1);
+        }
+        indice++;
     }
-    printf("Chaves Secretas Geradas com sucesso\n");
+    
+    fclose(arquivo);
+    printf("Chaves públicas carregadas: %d pares\n", indice);
+    return pKeys;
+}
+bool* lerMensagem(char* caminho, bool mensagem[256]){
+    FILE *arquivo = fopen(caminho, "r");
+
+    
+    // Determina o tamanho do arquivo
+    fseek(arquivo, 0, SEEK_END);
+    long tamanho = ftell(arquivo);
+    fseek(arquivo, 0, SEEK_SET);
+    
+    // Aloca memória para a mensagem
+    char *contMensagem = malloc(tamanho + 1);
+    if (!contMensagem) {
+        printf("Erro ao alocar memória para a contMensagem\n");
+        fclose(arquivo);
+        return NULL;
+    }
+    
+    // Lê o conteúdo completo
+    size_t bytesLidos = fread(contMensagem, 1, tamanho, arquivo);
+    contMensagem[bytesLidos] = '\0';
+    
+    fclose(arquivo);
+
+
+    for (int i =0; i< 256;i++){
+        if ( contMensagem[i]=='0'){
+            mensagem[i]= true;
+            continue;
+        }   
+        mensagem[i]= false;
+    }
+}
+void escreverMensagem(char*caminho, bool* mensagem){
+    FILE *arquivo = fopen(caminho, "w");
+
+
+    for(int i =0; i< 256; i++){
+        if (mensagem[i] ==false){
+            fprintf(arquivo,"0" );
+            continue;
+        }   
+        fprintf(arquivo,"1");
+    }
+    fclose(arquivo);
 }
 
-void generatePublicKeys(PublicKeys *Pkeys, SecretKeys*Skeys){
-    for (int i =0; i<256; i++){
-        Pkeys->PK0[i] = (char*)malloc(SHA256_HEX_SIZE * sizeof(char));        
-        sha256_hex(Skeys->SK0[i], strlen(Skeys->SK0[i]), Pkeys->PK0[i]);
+// Função para escrever chaves públicas em arquivo
+void escreverChavesPublicas(char* caminho, PublicKeys *pKeys){
+    FILE *arquivo = fopen(caminho, "w");
 
-        Pkeys->PK1[i] = (char*)malloc(SHA256_HEX_SIZE * sizeof(char));        
-        sha256_hex(Skeys->SK1[i], strlen(Skeys->SK1[i]), Pkeys->PK1[i]);
-    }
-    printf("Chaves publicas geradas com sucesso\n");
-}
-
-void printKeys(PublicKeys *Pkeys, SecretKeys*Skeys){
-    printf("Chaves Secretas\n");
-    for (int i =0; i<256; i++){
-        printf("Chave 0 %d: %s\t|",i, Skeys->SK0[i] );
-        printf("Chave 1 %d: %s\n",i, Skeys->SK1[i] );
-         
-    }
-    printf("Chaves publicas\n");
-    for (int i =0; i<256; i++){
-        printf("Chave 0 %d: %s\t|",i, Pkeys->PK0[i] );
-        printf("Chave 1 %d: %s\n",i, Pkeys->PK1[i] );
-    }
-}
-void freeKeys(PublicKeys *Pkeys, SecretKeys*Skeys) {
-    if (Pkeys == NULL && Skeys == NULL) return;
+    
+    fprintf(arquivo, "# Chaves Públicas Lamport OTS\n");
+    fprintf(arquivo, "# Formato: PK0|PK1 (uma por linha)\n\n");
     
     for (int i = 0; i < 256; i++) {
-        if (Skeys->SK0[i] != NULL) {
-            free(Skeys->SK0[i]);
-        }
-        if (Skeys->SK1[i] != NULL) {
-            free(Skeys->SK1[i]);
-        }
-        if (Pkeys->PK0[i] != NULL) {
-            free(Pkeys->PK0[i]);
-        }
-        if (Pkeys->PK1[i] != NULL) {
-            free(Pkeys->PK1[i]);
+        if (pKeys->PK0[i] && pKeys->PK1[i]) {
+            fprintf(arquivo, "%s|%s\n", pKeys->PK0[i], pKeys->PK1[i]);
         }
     }
-    free(Pkeys);
-    free(Skeys);
+    
+    fclose(arquivo);
+    printf("Chaves públicas salvas em: %s\n", caminho);
+}
+
+// Função para escrever assinatura em arquivo
+void escreverAssinatura(char* caminho, char **assinatura, int tamanho){
+    FILE *arquivo = fopen(caminho, "w");
+    if (!arquivo) {
+        printf("Erro: não foi possível criar o arquivo %s\n", caminho);
+        return;
+    }
+    
+    fprintf(arquivo, "# Assinatura Lamport OTS\n");
+
+    
+    for (int i = 0; i < tamanho; i++) {
+        if (assinatura[i]) {
+            fprintf(arquivo, "%d:%s\n", i, assinatura[i]);
+        }
+    }
+    
+    fclose(arquivo);
+    printf("Assinatura salva em: %s\n", caminho);
+}
+
+// Função para ler assinatura de arquivo
+char** lerAssinatura(char* caminho, int *tamanho){
+    FILE *arquivo = fopen(caminho, "r");
+
+    // Aloca array de ponteiros para assinatura
+    char **assinatura = malloc(256 * sizeof(char*));
+    if (!assinatura) {
+        fclose(arquivo);
+        return NULL;
+    }
+    
+    // Inicializa todos os ponteiros como NULL
+    for (int i = 0; i < 256; i++) {
+        assinatura[i] = NULL;
+    }
+    
+    char linha[1024];
+    int count = 0;
+    
+    while (fgets(linha, sizeof(linha), arquivo)) {
+        // Ignora comentários
+        if (linha[0] == '#') continue;
+        
+        // Procura o separador ":"
+        char *separador = strchr(linha, ':');
+        if (!separador) continue;
+        
+        // Extrai índice e valor
+        int indice = atoi(linha);
+        char *valor = separador + 1;
+        
+        // Remove quebra de linha do valor
+        valor[strcspn(valor, "\n")] = 0;
+        
+        // Aloca e copia o valor
+        if (indice >= 0 && indice < 256) {
+            assinatura[indice] = malloc(strlen(valor) + 1);
+            if (assinatura[indice]) {
+                strcpy(assinatura[indice], valor);
+                count++;
+            }
+        }
+    }
+    
+    fclose(arquivo);
+    if (tamanho) *tamanho = count;
+    printf("Assinatura carregada: %d elementos\n", count);
+    return assinatura;
 }

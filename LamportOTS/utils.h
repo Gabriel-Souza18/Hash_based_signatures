@@ -1,17 +1,17 @@
+#ifndef UTILS_H
+#define UTILS_H
 
-typedef struct {
-    char* SK0[256];
-    char* SK1[256];
-}SecretKeys;
+#include "keys.h"
+#include <stdbool.h>
 
-typedef struct{
-    char* PK0[256]; 
-    char* PK1[256];
-}PublicKeys;
+// Funções de leitura
+PublicKeys* lerPkeys(char* caminho);
+bool* lerMensagem(char* caminho, bool mensagem[256]);
+char** lerAssinatura(char* caminho, int *tamanho);
 
-SecretKeys *malloc_Skeys();
-PublicKeys *malloc_Pkeys();
-void generateSecretKeys(SecretKeys *keys);
-void  generatePublicKeys(PublicKeys *Pkeys, SecretKeys*Skeys) ;
-void printKeys(PublicKeys *Pkeys, SecretKeys*Skeys) ;
-void freeKeys(PublicKeys *Pkeys, SecretKeys*Skeys) ;
+// Funções de escrita
+void escreverMensagem(char*caminho, bool* mensagem);
+void escreverChavesPublicas(char* caminho, PublicKeys *pKeys);
+void escreverAssinatura(char* caminho, char **assinatura, int tamanho);
+
+#endif // UTILS_H
