@@ -1,7 +1,12 @@
 # Assinaturas digitais baseadas em Hash
 ## Repositorio pra Salvar codigos feitos na Iniciação cientifica
 
+## Comandos importantes:
+* make teste
+* make lamport
+* valgrind --track-origins=yes --leak-check=full ./testeHash
 
+* make clean
 ### Primeiros testes com a função sha256 
 # 22/09 a 03/10
 

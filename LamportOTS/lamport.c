@@ -25,7 +25,7 @@ void main(){
 
         bool msg[256];
         for (int i=0; i<256; i++){
-            if( i%2==0){
+            if( 1){
                 msg[i] = true; 
                 continue;
             }
@@ -45,7 +45,7 @@ void main(){
         printKeys(pKeys, sKeys);
         
         escreverAssinatura("assinatura.txt", assinatura, 256);
-        escreverChavesPublicas("publicKeys.txt", pKeys);
+        escreverPkeys("publicKeys.txt", pKeys);
         escreverMensagem("mensagem.txt", msg);
         freeKeys(pKeys, sKeys);
 
@@ -64,11 +64,7 @@ void main(){
         
         int tamanhoAssinatura;
         char** assinaturaVerif = lerAssinatura("assinatura.txt", &tamanhoAssinatura);
-        if (!assinaturaVerif) {
-            printf("Erro ao ler assinatura\n");
-            break;
-        }
-        
+
         bool resultado = verificarMSG(mensagem, pKeysVerif, assinaturaVerif);
         printf("Verificação: %s\n", resultado ? "VÁLIDA" : "INVÁLIDA");
         
@@ -101,23 +97,21 @@ void assinarMSG(bool* msg, SecretKeys *sKeys, char **assinatura){
 
 
 bool verificarMSG(bool* msg, PublicKeys *pKeys, char** assinatura){
-    // Verifica se cada elemento da assinatura corresponde à chave pública correta
     for (int i = 0; i < 256; i++) {
         char hashAssinatura[SHA256_HEX_SIZE];
         
-        // Calcula hash do elemento da assinatura
         sha256_hex(assinatura[i], strlen(assinatura[i]), hashAssinatura);
         
         if (msg[i] == true) {
             // Se bit é 1, deve corresponder a PK1[i]
             if (strcmp(hashAssinatura, pKeys->PK1[i]) != 0) {
-                printf("Falha na verificação no bit %d (esperava PK1)\n", i);
+                printf("Falha na verificação no bit %d \n", i);
                 return false;
             }
         } else {
             // Se bit é 0, deve corresponder a PK0[i]
             if (strcmp(hashAssinatura, pKeys->PK0[i]) != 0) {
-                printf("Falha na verificação no bit %d (esperava PK0)\n", i);
+                printf("Falha na verificação no bit %d \n", i);
                 return false;
             }
         }

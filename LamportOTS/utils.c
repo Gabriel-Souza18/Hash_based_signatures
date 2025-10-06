@@ -67,10 +67,10 @@ bool* lerMensagem(char* caminho, bool mensagem[256]){
 
     for (int i =0; i< 256;i++){
         if ( contMensagem[i]=='0'){
-            mensagem[i]= true;
+            mensagem[i]= false;
             continue;
         }   
-        mensagem[i]= false;
+        mensagem[i]= true;
     }
 }
 void escreverMensagem(char*caminho, bool* mensagem){
@@ -87,14 +87,9 @@ void escreverMensagem(char*caminho, bool* mensagem){
     fclose(arquivo);
 }
 
-// Função para escrever chaves públicas em arquivo
-void escreverChavesPublicas(char* caminho, PublicKeys *pKeys){
+void escreverPkeys(char* caminho, PublicKeys *pKeys){
     FILE *arquivo = fopen(caminho, "w");
 
-    
-    fprintf(arquivo, "# Chaves Públicas Lamport OTS\n");
-    fprintf(arquivo, "# Formato: PK0|PK1 (uma por linha)\n\n");
-    
     for (int i = 0; i < 256; i++) {
         if (pKeys->PK0[i] && pKeys->PK1[i]) {
             fprintf(arquivo, "%s|%s\n", pKeys->PK0[i], pKeys->PK1[i]);
@@ -112,9 +107,6 @@ void escreverAssinatura(char* caminho, char **assinatura, int tamanho){
         printf("Erro: não foi possível criar o arquivo %s\n", caminho);
         return;
     }
-    
-    fprintf(arquivo, "# Assinatura Lamport OTS\n");
-
     
     for (int i = 0; i < tamanho; i++) {
         if (assinatura[i]) {
@@ -146,18 +138,14 @@ char** lerAssinatura(char* caminho, int *tamanho){
     int count = 0;
     
     while (fgets(linha, sizeof(linha), arquivo)) {
-        // Ignora comentários
-        if (linha[0] == '#') continue;
-        
         // Procura o separador ":"
         char *separador = strchr(linha, ':');
         if (!separador) continue;
         
-        // Extrai índice e valor
         int indice = atoi(linha);
         char *valor = separador + 1;
         
-        // Remove quebra de linha do valor
+        // Remove quebra de linha
         valor[strcspn(valor, "\n")] = 0;
         
         // Aloca e copia o valor

@@ -1,6 +1,6 @@
 
 def a():
-    arq = open("Arquivo.txt", "w")
+    arq = open("Grande.txt", "w")
     for i in range(0,1000000):
         arq.write("a")
         
@@ -8,7 +8,7 @@ def a():
     arq.close()
     
 def b():
-    arq = open("Arquivo.txt", "w")
+    arq = open("Grande.txt", "w")
     for i in range(0,16777216):
         arq.write("abcdefghbcdefghicdefghijdefghijkefghijklfghijklmghijklmnhijklmno")
         
@@ -16,5 +16,5 @@ def b():
     arq.close()
 
     
-b()
+a()
     

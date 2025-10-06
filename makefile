@@ -15,4 +15,8 @@ teste: ${DIR1}main.c ${LIBS1}
 clean: 
 	@echo "Removendo o executável..."
 	rm -f lamport testeHash
+
+	@echo "Removendo .txts"
+	rm assinatura.txt mensagem.txt publicKeys.txt
+	
 	@echo "Feito!"

@@ -11,7 +11,7 @@ char** lerAssinatura(char* caminho, int *tamanho);
 
 // Funções de escrita
 void escreverMensagem(char*caminho, bool* mensagem);
-void escreverChavesPublicas(char* caminho, PublicKeys *pKeys);
+void escreverPkeys(char* caminho, PublicKeys *pKeys);
 void escreverAssinatura(char* caminho, char **assinatura, int tamanho);
 
 #endif // UTILS_H

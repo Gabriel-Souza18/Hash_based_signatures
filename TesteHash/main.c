@@ -7,8 +7,10 @@
 #include <stdlib.h>
 
 int main(void){
+    char * pequeno= "TesteHash/Pequeno.txt" ;
+    char * grande= "TesteHash/Grande.txt" ;
     char hex[SHA256_HEX_SIZE];
-    DicionarioHash *dict = carregarVetores("TesteHash/Arquivo.txt");
+    DicionarioHash *dict = carregarVetores(grande);
     if (!dict) {
         printf("Erro ao carregar arquivo\n");
         return 1;
@@ -18,19 +20,21 @@ int main(void){
 
     for (int i = 0; i < dict->count; i++) {
         printf("Tamanho da String: %ld\n", strlen(dict->strings[i]));
-        double inicioInMs = (clock()/CLOCKS_PER_SEC)*1e6;
+        double inicio = clock();
         sha256_hex(dict->strings[i], strlen(dict->strings[i]), hex);
-        double fimInMs = (clock()/CLOCKS_PER_SEC)*1e6;
+        double fim = clock();
         if (strcmp(hex, dict->hashes[i]) == 0) {
             printf("[%d] -> hash'%s' (correto)\n", i, dict->hashes[i]);
         } else {
             printf("[%d] -> hash'%s' (incorreto, calculado: %s)\n", i, dict->hashes[i], hex);
         }
-        double tempoTotal = fimInMs - inicioInMs;
-        printf("Tempo gasto: %0.10lf ms\n", tempoTotal);
+        double tempoTotalSec = ((double)(fim - inicio) / CLOCKS_PER_SEC);      
+        double tempoTotalMs = ((double)(fim - inicio) / CLOCKS_PER_SEC) * 1000.0;
+        printf("Tempo gasto: %0.10lf ms\n", tempoTotalMs);
+        printf("Tempo gasto: %0.10lf Sec\n", tempoTotalSec);
+        
 
     }
-    printf("%s", dict->strings[4]);
 
     liberarDicionario(dict);
     return 0;
