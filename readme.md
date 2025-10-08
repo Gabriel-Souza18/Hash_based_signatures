@@ -22,8 +22,12 @@ e terminar de implementar funções de testes, anotar estatisticas(tempo, memori
 * 03/09 - Mudei os nomes das .h e arrumei as leituras e escritas de arquivos, aparentemente a assinatura ta correta, so falta a função de verificação das assinaturas, Vou ler sobre Funçoes Esponjas.
 
 ---
-
+### Comparando LOTS e WOTS
+# 06/10 a 20/10
+* 08/10 - Finalizei o LamportOTS, Esqueci de escrever aqui algumas mudanças que eu realizei, mas o principal foi a mudança no tamanho da mensagem e das chaves secretas, 
 
 TODO: 
-* Implementar lamport OTS
+* Implementar W-OTS
+* Comparar Wots e Lots
+* Pesquisar se repetição nos valores das chaves interfere na segurança da assinatura.
 * Ler sobre Funçoes Esponjas
