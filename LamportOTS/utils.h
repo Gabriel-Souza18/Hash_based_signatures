@@ -6,11 +6,11 @@
 
 // Funções de leitura
 PublicKeys* lerPkeys(char* caminho);
-bool* lerMensagem(char* caminho, bool mensagem[256]);
+void lerMensagem(char* caminho, char *mensagem);
 char** lerAssinatura(char* caminho, int *tamanho);
 
 // Funções de escrita
-void escreverMensagem(char*caminho, bool* mensagem);
+void escreverMensagem(char*caminho, char* mensagem);
 void escreverPkeys(char* caminho, PublicKeys *pKeys);
 void escreverAssinatura(char* caminho, char **assinatura, int tamanho);
 

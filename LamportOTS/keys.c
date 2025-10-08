@@ -36,15 +36,20 @@ SecretKeys *malloc_Skeys(){
 }
 
 void generateSecretKeys(SecretKeys *keys) {
-    int NUM_MAX = 10000;
+        
     for (int i = 0; i < 256; i++) {
-        int key0= rand() % NUM_MAX;
-        int key1 = rand() % NUM_MAX;
+        keys->SK0[i] = (char*)malloc(256 * sizeof(char));
+        keys->SK1[i] = (char*)malloc(256 * sizeof(char));
     
-        keys->SK0[i] = (char*)malloc(100 * sizeof(char));
-        keys->SK1[i] = (char*)malloc(100 * sizeof(char));
-        sprintf(keys->SK0[i], "%d", key0);
-        sprintf(keys->SK1[i], "%d", key1);
+
+        for(int j =0; j< 256;j++){
+            int bit0 =rand()%2;       
+            int bit1 =rand()%2; 
+    
+            keys->SK0[i][j] =   '0' + bit0;
+            keys->SK1[i][j] =   '0' + bit1;
+        }
+
     }
     printf("Chaves Secretas Geradas com sucesso\n");
 }

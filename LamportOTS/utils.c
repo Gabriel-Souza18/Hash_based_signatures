@@ -41,21 +41,23 @@ PublicKeys* lerPkeys(char* caminho){
     printf("Chaves públicas carregadas: %d pares\n", indice);
     return pKeys;
 }
-bool* lerMensagem(char* caminho, bool mensagem[256]){
+void lerMensagem(char* caminho, char *mensagem){
     FILE *arquivo = fopen(caminho, "r");
+    if (!arquivo) {
+        printf("Erro: não foi possível abrir o arquivo %s\n", caminho);
+        return;
+    }
 
-    
-    // Determina o tamanho do arquivo
     fseek(arquivo, 0, SEEK_END);
     long tamanho = ftell(arquivo);
     fseek(arquivo, 0, SEEK_SET);
     
-    // Aloca memória para a mensagem
+
     char *contMensagem = malloc(tamanho + 1);
     if (!contMensagem) {
-        printf("Erro ao alocar memória para a contMensagem\n");
+        printf("Erro ao alocar memória para a mensagem\n");
         fclose(arquivo);
-        return NULL;
+        return;
     }
     
     // Lê o conteúdo completo
@@ -63,28 +65,28 @@ bool* lerMensagem(char* caminho, bool mensagem[256]){
     contMensagem[bytesLidos] = '\0';
     
     fclose(arquivo);
-
-
-    for (int i =0; i< 256;i++){
-        if ( contMensagem[i]=='0'){
-            mensagem[i]= false;
-            continue;
-        }   
-        mensagem[i]= true;
-    }
+    
+    // Remove quebra de linha se existir
+    contMensagem[strcspn(contMensagem, "\n")] = 0;
+    
+    // Copia a mensagem original
+    strcpy(mensagem, contMensagem);
+    
+    free(contMensagem);
+    printf("Mensagem carregada: %s\n", mensagem);
 }
-void escreverMensagem(char*caminho, bool* mensagem){
+void escreverMensagem(char*caminho, char* mensagem){
     FILE *arquivo = fopen(caminho, "w");
-
-
-    for(int i =0; i< 256; i++){
-        if (mensagem[i] ==false){
-            fprintf(arquivo,"0" );
-            continue;
-        }   
-        fprintf(arquivo,"1");
+    if (!arquivo) {
+        printf("Erro: não foi possível criar o arquivo %s\n", caminho);
+        return;
     }
+
+    // Escreve a mensagem original no arquivo
+    fprintf(arquivo, "%s\n", mensagem);
+    
     fclose(arquivo);
+    printf("Mensagem salva em: %s\n", caminho);
 }
 
 void escreverPkeys(char* caminho, PublicKeys *pKeys){
