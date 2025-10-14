@@ -13,9 +13,9 @@ bool verificarMSG(char* msgHash, PublicKeys *pKeys, char** assinatura);
 
 void main(){
     int opção;
-    printf("1-gerar mensagem\n2-Verificar Mensagem");
+    printf("1-Gerar mensagem\n2-Verificar Mensagem\n");
     scanf("%d",&opção );
-
+    
     srand(clock());
     while(getchar() != '\n');
    

@@ -25,6 +25,8 @@ e terminar de implementar funções de testes, anotar estatisticas(tempo, memori
 ### Comparando LOTS e WOTS
 # 06/10 a 20/10
 * 08/10 - Finalizei o LamportOTS, Esqueci de escrever aqui algumas mudanças que eu realizei, mas o principal foi a mudança no tamanho da mensagem e das chaves secretas, 
+* 10/10 - Iniciei o Wots+, achei mais dificil de entender do que o Lots, mas aparentemente ele é melhor pois gera menos chaves, mas ainda preciso implementar e testar tudo, vou pesquisar sobre repetiçoes nas chaves.
+* 13/10 - sobre a pesuqisa nao achei nada sobre repetição vou ter que testar, mas achei sobre IOT.
 
 TODO: 
 * Implementar W-OTS
