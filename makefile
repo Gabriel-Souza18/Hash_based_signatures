@@ -12,7 +12,7 @@ all:
 	make wots
 	make lamport
 
-wots: ${DIR3} wots.c ${LIBS3}
+wots: ${DIR3}wots.c ${LIBS3}
 	gcc -o wots ${DIR3}wots.c ${LIBS3} -I.
 	@echo "Wots Compilado"
 

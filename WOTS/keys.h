@@ -1,3 +1,5 @@
+#ifndef KEYS_H
+#define KEYS_H
 #include <stdio.h>
 #include <math.h>
 
@@ -35,12 +37,13 @@ typedef struct {
 SecretKeys* mallocSkeys();
 PublicKeys* mallocPkeys();
 Masks* mallocMasks();
+Assinatura* mallocAssinatura();
 
 void generateSKeys(SecretKeys* );
 void generatePKeys(PublicKeys*, SecretKeys*, Masks* );
 void generateMasks(Masks*);
 
-void mensageForBlocks(char*msg,int*output);
+void mensageForBlocks(char*msgHash,int*output);
 void chainFunction(char*src, int steps,Masks* r, char* output);
 void calcularChecksum(const int* message_blocks, int* checksum_blocks);
 
@@ -48,3 +51,4 @@ void assinarMensagem(char*msg, Assinatura*, SecretKeys*, Masks*);
 
 int verificarMensagem(char*msg, Assinatura*, Masks*, PublicKeys*);
 
+#endif

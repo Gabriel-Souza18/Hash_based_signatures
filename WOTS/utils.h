@@ -1,12 +1,14 @@
+#ifndef UTILS_H
+#define UTILS_H
+
 #include "keys.h"
-
-
 
 void escreverMensagem(char* caminho, char*mensagem);
 void escreverAssinatura(char* caminho, Assinatura* assinatura);
-void escreverPkeys(char* caminho, PublicKeys pKeys);
+void escreverPkeys(char* caminho, PublicKeys * pKeys);
 
-char* lerMensagem(char* caminho);
-Assinatura* lerAssinatura(char* caminho);
-PublicKeys lerPkeys(char* caminho);
+void lerMensagem(char* caminho, char* mensagem);
+void lerAssinatura(char* caminho, Assinatura* assinatura);
+void lerPkeys(char* caminho, PublicKeys* pKeys);
 
+#endif // UTILS_H
