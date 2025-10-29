@@ -1,4 +1,4 @@
-#include "sha256.h"
+#include "../SHA256/sha256.h"
 #include "dicionario.h"
 
 #include <time.h>

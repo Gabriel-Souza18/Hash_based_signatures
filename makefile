@@ -1,34 +1,90 @@
+# Makefile principal do projeto SHA256 C/CPP
 
-DIR1 = TesteHash/
-DIR2 = LamportOTS/
-DIR3 = WOTS/
+# Diretorios
+SHA256_DIR = SHA256
+LAMPORT_DIR = LamportOTS
+WOTS_DIR = WOTS
+TESTE_DIR = TesteHash
 
-LIBS1 = sha256.c ${DIR1}dicionario.c
-LIBS2= sha256.c ${DIR2}utils.c ${DIR2}keys.c
-LIBS3= sha256.c ${DIR3}utils.c ${DIR3}keys.c
+# Target padrao: compilar tudo
+all: sha256 lamport wots
 
-all: 
-	make clean
-	make wots
-	make lamport
+# Compilar biblioteca SHA256
+sha256:
+	@echo "================================"
+	@echo "Compilando biblioteca SHA256..."
+	@echo "================================"
+	$(MAKE) -C $(SHA256_DIR)
+	@echo ""
 
-wots: ${DIR3}wots.c ${LIBS3}
-	gcc -o wots ${DIR3}wots.c ${LIBS3} -I.
-	@echo "Wots Compilado"
+# Compilar Lamport OTS
+lamport: sha256
+	@echo "================================"
+	@echo "Compilando Lamport OTS..."
+	@echo "================================"
+	$(MAKE) -C $(LAMPORT_DIR)
+	@echo ""
 
-lamport: ${DIR2}lamport.c ${LIBS2}
-	gcc -o lamport ${DIR2}lamport.c ${LIBS2} -I.
-	@echo "Lots Compilado"
-teste: ${DIR1}main.c ${LIBS1}
-	gcc -o testeHash ${DIR1}main.c $(LIBS1) -I.
+# Compilar WOTS
+wots: sha256
+	@echo "================================"
+	@echo "Compilando WOTS..."
+	@echo "================================"
+	$(MAKE) -C $(WOTS_DIR)
+	@echo ""
 
+# Compilar TesteHash
+teste: sha256
+	@echo "================================"
+	@echo "Compilando TesteHash..."
+	@echo "================================"
+	$(MAKE) -C $(TESTE_DIR)
+	@echo ""
 
+# Executar testes automatizados
+test: all
+	@echo "================================"
+	@echo "Executando testes..."
+	@echo "================================"
+	./test_algorithms.sh
 
-clean: 
-	@echo "Removendo o executável..."
-	rm -f lamport testeHash wots
+# Limpar tudo
+clean:
+	@echo "================================"
+	@echo "Limpando projeto completo..."
+	@echo "================================"
+	$(MAKE) -C $(SHA256_DIR) clean
+	$(MAKE) -C $(LAMPORT_DIR) clean
+	$(MAKE) -C $(WOTS_DIR) clean
+	$(MAKE) -C $(TESTE_DIR) clean
+	@echo ""
+	@echo "Removendo arquivos de resultados e txt..."
+	rm -f resultados_*.csv
+	rm -f *.txt
+	@echo ""
+	@echo "================================"
+	@echo "Limpeza concluida!"
+	@echo "================================"
 
-	@echo "Removendo .txts"
-	rm assinatura.txt mensagem.txt publicKeys.txt
-	
-	@echo "Feito!"
+# Recompilar tudo do zero
+rebuild: clean all
+
+# Ajuda
+help:
+	@echo "================================"
+	@echo "Makefile - SHA256 C/CPP"
+	@echo "================================"
+	@echo "Targets disponiveis:"
+	@echo "  make           - Compila biblioteca SHA256, Lamport e WOTS"
+	@echo "  make all       - Mesmo que 'make'"
+	@echo "  make sha256    - Compila apenas a biblioteca SHA256"
+	@echo "  make lamport   - Compila apenas Lamport OTS"
+	@echo "  make wots      - Compila apenas WOTS"
+	@echo "  make teste     - Compila TesteHash"
+	@echo "  make test      - Compila e executa testes automatizados"
+	@echo "  make clean     - Remove todos os arquivos compilados"
+	@echo "  make rebuild   - Limpa e recompila tudo"
+	@echo "  make help      - Mostra esta mensagem"
+	@echo "================================"
+
+.PHONY: all sha256 lamport wots teste test clean rebuild help

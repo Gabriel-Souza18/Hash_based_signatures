@@ -7,6 +7,13 @@
 #define SHA256_HEX_SIZE (64 + 1)
 #define SHA256_BYTES_SIZE 32
 
+// Contador global de operações SHA256
+extern unsigned long long sha256_counter;
+
+// Funções para gerenciar o contador
+void sha256_reset_counter(void);
+unsigned long long sha256_get_counter(void);
+
 /*
  * Compute the SHA-256 checksum of a memory region given a pointer and
  * the size of that memory region.

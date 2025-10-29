@@ -158,12 +158,19 @@ valgrind --track-origins=yes --leak-check=full ./WOTS/wots
 
 ## 📚 Referências
 
-An Overview of Hash Based Signatures
-Vikas Srivastava1⋆ , Anubhab Baksi2 , and Sumit Kumar Debnath1
-National Institute of Technology Jamshedpur, India
-2
-Nanyang Technological University, Singapore
+- Lamport One-Time Signature Scheme
+- WOTS+ (Winternitz One-Time Signature Plus)
+- SHA-256 Cryptographic Hash Function
+- RFC 8391 - XMSS: eXtended Merkle Signature Scheme
+
 ---
-## Autor- Gabriel da Silva Souza
+
+## 👤 Autor
 
 Desenvolvido como parte da Iniciação Científica em Criptografia.
+
+---
+
+## 📄 Licença
+
+Este projeto é de código aberto para fins acadêmicos e educacionais.

@@ -1,13 +1,13 @@
-# Makefile para WOTS (Winternitz OTS)
+# Makefile para Lamport OTS
 
 CC = gcc
 CFLAGS = -Wall -O2 -I../SHA256
 LDFLAGS = -L../SHA256 -lsha256
 
 # Arquivos fonte
-SRC = wots.c keys.c utils.c
+SRC = lamport.c keys.c utils.c
 OBJ = $(SRC:.c=.o)
-TARGET = wots
+TARGET = lamport
 
 # Target padrão
 all: $(TARGET)
@@ -15,14 +15,14 @@ all: $(TARGET)
 # Compilar executável
 $(TARGET): $(OBJ) ../SHA256/libsha256.a
 	$(CC) $(OBJ) -o $(TARGET) $(LDFLAGS)
-	@echo "WOTS compilado!"
+	@echo "Lamport OTS compilado!"
 
 # Compilar objetos
 %.o: %.c %.h
 	$(CC) $(CFLAGS) -c $< -o $@
 
-wots.o: wots.c utils.h keys.h
-	$(CC) $(CFLAGS) -c wots.c -o wots.o
+lamport.o: lamport.c utils.h keys.h
+	$(CC) $(CFLAGS) -c lamport.c -o lamport.o
 
 # Garantir que a biblioteca SHA256 está compilada
 ../SHA256/libsha256.a:
@@ -31,9 +31,9 @@ wots.o: wots.c utils.h keys.h
 
 # Limpar arquivos gerados
 clean:
-	@echo "Limpando WOTS..."
+	@echo "Limpando Lamport OTS..."
 	rm -f $(OBJ) $(TARGET)
-	rm -f Assinatura.txt Mensagem.txt PublicKeys.txt Masks.txt
+	rm -f assinatura.txt mensagem.txt publicKeys.txt
 	@echo "Limpeza concluída!"
 
 .PHONY: all clean

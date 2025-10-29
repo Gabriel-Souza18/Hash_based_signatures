@@ -1,13 +1,13 @@
-# Makefile para WOTS (Winternitz OTS)
+# Makefile para TesteHash
 
 CC = gcc
 CFLAGS = -Wall -O2 -I../SHA256
 LDFLAGS = -L../SHA256 -lsha256
 
 # Arquivos fonte
-SRC = wots.c keys.c utils.c
+SRC = main.c dicionario.c
 OBJ = $(SRC:.c=.o)
-TARGET = wots
+TARGET = testeHash
 
 # Target padrão
 all: $(TARGET)
@@ -15,14 +15,14 @@ all: $(TARGET)
 # Compilar executável
 $(TARGET): $(OBJ) ../SHA256/libsha256.a
 	$(CC) $(OBJ) -o $(TARGET) $(LDFLAGS)
-	@echo "WOTS compilado!"
+	@echo "TesteHash compilado!"
 
 # Compilar objetos
 %.o: %.c %.h
 	$(CC) $(CFLAGS) -c $< -o $@
 
-wots.o: wots.c utils.h keys.h
-	$(CC) $(CFLAGS) -c wots.c -o wots.o
+main.o: main.c dicionario.h
+	$(CC) $(CFLAGS) -c main.c -o main.o
 
 # Garantir que a biblioteca SHA256 está compilada
 ../SHA256/libsha256.a:
@@ -31,9 +31,8 @@ wots.o: wots.c utils.h keys.h
 
 # Limpar arquivos gerados
 clean:
-	@echo "Limpando WOTS..."
+	@echo "Limpando TesteHash..."
 	rm -f $(OBJ) $(TARGET)
-	rm -f Assinatura.txt Mensagem.txt PublicKeys.txt Masks.txt
 	@echo "Limpeza concluída!"
 
 .PHONY: all clean

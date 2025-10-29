@@ -147,3 +147,52 @@ void lerPkeys(char* caminho, PublicKeys *pKeys){
     fclose(arquivo);
     printf("Chaves públicas carregadas: %d chaves de %d bytes cada\n", i, N);
 }
+
+void escreverMasks(char* caminho, Masks* masks){
+    FILE *arquivo = fopen(caminho, "w");
+    if (!arquivo) {
+        printf("Erro: não foi possível criar o arquivo %s\n", caminho);
+        return;
+    }
+
+    // Escreve cada máscara em formato hexadecimal
+    for (int i = 0; i < W-1; i++) {
+        for(int j = 0; j < N; j++){
+            fprintf(arquivo, "%02x", (unsigned char)masks->masks[i][j]);
+        }
+        fprintf(arquivo, "\n");
+    }
+    
+    fclose(arquivo);
+    printf("Máscaras salvas em: %s\n", caminho);
+}
+
+void lerMasks(char* caminho, Masks* masks){
+    FILE *arquivo = fopen(caminho, "r");
+    if (!arquivo) {
+        printf("Erro: não foi possível abrir o arquivo %s\n", caminho);
+        return;
+    }
+    
+    char linha[N * 2 + 10]; // Buffer para linha hexadecimal
+    int i = 0;
+    
+    while (fgets(linha, sizeof(linha), arquivo) && i < W-1) {
+        // Remove quebra de linha
+        linha[strcspn(linha, "\n")] = 0;
+        
+        // Converte string hexadecimal para bytes
+        for (int j = 0; j < N; j++) {
+            if (j * 2 + 1 < strlen(linha)) {
+                char hex_byte[3] = {linha[j*2], linha[j*2+1], '\0'};
+                masks->masks[i][j] = (char)strtol(hex_byte, NULL, 16);
+            } else {
+                masks->masks[i][j] = 0;
+            }
+        }
+        i++;
+    }
+    
+    fclose(arquivo);
+    printf("Máscaras carregadas: %d máscaras de %d bytes cada\n", i, N);
+}

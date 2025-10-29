@@ -1,4 +1,4 @@
-#include "sha256.h"
+#include "../SHA256/sha256.h"
 #include "utils.h"
 #include "keys.h"
 
@@ -16,6 +16,9 @@ void main(){
     printf("1-Gerar mensagem\n2-Verificar Mensagem\n");
     scanf("%d",&opção );
     
+    // Reseta contador global
+    sha256_reset_counter();
+    
     srand(clock());
     while(getchar() != '\n');
    
@@ -32,10 +35,6 @@ void main(){
         generatePublicKeys(pKeys, sKeys);
         clock_t fimPkeys = clock();
         
-        printf("Chaves geradas no tempo: \n");
-        printf("SecretsKeys: %lfs\n",(double) (fimSkeys-inicioSkeys)/CLOCKS_PER_SEC);
-        printf("PublicKeys: %lfs\n", (double)(fimPkeys-inicioPkeys)/CLOCKS_PER_SEC);
-
 
         char mensagem[1001];
         printf("Digite a mensagem ate 1000 caracteres:\n");
@@ -58,15 +57,31 @@ void main(){
         assinarMSG(msgHash,sKeys, assinatura);
         clock_t fimAssin = clock();
 
+        printf("Chaves geradas no tempo: \n");
+        printf("SecretsKeys: %lfs\n",(double) (fimSkeys-inicioSkeys)/CLOCKS_PER_SEC);
+        printf("PublicKeys: %lfs\n", (double)(fimPkeys-inicioPkeys)/CLOCKS_PER_SEC);
+
+
         printf("Mensagem Assinada em: %lf s\n",(double) (fimAssin- inicioAssin)/CLOCKS_PER_SEC);
       
- 
+        printf("Total de hashes SHA256: %llu\n", sha256_get_counter());
+
+        unsigned long tamanho_assinatura = 256 * SHA256_HEX_SIZE;
+        printf("Tamanho Assinatura: %lu bytes\n", tamanho_assinatura);
+        
+        unsigned long tamanho_secret_keys = 256 * 2 * 256; 
+        unsigned long tamanho_public_keys = 256 * 2 * SHA256_HEX_SIZE;
+        
+        printf("Tamanho Secretkeys: %lu bytes\n", tamanho_secret_keys);
+        printf("Tamanho Publickeys: %lu bytes\n", tamanho_public_keys);
+
         //printKeys(pKeys, sKeys);
         
         escreverAssinatura("assinatura.txt", assinatura, 256);
         escreverPkeys("publicKeys.txt", pKeys);
         escreverMensagem("mensagem.txt", mensagem);
         freeKeys(pKeys, sKeys);
+
 
         for (int i = 0; i < 256; i++) {
             free(assinatura[i]);
@@ -88,6 +103,9 @@ void main(){
 
         bool resultado = verificarMSG(msgLidaHash, pKeysVerif, assinaturaVerif);
         printf("Verificação: %s\n", resultado ? "VÁLIDA" : "INVÁLIDA");
+        
+
+        printf("Total de hashes SHA256: %llu\n", sha256_get_counter());
         
         // Limpeza
         for (int i = 0; i < tamanhoAssinatura; i++) {

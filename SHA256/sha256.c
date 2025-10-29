@@ -1,5 +1,17 @@
 #include "sha256.h"
 
+// Contador global de operações SHA256
+unsigned long long sha256_counter = 0;
+
+// Funções para gerenciar o contador
+void sha256_reset_counter(void) {
+    sha256_counter = 0;
+}
+
+unsigned long long sha256_get_counter(void) {
+    return sha256_counter;
+}
+
 
 // Rotate right
 static inline uint32_t rotr(uint32_t x, int n){
@@ -180,18 +192,20 @@ void sha256_hex(const void *src, size_t n_bytes, char *dst_hex65){
     struct sha256 sha;
 
     sha256_init(&sha);
-
     sha256_append(&sha, src, n_bytes);
-
     sha256_finalize_hex(&sha, dst_hex65);
+    
+    // Incrementa contador
+    sha256_counter++;
 }
 
 void sha256_bytes(const void *src, size_t n_bytes, void *dst_bytes32){
     struct sha256 sha;
 
     sha256_init(&sha);
-
     sha256_append(&sha, src, n_bytes);
-
     sha256_finalize_bytes(&sha, dst_bytes32);
+    
+    // Incrementa contador
+    sha256_counter++;
 }

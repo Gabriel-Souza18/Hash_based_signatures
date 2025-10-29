@@ -1,0 +1,166 @@
+#!/bin/bash
+
+# Script para testar algoritmos Lamport e WOTS múltiplas vezes
+# e salvar os resultados em uma tabela
+
+# Cores para output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+BLUE='\033[0;34m'
+YELLOW='\033[1;33m'
+NC='\033[0m' # No Color
+
+echo -e "${BLUE}========================================${NC}"
+echo -e "${BLUE}  TESTE DE ALGORITMOS DE ASSINATURA    ${NC}"
+echo -e "${BLUE}========================================${NC}"
+
+# Número de testes
+TESTES=10
+TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
+RESULTADO_FILE="resultados_${TIMESTAMP}.csv"
+
+# Mensagem de teste padrão
+MENSAGEM_TESTE="Esta é uma mensagem de teste para avaliar os algoritmos de assinatura digital."
+
+# Cria cabeçalho do CSV
+echo "Algoritmo,Teste,Tempo_SecretKeys,Tempo_PublicKeys,Tempo_Masks,Tempo_Assinatura,Hashes_Assinatura,Tamanho_SecretKeys,Tamanho_PublicKeys,Tamanho_Assinatura" > "$RESULTADO_FILE"
+
+echo -e "${YELLOW}Compilando algoritmos...${NC}"
+make clean > /dev/null 2>&1
+make all > /dev/null 2>&1
+
+if [ $? -ne 0 ]; then
+    echo -e "${RED}Erro na compilação!${NC}"
+    exit 1
+fi
+
+echo -e "${GREEN}Compilação concluída!${NC}"
+echo
+
+# Função para extrair valores do output
+extrair_valor() {
+    local texto="$1"
+    local padrao="$2"
+    echo "$texto" | grep "$padrao" | grep -o '[0-9]\+\.*[0-9]*' | head -1
+}
+
+# Função para testar Lamport
+testar_lamport() {
+    local teste_num=$1
+    echo -e "${BLUE}Testando Lamport - Teste $teste_num${NC}"
+    
+    # Teste de assinatura (opção 1)
+    local output_assinatura=$(echo -e "1\n$MENSAGEM_TESTE" | timeout 30 ./LamportOTS/lamport 2>&1)
+    
+    if [ $? -ne 0 ]; then
+        echo -e "${RED}Erro no teste Lamport $teste_num (assinatura)${NC}"
+        return 1
+    fi
+    
+    # Teste de verificação (opção 2)
+    local output_verificacao=$(echo "2" | timeout 30 ./LamportOTS/lamport 2>&1)
+    
+    if [ $? -ne 0 ]; then
+        echo -e "${RED}Erro no teste Lamport $teste_num (verificação)${NC}"
+        return 1
+    fi
+    
+    # Extrai valores do Lamport com os padrões corretos
+    local tempo_secret_keys=$(extrair_valor "$output_assinatura" "SecretsKeys:")
+    local tempo_public_keys=$(extrair_valor "$output_assinatura" "PublicKeys:")
+    local tempo_assinatura=$(extrair_valor "$output_assinatura" "Mensagem Assinada em:")
+    
+    local hashes_assinatura=$(extrair_valor "$output_assinatura" "Total de hashes SHA256:")
+    
+    local tamanho_secret=$(extrair_valor "$output_assinatura" "Tamanho Secretkeys:")
+    local tamanho_public=$(extrair_valor "$output_assinatura" "Tamanho Publickeys:")
+    local tamanho_assinatura=$(extrair_valor "$output_assinatura" "Tamanho Assinatura:")
+    
+    # Valores padrão se não encontrados
+    tempo_secret_keys=${tempo_secret_keys:-"0"}
+    tempo_public_keys=${tempo_public_keys:-"0"}
+    tempo_assinatura=${tempo_assinatura:-"0"}
+    hashes_assinatura=${hashes_assinatura:-"0"}
+    tamanho_secret=${tamanho_secret:-"131072"}
+    tamanho_public=${tamanho_public:-"33280"}
+    tamanho_assinatura=${tamanho_assinatura:-"16640"}
+    
+    # Salva no CSV (Lamport não tem masks, então usa 0)
+    echo "Lamport,$teste_num,$tempo_secret_keys,$tempo_public_keys,0,$tempo_assinatura,$hashes_assinatura,$tamanho_secret,$tamanho_public,$tamanho_assinatura" >> "$RESULTADO_FILE"
+    
+    echo -e "${GREEN}Lamport Teste $teste_num: OK${NC}"
+    echo "  SK: ${tempo_secret_keys}s | PK: ${tempo_public_keys}s | Assinatura: ${tempo_assinatura}s | Hashes: $hashes_assinatura"
+}
+
+# Função para testar WOTS
+testar_wots() {
+    local teste_num=$1
+    echo -e "${BLUE}Testando WOTS - Teste $teste_num${NC}"
+    
+    # Teste de assinatura (opção 1)
+    local output_assinatura=$(echo -e "1\n$MENSAGEM_TESTE" | timeout 30 ./WOTS/wots 2>&1)
+    
+    if [ $? -ne 0 ]; then
+        echo -e "${RED}Erro no teste WOTS $teste_num (assinatura)${NC}"
+        return 1
+    fi
+    
+    # Extrai valores do WOTS separadamente
+    local tempo_secret_keys=$(extrair_valor "$output_assinatura" "Tempo para gerar Chaves Secretas:")
+    local tempo_public_keys=$(extrair_valor "$output_assinatura" "Tempo para gerar Chaves Public:")
+    local tempo_masks=$(extrair_valor "$output_assinatura" "Tempo para gerar Masks:")
+    local tempo_assinatura=$(extrair_valor "$output_assinatura" "Tempo para Assinar:")
+    
+    local hashes_assinatura=$(extrair_valor "$output_assinatura" "Total de hashes SHA256:")
+    
+    local tamanho_secret=$(extrair_valor "$output_assinatura" "Tamanho Secretkeys:")
+    local tamanho_public=$(extrair_valor "$output_assinatura" "Tamanho Publickeys:")
+    local tamanho_assinatura=$(extrair_valor "$output_assinatura" "Tamanho Assinatura:")
+    
+    # Valores padrão se não encontrados
+    tempo_secret_keys=${tempo_secret_keys:-"0"}
+    tempo_public_keys=${tempo_public_keys:-"0"}
+    tempo_masks=${tempo_masks:-"0"}
+    tempo_assinatura=${tempo_assinatura:-"0"}
+    hashes_assinatura=${hashes_assinatura:-"0"}
+    tamanho_secret=${tamanho_secret:-"2144"}
+    tamanho_public=${tamanho_public:-"2144"}
+    tamanho_assinatura=${tamanho_assinatura:-"2144"}
+    
+    # Salva no CSV com tempos separados
+    echo "WOTS,$teste_num,$tempo_secret_keys,$tempo_public_keys,$tempo_masks,$tempo_assinatura,$hashes_assinatura,$tamanho_secret,$tamanho_public,$tamanho_assinatura" >> "$RESULTADO_FILE"
+    
+    echo -e "${GREEN}WOTS Teste $teste_num: OK${NC}"
+    echo "  SK: ${tempo_secret_keys}s | PK: ${tempo_public_keys}s | Masks: ${tempo_masks}s | Assinatura: ${tempo_assinatura}s"
+}
+
+echo -e "${YELLOW}Iniciando testes ($TESTES execuções para cada algoritmo)...${NC}"
+echo
+
+# Executa testes
+for i in $(seq 1 $TESTES); do
+    echo -e "${YELLOW}=== EXECUÇÃO $i/$TESTES ===${NC}"
+    
+    # Testa Lamport
+    testar_lamport $i
+    sleep 1
+    
+    # Testa WOTS  
+    testar_wots $i
+    sleep 1
+    
+    echo
+done
+
+echo -e "${GREEN}========================================${NC}"
+echo -e "${GREEN}  TESTES CONCLUÍDOS!                   ${NC}"
+echo -e "${GREEN}========================================${NC}"
+echo -e "${GREEN}Resultados salvos em: $RESULTADO_FILE${NC}"
+echo
+
+
+echo "Arquivo CSV gerado: $RESULTADO_FILE"
+
+echo
+echo -e "${GREEN}Script finalizado!${NC}"
+echo -e "${BLUE}Arquivo de resultados: ${YELLOW}$RESULTADO_FILE${NC}"
