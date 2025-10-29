@@ -59,7 +59,8 @@
   "files.associations": {
     "sha256.h": "c",
     "stdio.h": "c",
-    "keys.h": "c"
+    "keys.h": "c",
+    "arvore.h": "c"
   },
   "github.copilot.advanced": {}
 }

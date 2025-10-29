@@ -1,7 +1,7 @@
 # Assinaturas Digitais Baseadas em Hash
 ## Repositório para códigos desenvolvidos na Iniciação Científica
 
-Este projeto implementa e compara algoritmos de assinatura digital baseados em hash: **Lamport OTS** e **WOTS** (Winternitz One-Time Signature).
+Este projeto implementa e compara algoritmos de assinatura digital baseados em hash: **Lamport OTS**, **WOTS** (Winternitz One-Time Signature) e **MSS** (Merkle Signature Scheme).
 
 ---
 
@@ -26,6 +26,11 @@ sha256_c_cpp/
 │   ├── utils.c/h        # Funções utilitárias
 │   └── makefile         # Compilação WOTS
 │
+├── MSS/                 # Implementação MSS (Merkle Signature Scheme)
+│   ├── mss.c            # Programa principal
+│   ├── Arvore.c/h       # Estrutura da árvore de Merkle
+│   └── makefile         # Compilação MSS
+│
 ├── TesteHash/           # Testes de hash
 │   ├── main.c           # Programa de testes
 │   ├── dicionario.c/h   # Manipulação de dicionários
@@ -35,18 +40,19 @@ sha256_c_cpp/
 ├── test_algorithms.sh   # Script de testes automatizados
 └── readme.md            # Este arquivo
 ```
-
----
-
-## 🚀 Comandos de Compilação
-
 ### Compilar tudo
 ```bash
-make           # Compila biblioteca SHA256, Lamport e WOTS
+make           # Compila biblioteca SHA256, Lamport, WOTS e MSS
 make all       # Mesmo que 'make'
 ```
 
 ### Compilar módulos individuais
+```bash
+make sha256    # Compila apenas a biblioteca SHA256
+make lamport   # Compila apenas Lamport OTS
+make wots      # Compila apenas WOTS
+make mss       # Compila apenas MSS
+make teste     # Compila TesteHash
 ```bash
 make sha256    # Compila apenas a biblioteca SHA256
 make lamport   # Compila apenas Lamport OTS
@@ -67,14 +73,20 @@ make help      # Mostra ajuda
 ## 🧪 Executando os Algoritmos
 
 ### Lamport OTS
+### WOTS
 ```bash
-./LamportOTS/lamport
+./WOTS/wots
 # Opção 1: Gerar assinatura
 # Opção 2: Verificar assinatura
 ```
 
-### WOTS
+### MSS (Merkle Signature Scheme)
 ```bash
+./MSS/mss
+# Demonstração da árvore de Merkle
+```
+
+### Testes Automatizados
 ./WOTS/wots
 # Opção 1: Gerar assinatura
 # Opção 2: Verificar assinatura
@@ -144,15 +156,15 @@ valgrind --track-origins=yes --leak-check=full ./WOTS/wots
 - ✅ Script de testes automatizados aprimorado
 - ✅ Coleta detalhada de métricas de desempenho
 
+### Fase 5: MSS(29/10 -)
+- ✅ Implementando Arvore que gera Hashs 
 ---
 
 ## 🎯 Próximos Passos
 
-- Implementar MSS (Merkle Signature Scheme)
 - Analisar padrões de repetição em chaves
 - Estudar funções esponja (Sponge Functions)
-- Testes em aplicações IoT
-- Análise de segurança comparativa
+
 
 ---
 
