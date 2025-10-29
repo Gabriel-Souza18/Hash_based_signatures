@@ -137,7 +137,7 @@ valgrind --track-origins=yes --leak-check=full ./WOTS/wots
 - ✅ Comparação com Lamport OTS
 - ✅ Testes de desempenho
 
-### Fase 4: Reorganização e Testes (29/10)
+### Fase 4: Reorganização e Testes (21/10 - 29/10)
 - ✅ Reorganização modular do projeto
 - ✅ Criação de makefiles individuais
 - ✅ Biblioteca SHA256 separada
@@ -148,20 +148,20 @@ valgrind --track-origins=yes --leak-check=full ./WOTS/wots
 
 ## 🎯 Próximos Passos
 
-- [ ] Implementar XMSS (Extended Merkle Signature Scheme)
-- [ ] Analisar padrões de repetição em chaves
-- [ ] Estudar funções esponja (Sponge Functions)
-- [ ] Testes em aplicações IoT
-- [ ] Análise de segurança comparativa
+- Implementar MSS (Merkle Signature Scheme)
+- Analisar padrões de repetição em chaves
+- Estudar funções esponja (Sponge Functions)
+- Testes em aplicações IoT
+- Análise de segurança comparativa
 
 ---
 
-## 📚 Referências
+## 📚 Referência Principal 
 
-An Overview of Hash Based Signatures
-Vikas Srivastava1⋆ , Anubhab Baksi2 , and Sumit Kumar Debnath1
-National Institute of Technology Jamshedpur, India
-2
+### An Overview of Hash Based Signatures <br>
+#### Vikas Srivastava , Anubhab Baksi, and Sumit Kumar Debnath1<br>
+National Institute of Technology Jamshedpur, India 
+
 Nanyang Technological University, Singapore
 ---
 ## Autor- Gabriel da Silva Souza
