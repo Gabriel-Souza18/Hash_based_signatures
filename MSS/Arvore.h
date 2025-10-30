@@ -10,14 +10,30 @@ typedef struct no{
     struct no* filho_esq;
 }No;
 
+typedef struct {
+    int quantFolhas;
+    No** nos;
+}Andar;
 
 
-No * alocarFolha();
-No * criarPai(No *filho_esq, No *filho_dir);
+// Alocação
+No * alocarNo();
+Andar* alocarAndar(int quantFolhas);
 
+void criarPai(No *pai);
+
+// Liberação de memória
+void liberarNo(No *no);
+void liberarAndar(Andar *andar);
+void limparArvore(No *raiz);
+
+// I/O
 void escreverArvore(char *caminho,No *raiz);
 void lerArvore(char* caminho);
 
-void limparArvore(No *raiz);
+// Visualização
+void printarArvore(No *raiz);
+void printarArvoreNivel(No *raiz, int nivel);
+void printarArvoreCompleta(No *raiz);
 
 #endif

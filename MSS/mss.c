@@ -3,26 +3,75 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <time.h>
+#include <string.h>
+
+#define NUM_FOLHAS 256 
+
+No* criarTreeMSS(Andar* folhas);
+Andar* criarFolhas();
 
 void main(){
-    No* filho1 = alocarFolha();
-    No* filho2 = alocarFolha();
+    srand(time(NULL));
+    
+    printf("Criando %d folhas...\n", NUM_FOLHAS);
+    Andar* folhas = criarFolhas();
+    
+    printf("Construindo árvore de Merkle...\n");
+    No* raiz = criarTreeMSS(folhas);
 
-    filho1->filho_esq = NULL;
-    filho2->filho_esq = NULL;
+    printf("\nÁrvore construída! Imprimindo...\n\n");
+    printarArvoreCompleta(raiz);
+    
+    limparArvore(raiz);
+    printf("\nConcluído!\n");
+}
 
-    filho1->filho_dir = NULL;
-    filho2->filho_dir = NULL;
+Andar* criarFolhas(){
+    Andar* andar = alocarAndar(NUM_FOLHAS);
+    
 
-    sha256_hex("1", 1, filho1->hash);
-    sha256_hex("2", 1, filho2->hash);
+    for (int i = 0; i < NUM_FOLHAS; i++){
+        char buffer[128];
+        sprintf(buffer, "folha_%d_%d", i, rand());
+        sha256_hex(buffer, strlen(buffer), andar->nos[i]->hash);
+    }
+    
+    return andar;
+}
 
-
-    No* pai = criarPai(filho1,filho2);
-    printf("Hashs filhos:\n1- %s\n2- %s\n",filho1->hash, filho2->hash );
-    printf("Hash pai: %s\n", pai->hash);
-
-    free(filho1);
-    free(filho2);
-    free(pai);
+No* criarTreeMSS(Andar* folhas){
+    int faltam = NUM_FOLHAS;
+    Andar *andarAtual = folhas;
+    
+    while (faltam > 1){
+        int quantPais = andarAtual->quantFolhas / 2;
+        Andar *novoAndar = (Andar*)malloc(sizeof(Andar));
+        novoAndar->quantFolhas = quantPais;
+        novoAndar->nos = (No**)malloc(sizeof(No*) * quantPais);
+        
+        int j = 0;
+        for (int i = 0; i < andarAtual->quantFolhas; i += 2){
+            No* novoNo = alocarNo();
+            novoNo->filho_esq = andarAtual->nos[i];
+            novoNo->filho_dir = andarAtual->nos[i + 1];
+            criarPai(novoNo);
+            
+            novoAndar->nos[j] = novoNo;
+            j++;
+        }
+        
+        free(andarAtual->nos);
+        free(andarAtual);
+        
+        andarAtual = novoAndar;
+        faltam = faltam / 2;
+    }
+    
+    No* raiz = andarAtual->nos[0];
+    
+    free(andarAtual->nos);
+    free(andarAtual);
+    
+    return raiz;
 }
