@@ -22,9 +22,6 @@ RESULTADO_FILE="resultados_${TIMESTAMP}.csv"
 # Mensagem de teste padrão
 MENSAGEM_TESTE="Esta é uma mensagem de teste para avaliar os algoritmos de assinatura digital."
 
-# Cria cabeçalho do CSV
-echo "Algoritmo,Teste,Tempo_SecretKeys,Tempo_PublicKeys,Tempo_Masks,Tempo_Assinatura,Hashes_Assinatura,Tamanho_SecretKeys,Tamanho_PublicKeys,Tamanho_Assinatura" > "$RESULTADO_FILE"
-
 echo -e "${YELLOW}Compilando algoritmos...${NC}"
 make clean > /dev/null 2>&1
 make all > /dev/null 2>&1
@@ -37,11 +34,20 @@ fi
 echo -e "${GREEN}Compilação concluída!${NC}"
 echo
 
+# Cria cabeçalho do CSV DEPOIS da compilação (para não ser apagado pelo make clean)
+HEADER="Algoritmo,Teste,Tempo_SecretKeys,Tempo_PublicKeys,Tempo_Masks,Tempo_Assinatura,Hashes_Assinatura,Tamanho_SecretKeys,Tamanho_PublicKeys,Tamanho_Assinatura"
+printf "%s\n" "$HEADER" > "$RESULTADO_FILE"
+
+echo -e "${GREEN}✓ Arquivo CSV criado: $RESULTADO_FILE${NC}"
+echo -e "${BLUE}Header: $(head -1 "$RESULTADO_FILE")${NC}"
+echo
+
 # Função para extrair valores do output
 extrair_valor() {
     local texto="$1"
     local padrao="$2"
-    echo "$texto" | grep "$padrao" | grep -o '[0-9]\+\.*[0-9]*' | head -1
+    # Extrai o valor numérico após o padrão (após os dois pontos)
+    echo "$texto" | grep "$padrao" | sed 's/.*: *\([0-9.]*\).*/\1/' | head -1
 }
 
 # Função para testar Lamport

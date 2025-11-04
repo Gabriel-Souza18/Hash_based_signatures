@@ -1,20 +1,24 @@
 # Makefile para MSS (Merkle Signature Scheme)
 
 CC = gcc
-CFLAGS = -Wall -O2 -I../SHA256
-LDFLAGS = -L../SHA256 -lsha256
+CFLAGS = -Wall -O2 -I../SHA256 -I../WOTS
+LDFLAGS = -L../SHA256 -lsha256 -lm
 
 # Arquivos fonte
 SRC = mss.c Arvore.c
 OBJ = $(SRC:.c=.o)
+
+# Objetos do WOTS que precisamos linkar
+WOTS_OBJ = ../WOTS/keys.o ../WOTS/utils.o
+
 TARGET = mss
 
 # Target padrão
 all: $(TARGET)
 
 # Compilar executável
-$(TARGET): $(OBJ) ../SHA256/libsha256.a
-	$(CC) $(OBJ) -o $(TARGET) $(LDFLAGS)
+$(TARGET): $(OBJ) $(WOTS_OBJ) ../SHA256/libsha256.a
+	$(CC) $(OBJ) $(WOTS_OBJ) -o $(TARGET) $(LDFLAGS)
 	@echo "MSS compilado!"
 
 # Compilar objetos
@@ -28,6 +32,11 @@ mss.o: mss.c Arvore.h
 ../SHA256/libsha256.a:
 	@echo "Compilando biblioteca SHA256..."
 	$(MAKE) -C ../SHA256
+
+# Garantir que os objetos do WOTS estão compilados
+$(WOTS_OBJ):
+	@echo "Compilando WOTS..."
+	$(MAKE) -C ../WOTS
 
 # Limpar arquivos gerados
 clean:

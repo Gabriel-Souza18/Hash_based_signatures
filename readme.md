@@ -68,55 +68,8 @@ make rebuild   # Limpa e recompila tudo
 make help      # Mostra ajuda
 ```
 
----
 
-## 🧪 Executando os Algoritmos
-
-### Lamport OTS
-### WOTS
-```bash
-./WOTS/wots
-# Opção 1: Gerar assinatura
-# Opção 2: Verificar assinatura
-```
-
-### MSS (Merkle Signature Scheme)
-```bash
-./MSS/mss
-# Demonstração da árvore de Merkle
-```
-
-### Testes Automatizados
-./WOTS/wots
-# Opção 1: Gerar assinatura
-# Opção 2: Verificar assinatura
-```
-
-### Testes Automatizados
-```bash
-./test_algorithms.sh
-# Executa 10 testes de cada algoritmo
-# Gera arquivo CSV com resultados comparativos
-```
-
----
-
-## 📊 Métricas Coletadas
-
-O script de testes automatizados coleta as seguintes métricas:
-
-- **Tempo de geração de chaves secretas**
-- **Tempo de geração de chaves públicas**
-- **Tempo de geração de masks** (apenas WOTS)
-- **Tempo de assinatura**
-- **Número de hashes SHA256** utilizados
-- **Tamanho das chaves e assinaturas** (em bytes)
-
-Os resultados são salvos em formato CSV para análise posterior.
-
----
-
-## 🔧 Ferramentas de Debug
+## Ferramentas de Debug
 
 ### Valgrind (verificação de memória)
 ```bash
@@ -129,7 +82,7 @@ valgrind --track-origins=yes --leak-check=full ./WOTS/wots
 
 ---
 
-## 📝 Histórico de Desenvolvimento
+##  Histórico de Desenvolvimento
 
 ### Fase 1: Implementação SHA256 (22/09 - 03/10)
 - ✅ Implementação da função SHA256
@@ -140,27 +93,28 @@ valgrind --track-origins=yes --leak-check=full ./WOTS/wots
 ### Fase 2: Lamport OTS (03/10 - 08/10)
 - ✅ Implementação completa do Lamport OTS
 - ✅ Sistema de leitura/escrita de chaves
-- ✅ Função de assinatura
+- ✅Função de assinatura
 - ✅ Função de verificação
 
 ### Fase 3: WOTS (10/10 - 20/10)
-- ✅ Implementação do WOTS (W=16, L=67)
+- ✅Implementação do WOTS (W=16, L=67)
 - ✅ Sistema de máscaras
 - ✅ Comparação com Lamport OTS
 - ✅ Testes de desempenho
 
 ### Fase 4: Reorganização e Testes (21/10 - 29/10)
-- ✅ Reorganização modular do projeto
+- ✅  Reorganização modular do projeto
 - ✅ Criação de makefiles individuais
-- ✅ Biblioteca SHA256 separada
-- ✅ Script de testes automatizados aprimorado
+- ✅Biblioteca SHA256 separada
+- ✅Script de testes automatizados aprimorado
 - ✅ Coleta detalhada de métricas de desempenho
 
 ### Fase 5: MSS(29/10 -)
 - ✅ Implementando Arvore que gera Hashs 
+- ✅Assisti a aula do Christof Paar sobre MSS
 ---
 
-## 🎯 Próximos Passos
+## Próximos Passos
 
 - Analisar padrões de repetição em chaves
 - Estudar funções esponja (Sponge Functions)

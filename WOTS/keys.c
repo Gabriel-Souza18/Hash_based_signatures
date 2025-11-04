@@ -17,7 +17,7 @@ SecretKeys* mallocSkeys(){
             k->Sk[i][j] = 0;  // Inicializa com 0, não NULL
         }
     }
-    printf("Memoria Alocada com sucesso\n");
+    
     return k;
 }
 PublicKeys* mallocPkeys(){
@@ -45,7 +45,7 @@ Masks* mallocMasks(){
             m->masks[i][j] = 0;  // Inicializa com 0, não NULL
         }
     }
-    printf("Memoria Alocada com sucesso\n");
+    
     return m;
 }
 Assinatura* mallocAssinatura() {

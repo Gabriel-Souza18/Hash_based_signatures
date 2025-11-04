@@ -68,8 +68,8 @@ clean:
 	$(MAKE) -C $(MSS_DIR) clean
 	$(MAKE) -C $(TESTE_DIR) clean
 	@echo ""
-	@echo "Removendo arquivos de resultados e txt..."
-	rm -f resultados_*.csv
+	@echo "Removendo arquivos txt..."
+
 	rm -f *.txt
 	@echo ""
 	@echo "================================"
