@@ -4,31 +4,8 @@
 #define sizeTree 256
 #include "../SHA256/sha256.h"
 #include "../WOTS/keys.h"
-
-/*
- * ESTRUTURA DA ÁRVORE MERKLE (MSS)
- * 
- * Camadas são numeradas de cima para baixo (0 = raiz):
- * 
- * Camada 0:              [Raiz]
- *                       /      \
- * Camada 1:       [No1]          [No2]
- *                /    \          /    \
- * Camada 2:  [Folha] [Folha] [Folha] [Folha]
- * 
- * - Nós da CAMADA 1 têm filhos do tipo FOLHA (tipo_filho = TIPO_FOLHA)
- * - Nós ACIMA da camada 1 têm filhos do tipo NO (tipo_filho = TIPO_NO)
- * - Folhas contêm chaves WOTS (SecretKeys, PublicKeys, Masks)
- * - Nós internos contêm apenas hashes
- * 
- * Para 256 folhas:
- * - Camada 2 (última): 256 folhas
- * - Camada 1: 128 nós (cada um com 2 folhas)
- * - Camada 0: raiz
- */
-
-// Estrutura para folhas (nós terminais com chaves WOTS)
 typedef struct {
+    int usada; //0 = nao, 1 = sim
     SecretKeys* Skeys;
     PublicKeys* Pkeys;
     Masks* Masks;
@@ -62,8 +39,11 @@ typedef struct{
     char PublicKeysGeral[SHA256_HEX_SIZE];
     int alturaArvore;
     int totalFolhas;
-    char* caminho;
-    No* raiz;
+    Folha* folhaUsada;
+    int indiceFolha;
+    int tamanhoCaminho;
+    char caminho[32][SHA256_HEX_SIZE];
+    
 }AssinaturaMSS;
 
 // Alocação
@@ -74,9 +54,15 @@ AssinaturaMSS * alocarAssinatura();
 // Criação
 void criarFolhas(Folha *folhas, int quantFolhas);
 void criarPai(No *pai);
+void criarAssinatura(AssinaturaMSS* assinatura, No* raiz, 
+                    Folha* folhaUsada,int indice, int numFolhas);
 
-// Função auxiliar para conectar folhas aos nós da camada 1
+// Funcoes auxiliares
 void conectarFolhasAoNo(No *no, Folha *folha_esq, Folha *folha_dir);
+
+void coletarCaminhoAutenticacao(AssinaturaMSS *assinatura, No* raiz);
+int coletarCaminhoRecursivo(No* no, Folha* folhaAlvo, char caminhoAuth[][SHA256_HEX_SIZE], 
+                            int* tamanhoPath, int indiceFolha, int numFolhas);
 
 
 // Liberação de memória
@@ -84,19 +70,13 @@ void liberarFolha(Folha *folha);
 void liberarNo(No *no);
 void limparArvore(No *raiz);
 
+// Impressão
+void imprimirArvore(No* raiz);
+void imprimirArvoreRecursiva(No* no, int nivel, char* prefixo);
+
 // I/O
 void escreverArvore(char *caminho,No *raiz);
 void lerArvore(char* caminho);
 
-// Visualização
-void printarArvore(No *raiz);
-void printarArvoreNivel(No *raiz, int nivel);
-void printarArvoreCompleta(No *raiz);
-void printarAndar(No **andar, int numNos, int numeroAndar);
 
-
-//chaves
-No* gerarNo(char* SeedMaster);
-AssinaturaMSS gerarChavesMSS();
-No* gerarArvoreMss(AssinaturaMSS);
 #endif

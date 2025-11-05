@@ -110,15 +110,19 @@ valgrind --track-origins=yes --leak-check=full ./WOTS/wots
 - ✅ Coleta detalhada de métricas de desempenho
 
 ### Fase 5: MSS(29/10 -)
-- ✅ Implementando Arvore que gera Hashs 
 - ✅Assisti a aula do Christof Paar sobre MSS
+- ✅ Implementando Arvore que gera Hashs 
+- ✅ Corrigindo problemas e gerando assinatura
 ---
 
 ## Próximos Passos
+- implementar verificação da assinaturaMSS, e um sistema pra escolher quem vc quer ser no p2p
 
-- Analisar padrões de repetição em chaves
-- Estudar funções esponja (Sponge Functions)
+- corrigir implementação do lamporte colocar nome como LOTS, usar memoria igual no WOTS
 
+- ver aula pra fixar WOTS
+
+- Testar em arduino(aprender como rodar isso em arduino)
 
 ---
 
@@ -126,9 +130,9 @@ valgrind --track-origins=yes --leak-check=full ./WOTS/wots
 
 ### An Overview of Hash Based Signatures <br>
 #### Vikas Srivastava , Anubhab Baksi, and Sumit Kumar Debnath1<br>
-National Institute of Technology Jamshedpur, India 
+- National Institute of Technology Jamshedpur, India /Nanyang Technological University, Singapore
 
-Nanyang Technological University, Singapore
+### Aulas do youtube do Christof Paar
 ---
 ## Autor- Gabriel da Silva Souza
 

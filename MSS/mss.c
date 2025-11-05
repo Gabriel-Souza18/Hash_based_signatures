@@ -7,15 +7,12 @@
 #include <string.h>
 #include <math.h>
 
-#define NUM_FOLHAS 8
+#define NUM_FOLHAS 8 // sempre tem que ser 2^n
 
 No * mssTree(Folha* folhas);
 
 int main(){
 
-    fflush(stdout);  // Força impressão imediata
-
-    // CORRIGIDO: Aloca e inicializa os ponteiros das folhas
     Folha *folhas = malloc(NUM_FOLHAS * sizeof(Folha));
     if (!folhas) {
         fprintf(stderr, "Erro ao alocar folhas\n");
@@ -35,14 +32,37 @@ int main(){
     No * raiz = mssTree(folhas);
     printf("Raiz = %s\n", raiz->hash);
     
-    // Libera memória das folhas
+    // Imprime a estrutura completa da árvore
+    imprimirArvore(raiz);
+
+    AssinaturaMSS * assinatura = alocarAssinatura();
+
+    criarAssinatura(assinatura, raiz, &folhas[0],0, NUM_FOLHAS);
+
+    printf("\n=== ASSINATURA MSS ===\n");
+    printf("Public Key Geral (Raiz): %s\n", assinatura->PublicKeysGeral);
+    printf("Altura da Árvore: %d\n", assinatura->alturaArvore);
+    printf("Total de Folhas: %d\n", assinatura->totalFolhas);
+    printf("Índice da Folha Usada: %d\n", assinatura->indiceFolha);
+    printf("Hash da Folha Usada: %s\n", assinatura->folhaUsada->hash);
+    printf("\nCaminho de Autenticação (%d hashes):\n", assinatura->tamanhoCaminho);
+    for(int i = 0; i < assinatura->tamanhoCaminho; i++){
+        printf("  [%d] %s\n", i, assinatura->caminho[i]);
+    }
+    printf("======================\n\n");
+    
+    free(assinatura);
+
+    // limpeza
     for(int i = 0; i < NUM_FOLHAS; i++){
         free(folhas[i].Skeys);
         free(folhas[i].Pkeys);
         free(folhas[i].Masks);
     }
     free(folhas);
-    
+    limparArvore(raiz);
+
+
     return 0;
 }
 
@@ -64,36 +84,37 @@ No* mssTree(Folha* folhas){
     }
 
     
-    while(numNoAndar>=1){
+    while(numNoAndar > 1){
  
-        printarAndar(andarAtual, numNoAndar, andar);
-        int numNosNovoAndar =numNoAndar/2;
+
+        int numNosNovoAndar = numNoAndar/2;
 
         No **novoAndar = malloc(sizeof(No*) * numNosNovoAndar);
 
-        for (int i=0 ;i<numNoAndar; i++){
+        for (int i=0; i<numNosNovoAndar; i++){
             novoAndar[i] = alocarNo();
         }
 
         j=0;
-        for (int i = 0; i<numNoAndar;i++ ){
+        for (int i = 0; i<numNoAndar; i+=2){
             novoAndar[j]->filho_esq =  andarAtual[i];
             novoAndar[j]->tipo_filho_esq = TIPO_NO;
             novoAndar[j]->filho_dir =  andarAtual[i+1];
             novoAndar[j]->tipo_filho_dir = TIPO_NO;
 
             criarPai(novoAndar[j]);
-          j++;
+            j++;
         }
         free(andarAtual);
         andarAtual = novoAndar;
         numNoAndar = numNosNovoAndar;
         andar++;
-        
+
     }
 
-    printf("TErminou de gerar Arvore");
-    printf("ultimo no: %s", andarAtual[0]->hash );
-    limparArvore(andarAtual[0]);
-    return andarAtual[0];
+    printf("\nTerminou de gerar Arvore\n");
+    printf("ultimo no: %s\n", andarAtual[0]->hash);
+    No* raiz = andarAtual[0];
+    free(andarAtual);
+    return raiz;
 }

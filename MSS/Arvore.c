@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
 
 No *alocarNo(){
     No *no = (No*)malloc(sizeof(No));
@@ -27,7 +28,8 @@ Folha * alocarFolha(){
         fprintf(stderr, "ERRO: nao foi possivel alocar Folha\n");
         exit(1);
     }
-    
+    folha->usada = 0;// define como nao usada
+
     // Aloca as estruturas WOTS dentro da folha
     folha->Skeys = mallocSkeys();
     folha->Pkeys = mallocPkeys();
@@ -88,6 +90,102 @@ void criarFolhas(Folha *folhas, int quantFolhas){
     }
 }
 
+void criarAssinatura(AssinaturaMSS* assinatura, No* raiz, 
+                    Folha* folhaUsada,int indice, int numFolhas){
+    strcpy(assinatura->PublicKeysGeral, raiz->hash);
+    assinatura->alturaArvore = (int)log2(numFolhas);
+    assinatura->folhaUsada = folhaUsada;
+    assinatura->totalFolhas = numFolhas;
+    assinatura->indiceFolha = indice;
+    assinatura->tamanhoCaminho =0;
+    coletarCaminhoAutenticacao(assinatura, raiz);
+
+    folhaUsada->usada = 1;
+}
+
+// Função para coletar o caminho de autenticação
+void coletarCaminhoAutenticacao(AssinaturaMSS *assinatura, No* raiz) {
+    if (raiz == NULL || assinatura->folhaUsada == NULL) return;
+    if (assinatura->indiceFolha == -1) {
+        fprintf(stderr, "Erro: Folha não encontrada no array\n");
+        return;
+    }
+    
+    assinatura->tamanhoCaminho = 0; 
+    
+    // Para cada nível, precisamos encontrar o hash do irmão
+    coletarCaminhoRecursivo(raiz, assinatura->folhaUsada, 
+                            assinatura->caminho,
+                            &assinatura->tamanhoCaminho, 
+                            assinatura->indiceFolha, 
+                            assinatura->totalFolhas);
+}
+// Função auxiliar recursiva para coletar o caminho
+int coletarCaminhoRecursivo(No* no, Folha* folhaAlvo, char caminhoAuth[][SHA256_HEX_SIZE], 
+                            int* tamanhoPath, int indiceFolha, int numFolhas) {
+    if (no == NULL) return 0;
+    
+    // Caso base: chegamos no nível das folhas
+    if (no->tipo_filho_esq == TIPO_FOLHA && no->tipo_filho_dir == TIPO_FOLHA) {
+        Folha* folhaEsq = (Folha*)no->filho_esq;
+        Folha* folhaDir = (Folha*)no->filho_dir;
+        
+        // Verifica qual folha é a alvo e adiciona o hash do irmão
+        if (folhaEsq == folhaAlvo) {
+            strcpy(caminhoAuth[*tamanhoPath], folhaDir->hash);
+            (*tamanhoPath)++;
+            return 1; // Encontrou pela esquerda
+        } else if (folhaDir == folhaAlvo) {
+            strcpy(caminhoAuth[*tamanhoPath], folhaEsq->hash);
+            (*tamanhoPath)++;
+            return 2; // Encontrou pela direita
+        }
+        return 0;
+    }
+    
+    // Procura recursivamente nos filhos
+    int encontrado = 0;
+    
+    // Verifica filho esquerdo
+    if (no->filho_esq != NULL) {
+        if (no->tipo_filho_esq == TIPO_NO) {
+            encontrado = coletarCaminhoRecursivo((No*)no->filho_esq, folhaAlvo, 
+                                                    caminhoAuth, tamanhoPath, indiceFolha, numFolhas);
+        }
+    }
+    
+    // Se não encontrou à esquerda, verifica filho direito
+    if (encontrado == 0 && no->filho_dir != NULL) {
+        if (no->tipo_filho_dir == TIPO_NO) {
+            encontrado = coletarCaminhoRecursivo((No*)no->filho_dir, folhaAlvo, 
+                                                   caminhoAuth, tamanhoPath, indiceFolha, numFolhas);
+        }
+    }
+    
+    // Se encontrou em algum filho, adiciona o hash do irmão DESTE NÍVEL
+    if (encontrado > 0) {
+        if (encontrado == 1) {
+            // Encontrou à esquerda, adiciona hash da direita
+            if (no->tipo_filho_dir == TIPO_NO) {
+                strcpy(caminhoAuth[*tamanhoPath], ((No*)no->filho_dir)->hash);
+            } else {
+                strcpy(caminhoAuth[*tamanhoPath], ((Folha*)no->filho_dir)->hash);
+            }
+            (*tamanhoPath)++;
+        } else if (encontrado == 2) {
+            // Encontrou à direita, adiciona hash da esquerda
+            if (no->tipo_filho_esq == TIPO_NO) {
+                strcpy(caminhoAuth[*tamanhoPath], ((No*)no->filho_esq)->hash);
+            } else {
+                strcpy(caminhoAuth[*tamanhoPath], ((Folha*)no->filho_esq)->hash);
+            }
+            (*tamanhoPath)++;
+        }
+        return encontrado;
+    }
+    
+    return 0;
+}
 // Conecta duas folhas a um nó da camada 1
 void conectarFolhasAoNo(No *no, Folha *folha_esq, Folha *folha_dir){
     if (no == NULL) return;
@@ -135,240 +233,63 @@ void limparArvore(No *raiz){
     if (raiz->filho_esq != NULL) {
         if (raiz->tipo_filho_esq == TIPO_NO) {
             limparArvore((No*)raiz->filho_esq);
-        } else {
-            liberarFolha((Folha*)raiz->filho_esq);
         }
+        // NÃO libera folhas aqui - elas são liberadas no main
     }
     
     // Limpa filho direito
     if (raiz->filho_dir != NULL) {
         if (raiz->tipo_filho_dir == TIPO_NO) {
             limparArvore((No*)raiz->filho_dir);
-        } else {
-            liberarFolha((Folha*)raiz->filho_dir);
         }
+        // NÃO libera folhas aqui - elas são liberadas no main
     }
     
     // Libera o nó atual
     free(raiz);
 }
 
-// Função auxiliar para calcular altura da árvore
-int alturaArvore(No *raiz){
-    if (raiz == NULL) return 0;
+// Imprime a árvore
+void imprimirArvoreRecursiva(No* no, int nivel, char* prefixo) {
+    if (no == NULL) return;
     
-    int alturaEsq = 0;
-    int alturaDir = 0;
+    printf("%s[Nó nivel %d] Hash: %.16s...\n", prefixo, nivel, no->hash);
     
-    // Calcula altura do filho esquerdo
-    if (raiz->filho_esq != NULL) {
-        if (raiz->tipo_filho_esq == TIPO_NO) {
-            alturaEsq = alturaArvore((No*)raiz->filho_esq);
+    // Prepara prefixo para os filhos
+    char novoPrefixo[256];
+    sprintf(novoPrefixo, "%s  ", prefixo);
+    
+    // Imprime filho esquerdo
+    if (no->filho_esq != NULL) {
+        if (no->tipo_filho_esq == TIPO_NO) {
+            printf("%s  ├─ Esquerda:\n", prefixo);
+            imprimirArvoreRecursiva((No*)no->filho_esq, nivel + 1, novoPrefixo);
         } else {
-            alturaEsq = 1; // Folhas têm altura 1
+            Folha* folha = (Folha*)no->filho_esq;
+            printf("%s  ├─ [Folha ESQ] Hash: %.16s... Usada: %d\n", 
+                   prefixo, folha->hash, folha->usada);
         }
     }
     
-    // Calcula altura do filho direito
-    if (raiz->filho_dir != NULL) {
-        if (raiz->tipo_filho_dir == TIPO_NO) {
-            alturaDir = alturaArvore((No*)raiz->filho_dir);
+    // Imprime filho direito
+    if (no->filho_dir != NULL) {
+        if (no->tipo_filho_dir == TIPO_NO) {
+            printf("%s  └─ Direita:\n", prefixo);
+            imprimirArvoreRecursiva((No*)no->filho_dir, nivel + 1, novoPrefixo);
         } else {
-            alturaDir = 1; // Folhas têm altura 1
+            Folha* folha = (Folha*)no->filho_dir;
+            printf("%s  └─ [Folha DIR] Hash: %.16s... Usada: %d\n", 
+                   prefixo, folha->hash, folha->usada);
         }
     }
-    
-    return 1 + (alturaEsq > alturaDir ? alturaEsq : alturaDir);
 }
 
-// Função auxiliar para contar nós em um nível
-int contarNosNivel(No *raiz, int nivel){
-    if (raiz == NULL) return 0;
-    if (nivel == 0) return 1;
-    
-    int count = 0;
-    
-    // Conta no filho esquerdo
-    if (raiz->filho_esq != NULL) {
-        if (raiz->tipo_filho_esq == TIPO_NO) {
-            count += contarNosNivel((No*)raiz->filho_esq, nivel - 1);
-        } else if (nivel == 1) {
-            count += 1; // Folha no próximo nível
-        }
-    }
-    
-    // Conta no filho direito
-    if (raiz->filho_dir != NULL) {
-        if (raiz->tipo_filho_dir == TIPO_NO) {
-            count += contarNosNivel((No*)raiz->filho_dir, nivel - 1);
-        } else if (nivel == 1) {
-            count += 1; // Folha no próximo nível
-        }
-    }
-    
-    return count;
-}
-
-// Função auxiliar para printar um nível específico
-void printarNivel(No *raiz, int nivel, int espacamento){
-    if (raiz == NULL){
-        for (int i = 0; i < espacamento; i++) printf(" ");
-        printf("        ");
-        for (int i = 0; i < espacamento; i++) printf(" ");
+void imprimirArvore(No* raiz) {
+    printf("\n========== ÁRVORE MERKLE ==========\n");
+    if (raiz == NULL) {
+        printf("Árvore vazia!\n");
         return;
     }
-    
-    if (nivel == 0){
-        for (int i = 0; i < espacamento; i++) printf(" ");
-        printf("%.8s", raiz->hash);
-        for (int i = 0; i < espacamento; i++) printf(" ");
-    } else if (nivel == 1) {
-        // Imprime folhas se existirem
-        if (raiz->filho_esq != NULL) {
-            for (int i = 0; i < espacamento; i++) printf(" ");
-            if (raiz->tipo_filho_esq == TIPO_FOLHA) {
-                Folha* folha = (Folha*)raiz->filho_esq;
-                printf("[F]%.6s", folha->hash);
-            } else {
-                No* no = (No*)raiz->filho_esq;
-                printf("%.8s", no->hash);
-            }
-            for (int i = 0; i < espacamento; i++) printf(" ");
-        }
-        
-        if (raiz->filho_dir != NULL) {
-            for (int i = 0; i < espacamento; i++) printf(" ");
-            if (raiz->tipo_filho_dir == TIPO_FOLHA) {
-                Folha* folha = (Folha*)raiz->filho_dir;
-                printf("[F]%.6s", folha->hash);
-            } else {
-                No* no = (No*)raiz->filho_dir;
-                printf("%.8s", no->hash);
-            }
-            for (int i = 0; i < espacamento; i++) printf(" ");
-        }
-    } else {
-        // Continua recursão para nós internos
-        if (raiz->filho_esq != NULL && raiz->tipo_filho_esq == TIPO_NO) {
-            printarNivel((No*)raiz->filho_esq, nivel - 1, espacamento / 2);
-        }
-        if (raiz->filho_dir != NULL && raiz->tipo_filho_dir == TIPO_NO) {
-            printarNivel((No*)raiz->filho_dir, nivel - 1, espacamento / 2);
-        }
-    }
+    imprimirArvoreRecursiva(raiz, 0, "");
+    printf("===================================\n\n");
 }
-
-// Printar árvore de forma simples (percurso in-order)
-void printarArvore(No *raiz){
-    if (raiz == NULL) return;
-    
-    printarArvore(raiz->filho_esq);
-    printf("Hash: %s\n", raiz->hash);
-    printarArvore(raiz->filho_dir);
-}
-
-// Printar árvore mostrando níveis
-void printarArvoreNivel(No *raiz, int nivel){
-    if (raiz == NULL){
-        printf("Árvore vazia\n");
-        return;
-    }
-    
-    int altura = alturaArvore(raiz);
-    
-    if (nivel < 0 || nivel >= altura){
-        printf("Nível inválido. Altura da árvore: %d (níveis 0-%d)\n", 
-               altura, altura - 1);
-        return;
-    }
-    
-    printf("=== Nível %d ===\n", nivel);
-    int nosNivel = contarNosNivel(raiz, nivel);
-    printf("Número de nós: %d\n", nosNivel);
-    
-    printarNivel(raiz, nivel, 0);
-    printf("\n");
-}
-
-// Printar árvore completa de forma hierárquica
-void printarArvoreCompleta(No *raiz){
-    if (raiz == NULL){
-        printf("Árvore vazia\n");
-        return;
-    }
-    
-    int altura = alturaArvore(raiz);
-    printf("===================Altura: %d níveis===================\n", altura);
-    
-    for (int i = 0; i < altura; i++){
-        int nosNivel = contarNosNivel(raiz, i);
-        int espacamento = (1 << (altura - i - 1));
-        
-        printf("Nível %d (%d nós):\n", i, nosNivel);
-        printarNivel(raiz, i, espacamento);
-        printf("\n\n");
-    }
-    
-    printf("Raiz (completa): %s\n", raiz->hash);
-}
-
-// Printar um andar específico (array de nós)
-void printarAndar(No **andar, int numNos, int numeroAndar){
-    if (andar == NULL || numNos == 0) {
-        printf("Andar %d: vazio\n", numeroAndar);
-        return;
-    }
-    
-    printf("╔══════════════════════════════════════════════════════════════════════╗\n");
-    printf("║  ANDAR %d - %d nós                                                   \n", numeroAndar, numNos);
-    printf("╠══════════════════════════════════════════════════════════════════════╣\n");
-    
-    for (int i = 0; i < numNos; i++) {
-        if (andar[i] == NULL) {
-            printf("║  Nó[%2d]: NULL                                                      ║\n", i);
-            continue;
-        }
-        
-        // Mostra hash do nó (primeiros 16 caracteres)
-        printf("║  Nó[%2d]: %.16s... ", i, andar[i]->hash);
-        
-        // Mostra informações dos filhos
-        if (andar[i]->filho_esq != NULL || andar[i]->filho_dir != NULL) {
-            printf("│ Filhos: ");
-            
-            // Filho esquerdo
-            if (andar[i]->filho_esq != NULL) {
-                if (andar[i]->tipo_filho_esq == TIPO_FOLHA) {
-                    Folha* folha = (Folha*)andar[i]->filho_esq;
-                    printf("E:[F]%.6s ", folha->hash);
-                } else {
-                    No* no = (No*)andar[i]->filho_esq;
-                    printf("E:%.6s ", no->hash);
-                }
-            } else {
-                printf("E:NULL ");
-            }
-            
-            // Filho direito
-            if (andar[i]->filho_dir != NULL) {
-                if (andar[i]->tipo_filho_dir == TIPO_FOLHA) {
-                    Folha* folha = (Folha*)andar[i]->filho_dir;
-                    printf("D:[F]%.6s", folha->hash);
-                } else {
-                    No* no = (No*)andar[i]->filho_dir;
-                    printf("D:%.6s", no->hash);
-                }
-            } else {
-                printf("D:NULL");
-            }
-        }
-        
-        printf("\n");
-    }
-    
-    printf("╚══════════════════════════════════════════════════════════════════════╝\n");
-    printf("\n");
-}
-
-void escreverArvore(char *caminho,No* raiz);
-void lerArvore(char* caminho);
