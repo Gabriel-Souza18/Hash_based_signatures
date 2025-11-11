@@ -31,7 +31,6 @@ PublicKeys* mallocPkeys(){
             k->PK[i][j] = 0;  // Inicializa com 0, não NULL
         }
     }
-    printf("Memoria Alocada com sucesso\n");
     return k;
 }
 Masks* mallocMasks(){

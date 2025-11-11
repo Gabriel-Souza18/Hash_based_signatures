@@ -1,9 +1,12 @@
 *.txt
 *.o
 *.a
+*.json
 
 readme.md
 testeHash
 lamport
 .vscode/settings.json
 .vscode/settings.json
+.vscode/launch.json
+WOTS/wots

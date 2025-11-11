@@ -1,7 +1,7 @@
 # Makefile para MSS (Merkle Signature Scheme)
 
 CC = gcc
-CFLAGS = -Wall -O2 -I../SHA256 -I../WOTS
+CFLAGS = -Wall -g -O0 -I../SHA256 -I../WOTS
 LDFLAGS = -L../SHA256 -lsha256 -lm
 
 # Arquivos fonte
@@ -42,6 +42,8 @@ $(WOTS_OBJ):
 clean:
 	@echo "Limpando MSS..."
 	rm -f $(OBJ) $(TARGET)
+	rm -f *.bin
+	rm -f *.txt
 	@echo "Limpeza concluída!"
 
 .PHONY: all clean

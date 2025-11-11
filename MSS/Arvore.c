@@ -92,9 +92,15 @@ void criarFolhas(Folha *folhas, int quantFolhas){
 
 void criarAssinatura(AssinaturaMSS* assinatura, No* raiz, 
                     Folha* folhaUsada,int indice, int numFolhas){
+       if (folhaUsada->usada == 1) {
+        printf("ERRO: FOLHA JA USADA");
+        return;
+    }
+
     strcpy(assinatura->PublicKeysGeral, raiz->hash);
     assinatura->alturaArvore = (int)log2(numFolhas);
-    assinatura->folhaUsada = folhaUsada;
+    // Armazena apenas a hash da folha usada para evitar dangling pointers
+    strcpy(assinatura->hashFolha, folhaUsada->hash);
     assinatura->totalFolhas = numFolhas;
     assinatura->indiceFolha = indice;
     assinatura->tamanhoCaminho =0;
@@ -102,11 +108,11 @@ void criarAssinatura(AssinaturaMSS* assinatura, No* raiz,
 
     folhaUsada->usada = 1;
 }
-int verificarAssinatura(AssinaturaMSS* assinatura, No* Pkey){
-    if (assinatura == NULL || assinatura->folhaUsada == NULL) return 0;
 
+int verificarAssinatura(AssinaturaMSS* assinatura, char* Pkey){
     char hashAtual[SHA256_HEX_SIZE];
-    strcpy(hashAtual, assinatura->folhaUsada->hash);
+    // Começa com o hash da folha (salvo em assinatura)
+    strcpy(hashAtual, assinatura->hashFolha);
 
     for (int i = 0; i < assinatura->tamanhoCaminho; i++){
         char concatenado[SHA256_HEX_SIZE * 2 + 1];
@@ -122,25 +128,25 @@ int verificarAssinatura(AssinaturaMSS* assinatura, No* Pkey){
         sha256_hex(concatenado, strlen(concatenado), hashAtual);
     }
 
-    
-    if (Pkey != NULL && strcmp(Pkey->hash, assinatura->PublicKeysGeral)){
-        return (strcmp(hashAtual, Pkey->hash) == 0) ? 1 : 0;
+    if (Pkey != NULL){
+        return (strcmp(hashAtual, Pkey) == 0) ? 1 : 0;
+    } else {
+        return (strcmp(hashAtual, assinatura->PublicKeysGeral) == 0) ? 1 : 0;
     }
-    return 0;
 }
 
 // Função para coletar o caminho de autenticação
 void coletarCaminhoAutenticacao(AssinaturaMSS *assinatura, No* raiz) {
-    if (raiz == NULL || assinatura->folhaUsada == NULL) return;
+    if (raiz == NULL) return;
     if (assinatura->indiceFolha == -1) {
         fprintf(stderr, "Erro: Folha não encontrada no array\n");
         return;
     }
-    
-    assinatura->tamanhoCaminho = 0; 
-    
+
+    assinatura->tamanhoCaminho = 0;
+
     // Para cada nível, precisamos encontrar o hash do irmão
-    coletarCaminhoRecursivo(raiz, assinatura->folhaUsada,
+    coletarCaminhoRecursivo(raiz, assinatura->hashFolha,
                             assinatura->caminho,
                             assinatura->caminhoDirecao,
                             &assinatura->tamanhoCaminho,
@@ -148,7 +154,7 @@ void coletarCaminhoAutenticacao(AssinaturaMSS *assinatura, No* raiz) {
                             assinatura->totalFolhas);
 }
 // Função auxiliar recursiva para coletar o caminho
-int coletarCaminhoRecursivo(No* no, Folha* folhaAlvo, char caminhoAuth[][SHA256_HEX_SIZE], 
+int coletarCaminhoRecursivo(No* no, const char* folhaAlvoHash, char caminhoAuth[][SHA256_HEX_SIZE], 
                             unsigned char direcoes[], int* tamanhoPath, int indiceFolha, int numFolhas) {
     if (no == NULL) return 0;
     
@@ -156,15 +162,15 @@ int coletarCaminhoRecursivo(No* no, Folha* folhaAlvo, char caminhoAuth[][SHA256_
     if (no->tipo_filho_esq == TIPO_FOLHA && no->tipo_filho_dir == TIPO_FOLHA) {
         Folha* folhaEsq = (Folha*)no->filho_esq;
         Folha* folhaDir = (Folha*)no->filho_dir;
-        
-        // Verifica qual folha é a alvo e adiciona o hash do irmão
-        if (folhaEsq == folhaAlvo) {
+
+        // Verifica qual folha possui o hash alvo e adiciona o hash do irmão
+        if (strcmp(folhaEsq->hash, folhaAlvoHash) == 0) {
             strcpy(caminhoAuth[*tamanhoPath], folhaDir->hash);
             // alvo está à esquerda
             direcoes[*tamanhoPath] = 0;
             (*tamanhoPath)++;
             return 1; // Encontrou pela esquerda
-        } else if (folhaDir == folhaAlvo) {
+        } else if (strcmp(folhaDir->hash, folhaAlvoHash) == 0) {
             strcpy(caminhoAuth[*tamanhoPath], folhaEsq->hash);
             // alvo está à direita
             direcoes[*tamanhoPath] = 1;
@@ -180,18 +186,32 @@ int coletarCaminhoRecursivo(No* no, Folha* folhaAlvo, char caminhoAuth[][SHA256_
     // Verifica filho esquerdo
     if (no->filho_esq != NULL) {
         if (no->tipo_filho_esq == TIPO_NO) {
-            encontrado = coletarCaminhoRecursivo((No*)no->filho_esq, folhaAlvo, 
-                                                caminhoAuth,direcoes,
-                                                tamanhoPath,indiceFolha, numFolhas);
+            int childFound = coletarCaminhoRecursivo((No*)no->filho_esq, folhaAlvoHash,
+                                                    caminhoAuth, direcoes,
+                                                    tamanhoPath, indiceFolha, numFolhas);
+            if (childFound > 0) encontrado = 1; // alvo está na subárvore esquerda
+        } else {
+            // filho esquerdo é folha: compara hashes
+            Folha* f = (Folha*)no->filho_esq;
+            if (strcmp(f->hash, folhaAlvoHash) == 0) {
+                encontrado = 1;
+            }
         }
     }
     
     // Se não encontrou à esquerda, verifica filho direito
     if (encontrado == 0 && no->filho_dir != NULL) {
         if (no->tipo_filho_dir == TIPO_NO) {
-            encontrado = coletarCaminhoRecursivo((No*)no->filho_dir, folhaAlvo, 
-                                                caminhoAuth,direcoes, 
-                                                tamanhoPath, indiceFolha, numFolhas);
+            int childFound = coletarCaminhoRecursivo((No*)no->filho_dir, folhaAlvoHash,
+                                                    caminhoAuth, direcoes,
+                                                    tamanhoPath, indiceFolha, numFolhas);
+            if (childFound > 0) encontrado = 2; // alvo está na subárvore direita
+        } else {
+            // filho direito é folha: compara hashes
+            Folha* f = (Folha*)no->filho_dir;
+            if (strcmp(f->hash, folhaAlvoHash) == 0) {
+                encontrado = 2;
+            }
         }
     }
     
@@ -330,3 +350,312 @@ void imprimirArvore(No* raiz) {
     imprimirArvoreRecursiva(raiz, 0, "");
     printf("===================================\n\n");
 }
+
+// ========== FUNÇÕES DE I/O EM TEXTO SIMPLES ==========
+
+// Escrever folhas em formato texto simples
+void escreverFolhas(char* caminho, Folha* folhas, int numFolhas) {
+    FILE* arquivo = fopen(caminho, "w");
+    if (arquivo == NULL) {
+        fprintf(stderr, "Erro ao abrir arquivo %s para escrita\n", caminho);
+        return;
+    }
+    
+    // Cabeçalho
+    fprintf(arquivo, "FOLHAS_MSS\n");
+    fprintf(arquivo, "%d\n", numFolhas);
+    fprintf(arquivo, "---\n");
+    
+    // Dados de cada folha
+    for (int i = 0; i < numFolhas; i++) {
+        fprintf(arquivo, "FOLHA %d\n", i);
+        fprintf(arquivo, "Hash: %s\n", folhas[i].hash);
+        fprintf(arquivo, "Usada: %d\n", folhas[i].usada);
+        fprintf(arquivo, "---\n");
+    }
+    
+    fclose(arquivo);
+    printf("Folhas salvas em: %s\n", caminho);
+}
+
+// Ler folhas em formato texto simples
+void lerFolhas(char* caminho, Folha* folhas, int* numFolhas) {
+    FILE* arquivo = fopen(caminho, "r");
+    if (arquivo == NULL) {
+        fprintf(stderr, "Erro ao abrir arquivo %s para leitura\n", caminho);
+        *numFolhas = 0;
+        return;
+    }
+    
+    char linha[200];
+    
+    // Lê cabeçalho
+    fgets(linha, sizeof(linha), arquivo); // "FOLHAS_MSS"
+    fscanf(arquivo, "%d\n", numFolhas);
+    fgets(linha, sizeof(linha), arquivo); // "---"
+    
+    // Lê dados de cada folha
+    for (int i = 0; i < *numFolhas; i++) {
+        int indice;
+        fscanf(arquivo, "FOLHA %d\n", &indice);
+        fscanf(arquivo, "Hash: %s\n", folhas[i].hash);
+        fscanf(arquivo, "Usada: %d\n", &folhas[i].usada);
+        fgets(linha, sizeof(linha), arquivo); // "---"
+    }
+    
+    fclose(arquivo);
+    printf("Folhas carregadas de: %s (%d folhas)\n", caminho, *numFolhas);
+}
+
+// Escrever assinatura em formato texto simples
+void escreverAssinaturaMSS(char* caminho, AssinaturaMSS* assinatura) {
+    FILE* arquivo = fopen(caminho, "w");
+    if (arquivo == NULL) {
+        fprintf(stderr, "Erro ao abrir arquivo %s para escrita\n", caminho);
+        return;
+    }
+    
+    // Cabeçalho
+    fprintf(arquivo, "ASSINATURA_MSS\n");
+    fprintf(arquivo, "---\n");
+    
+    // Dados básicos
+    fprintf(arquivo, "PublicKey: %s\n", assinatura->PublicKeysGeral);
+    fprintf(arquivo, "AlturaArvore: %d\n", assinatura->alturaArvore);
+    fprintf(arquivo, "TotalFolhas: %d\n", assinatura->totalFolhas);
+    fprintf(arquivo, "IndiceFolha: %d\n", assinatura->indiceFolha);
+    fprintf(arquivo, "HashFolha: %s\n", assinatura->hashFolha);
+    fprintf(arquivo, "TamanhoCaminho: %d\n", assinatura->tamanhoCaminho);
+    fprintf(arquivo, "---\n");
+    
+    // Caminho de autenticação
+    fprintf(arquivo, "CAMINHO\n");
+    for (int i = 0; i < assinatura->tamanhoCaminho; i++) {
+        fprintf(arquivo, "%d: %s\n", i, assinatura->caminho[i]);
+    }
+    fprintf(arquivo, "---\n");
+    
+    // Direções (0=esquerda, 1=direita)
+    fprintf(arquivo, "DIRECOES\n");
+    for (int i = 0; i < assinatura->tamanhoCaminho; i++) {
+        fprintf(arquivo, "%d: %d\n", i, assinatura->caminhoDirecao[i]);
+    }
+    fprintf(arquivo, "---\n");
+    
+    fclose(arquivo);
+    printf("Assinatura salva em: %s\n", caminho);
+}
+
+// Ler assinatura em formato texto simples
+void lerAssinaturaMSS(char* caminho, AssinaturaMSS* assinatura) {
+    FILE* arquivo = fopen(caminho, "r");
+    if (arquivo == NULL) {
+        fprintf(stderr, "Erro ao abrir arquivo %s para leitura\n", caminho);
+        return;
+    }
+    
+    char linha[200];
+    
+    // Lê cabeçalho
+    fgets(linha, sizeof(linha), arquivo); // "ASSINATURA_MSS"
+    fgets(linha, sizeof(linha), arquivo); 
+    
+    // Lê dados básicos
+    fscanf(arquivo, "PublicKey: %s\n", assinatura->PublicKeysGeral);
+    fscanf(arquivo, "AlturaArvore: %d\n", &assinatura->alturaArvore);
+    fscanf(arquivo, "TotalFolhas: %d\n", &assinatura->totalFolhas);
+    fscanf(arquivo, "IndiceFolha: %d\n", &assinatura->indiceFolha);
+    fscanf(arquivo, "HashFolha: %s\n", assinatura->hashFolha);
+    fscanf(arquivo, "TamanhoCaminho: %d\n", &assinatura->tamanhoCaminho);
+    fgets(linha, sizeof(linha), arquivo); 
+    
+    // Lê caminho de autenticação
+    fgets(linha, sizeof(linha), arquivo); // "CAMINHO"
+    for (int i = 0; i < assinatura->tamanhoCaminho; i++) {
+        int indice;
+        fscanf(arquivo, "%d: %s\n", &indice, assinatura->caminho[i]);
+    }
+    fgets(linha, sizeof(linha), arquivo); 
+    
+    // Lê direções
+    fgets(linha, sizeof(linha), arquivo); // "DIRECOES"
+    for (int i = 0; i < assinatura->tamanhoCaminho; i++) {
+        int indice, direcao;
+        fscanf(arquivo, "%d: %d\n", &indice, &direcao);
+        assinatura->caminhoDirecao[i] = (unsigned char)direcao;
+    }
+    
+    fclose(arquivo);
+    printf("Assinatura carregada de: %s\n", caminho);
+}
+
+// Escreve a chave pública geral (hash da raiz) em arquivo texto simples
+void escreverPublicKey(char* caminho, const char* publicKey) {
+    FILE* arquivo = fopen(caminho, "w");
+    if (arquivo == NULL) {
+        fprintf(stderr, "Erro ao abrir arquivo %s para escrita\n", caminho);
+        return;
+    }
+    fprintf(arquivo, "PUBLIC_KEY\n");
+    fprintf(arquivo, "%s\n", publicKey);
+    fclose(arquivo);
+    printf("Chave pública salva em: %s\n", caminho);
+}
+
+// Lê a chave pública geral de um arquivo texto simples. Retorna 1 em sucesso, 0 em falha.
+int lerPublicKey(char* caminho, char* outPublicKey) {
+    FILE* arquivo = fopen(caminho, "r");
+    if (arquivo == NULL) {
+        return 0;
+    }
+    char linha[200];
+    if (fgets(linha, sizeof(linha), arquivo) == NULL) { fclose(arquivo); return 0; }
+    // pode ser que a primeira linha seja "PUBLIC_KEY"; se for, lê a próxima
+    if (strncmp(linha, "PUBLIC_KEY", 10) == 0) {
+        if (fgets(linha, sizeof(linha), arquivo) == NULL) { fclose(arquivo); return 0; }
+    }
+    // remove nova linha
+    linha[strcspn(linha, "\r\n")] = '\0';
+    strncpy(outPublicKey, linha, SHA256_HEX_SIZE);
+    outPublicKey[SHA256_HEX_SIZE-1] = '\0';
+    fclose(arquivo);
+    return 1;
+}
+
+// Escrever árvore em formato texto (pré-ordem)
+void escreverArvoreRecursivo(FILE* arquivo, No* no, int nivel) {
+    if (no == NULL) {
+        fprintf(arquivo, "NULL\n");
+        return;
+    }
+    
+    // Escreve nó atual
+    fprintf(arquivo, "NO %d %s\n", nivel, no->hash);
+    
+    // Escreve filhos
+    if (no->tipo_filho_esq == TIPO_FOLHA) {
+        Folha* folha = (Folha*)no->filho_esq;
+        fprintf(arquivo, "FOLHA %s %d\n", folha->hash, folha->usada);
+    } else {
+        escreverArvoreRecursivo(arquivo, (No*)no->filho_esq, nivel + 1);
+    }
+    
+    if (no->tipo_filho_dir == TIPO_FOLHA) {
+        Folha* folha = (Folha*)no->filho_dir;
+        fprintf(arquivo, "FOLHA %s %d\n", folha->hash, folha->usada);
+    } else {
+        escreverArvoreRecursivo(arquivo, (No*)no->filho_dir, nivel + 1);
+    }
+}
+
+void escreverArvore(char* caminho, No* raiz) {
+    FILE* arquivo = fopen(caminho, "w");
+    if (arquivo == NULL) {
+        fprintf(stderr, "Erro ao abrir arquivo %s para escrita\n", caminho);
+        return;
+    }
+    
+    fprintf(arquivo, "ARVORE_MSS\n");
+    fprintf(arquivo, "---\n");
+    
+    escreverArvoreRecursivo(arquivo, raiz, 0);
+    
+    fclose(arquivo);
+    printf("Árvore salva em: %s\n", caminho);
+}
+
+// Ler árvore em formato texto (pré-ordem)
+No* lerArvoreRecursivo(FILE* arquivo, Folha* folhas, int numFolhas) {
+    char tipo[20];
+    
+    if (fscanf(arquivo, "%s", tipo) != 1) {
+        return NULL;
+    }
+    
+    if (strcmp(tipo, "NULL") == 0) {
+        return NULL;
+    }
+    
+    if (strcmp(tipo, "FOLHA") == 0) {
+        // Lê hash e flag usada
+        char hash[SHA256_HEX_SIZE];
+        int usada;
+        fscanf(arquivo, "%s %d\n", hash, &usada);
+        
+        // Encontra a folha correspondente no array
+        for (int i = 0; i < numFolhas; i++) {
+            if (strcmp(folhas[i].hash, hash) == 0) {
+                return (No*)&folhas[i]; // Retorna ponteiro para folha
+            }
+        }
+        
+        fprintf(stderr, "AVISO: Folha com hash %.16s... não encontrada\n", hash);
+        return NULL;
+    }
+    
+    if (strcmp(tipo, "NO") == 0) {
+        // Lê nível e hash
+        int nivel;
+        char hash[SHA256_HEX_SIZE];
+        fscanf(arquivo, "%d %s\n", &nivel, hash);
+        
+        // Cria nó
+        No* no = alocarNo();
+        strcpy(no->hash, hash);
+        no->nivel = nivel;
+        
+        // Lê filhos
+        No* filhoEsq = lerArvoreRecursivo(arquivo, folhas, numFolhas);
+        if (filhoEsq == NULL) {
+            no->filho_esq = NULL;
+            no->tipo_filho_esq = TIPO_NO;
+        } else if (filhoEsq == (No*)folhas || 
+                   (filhoEsq >= (No*)folhas && filhoEsq < (No*)(folhas + numFolhas))) {
+            // É uma folha
+            no->filho_esq = filhoEsq;
+            no->tipo_filho_esq = TIPO_FOLHA;
+        } else {
+            // É um nó
+            no->filho_esq = filhoEsq;
+            no->tipo_filho_esq = TIPO_NO;
+        }
+        
+        No* filhoDir = lerArvoreRecursivo(arquivo, folhas, numFolhas);
+        if (filhoDir == NULL) {
+            no->filho_dir = NULL;
+            no->tipo_filho_dir = TIPO_NO;
+        } else if (filhoDir == (No*)folhas || 
+                   (filhoDir >= (No*)folhas && filhoDir < (No*)(folhas + numFolhas))) {
+            // É uma folha
+            no->filho_dir = filhoDir;
+            no->tipo_filho_dir = TIPO_FOLHA;
+        } else {
+            // É um nó
+            no->filho_dir = filhoDir;
+            no->tipo_filho_dir = TIPO_NO;
+        }
+        
+        return no;
+    }
+    
+    return NULL;
+}
+
+void lerArvore(char* caminho, Folha* folhas, int numFolhas, No** raiz) {
+    FILE* arquivo = fopen(caminho, "r");
+    if (arquivo == NULL) {
+        fprintf(stderr, "Erro ao abrir arquivo %s para leitura\n", caminho);
+        *raiz = NULL;
+        return;
+    }
+    
+    char linha[200];
+    fgets(linha, sizeof(linha), arquivo); // "ARVORE_MSS"
+    fgets(linha, sizeof(linha), arquivo); // "---"
+    
+    *raiz = lerArvoreRecursivo(arquivo, folhas, numFolhas);
+    
+    fclose(arquivo);
+    printf("Árvore carregada de: %s\n", caminho);
+}
+
