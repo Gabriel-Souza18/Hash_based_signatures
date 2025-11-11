@@ -50,10 +50,19 @@ int main(){
         printf("  [%d] %s\n", i, assinatura->caminho[i]);
     }
     printf("======================\n\n");
-    
-    free(assinatura);
 
+
+
+
+
+
+    //verficaçaõo
+    int verificacao = verificarAssinatura(assinatura, raiz);
+
+    printf("Verificação: %s", (verificacao == 0) ? "Valida\n":"Invalida\n");
     // limpeza
+        
+    free(assinatura);
     for(int i = 0; i < NUM_FOLHAS; i++){
         free(folhas[i].Skeys);
         free(folhas[i].Pkeys);

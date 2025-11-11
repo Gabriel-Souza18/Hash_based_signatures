@@ -102,6 +102,32 @@ void criarAssinatura(AssinaturaMSS* assinatura, No* raiz,
 
     folhaUsada->usada = 1;
 }
+int verificarAssinatura(AssinaturaMSS* assinatura, No* Pkey){
+    if (assinatura == NULL || assinatura->folhaUsada == NULL) return 0;
+
+    char hashAtual[SHA256_HEX_SIZE];
+    strcpy(hashAtual, assinatura->folhaUsada->hash);
+
+    for (int i = 0; i < assinatura->tamanhoCaminho; i++){
+        char concatenado[SHA256_HEX_SIZE * 2 + 1];
+        // Direcao: 0 = alvo estava à esquerda -> concat = alvo || irmão
+        //          1 = alvo estava à direita -> concat = irmão || alvo
+        if (assinatura->caminhoDirecao[i] == 0){
+            strcpy(concatenado, hashAtual);
+            strcat(concatenado, assinatura->caminho[i]);
+        } else {
+            strcpy(concatenado, assinatura->caminho[i]);
+            strcat(concatenado, hashAtual);
+        }
+        sha256_hex(concatenado, strlen(concatenado), hashAtual);
+    }
+
+    
+    if (Pkey != NULL && strcmp(Pkey->hash, assinatura->PublicKeysGeral)){
+        return (strcmp(hashAtual, Pkey->hash) == 0) ? 1 : 0;
+    }
+    return 0;
+}
 
 // Função para coletar o caminho de autenticação
 void coletarCaminhoAutenticacao(AssinaturaMSS *assinatura, No* raiz) {
@@ -114,15 +140,16 @@ void coletarCaminhoAutenticacao(AssinaturaMSS *assinatura, No* raiz) {
     assinatura->tamanhoCaminho = 0; 
     
     // Para cada nível, precisamos encontrar o hash do irmão
-    coletarCaminhoRecursivo(raiz, assinatura->folhaUsada, 
+    coletarCaminhoRecursivo(raiz, assinatura->folhaUsada,
                             assinatura->caminho,
-                            &assinatura->tamanhoCaminho, 
-                            assinatura->indiceFolha, 
+                            assinatura->caminhoDirecao,
+                            &assinatura->tamanhoCaminho,
+                            assinatura->indiceFolha,
                             assinatura->totalFolhas);
 }
 // Função auxiliar recursiva para coletar o caminho
 int coletarCaminhoRecursivo(No* no, Folha* folhaAlvo, char caminhoAuth[][SHA256_HEX_SIZE], 
-                            int* tamanhoPath, int indiceFolha, int numFolhas) {
+                            unsigned char direcoes[], int* tamanhoPath, int indiceFolha, int numFolhas) {
     if (no == NULL) return 0;
     
     // Caso base: chegamos no nível das folhas
@@ -133,10 +160,14 @@ int coletarCaminhoRecursivo(No* no, Folha* folhaAlvo, char caminhoAuth[][SHA256_
         // Verifica qual folha é a alvo e adiciona o hash do irmão
         if (folhaEsq == folhaAlvo) {
             strcpy(caminhoAuth[*tamanhoPath], folhaDir->hash);
+            // alvo está à esquerda
+            direcoes[*tamanhoPath] = 0;
             (*tamanhoPath)++;
             return 1; // Encontrou pela esquerda
         } else if (folhaDir == folhaAlvo) {
             strcpy(caminhoAuth[*tamanhoPath], folhaEsq->hash);
+            // alvo está à direita
+            direcoes[*tamanhoPath] = 1;
             (*tamanhoPath)++;
             return 2; // Encontrou pela direita
         }
@@ -150,7 +181,8 @@ int coletarCaminhoRecursivo(No* no, Folha* folhaAlvo, char caminhoAuth[][SHA256_
     if (no->filho_esq != NULL) {
         if (no->tipo_filho_esq == TIPO_NO) {
             encontrado = coletarCaminhoRecursivo((No*)no->filho_esq, folhaAlvo, 
-                                                    caminhoAuth, tamanhoPath, indiceFolha, numFolhas);
+                                                caminhoAuth,direcoes,
+                                                tamanhoPath,indiceFolha, numFolhas);
         }
     }
     
@@ -158,7 +190,8 @@ int coletarCaminhoRecursivo(No* no, Folha* folhaAlvo, char caminhoAuth[][SHA256_
     if (encontrado == 0 && no->filho_dir != NULL) {
         if (no->tipo_filho_dir == TIPO_NO) {
             encontrado = coletarCaminhoRecursivo((No*)no->filho_dir, folhaAlvo, 
-                                                   caminhoAuth, tamanhoPath, indiceFolha, numFolhas);
+                                                caminhoAuth,direcoes, 
+                                                tamanhoPath, indiceFolha, numFolhas);
         }
     }
     
@@ -171,6 +204,8 @@ int coletarCaminhoRecursivo(No* no, Folha* folhaAlvo, char caminhoAuth[][SHA256_
             } else {
                 strcpy(caminhoAuth[*tamanhoPath], ((Folha*)no->filho_dir)->hash);
             }
+            // alvo está à esquerda
+            direcoes[*tamanhoPath] = 0;
             (*tamanhoPath)++;
         } else if (encontrado == 2) {
             // Encontrou à direita, adiciona hash da esquerda
@@ -179,6 +214,8 @@ int coletarCaminhoRecursivo(No* no, Folha* folhaAlvo, char caminhoAuth[][SHA256_
             } else {
                 strcpy(caminhoAuth[*tamanhoPath], ((Folha*)no->filho_esq)->hash);
             }
+            // alvo está à direita
+            direcoes[*tamanhoPath] = 1;
             (*tamanhoPath)++;
         }
         return encontrado;

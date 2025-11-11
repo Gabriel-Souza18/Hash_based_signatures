@@ -85,34 +85,36 @@ valgrind --track-origins=yes --leak-check=full ./WOTS/wots
 ##  Histórico de Desenvolvimento
 
 ### Fase 1: Implementação SHA256 (22/09 - 03/10)
-- ✅ Implementação da função SHA256
-- ✅ Testes com strings de tamanhos variados
-- ✅ Medição de tempo de execução
-- ✅ Organização inicial da estrutura
+- [x] Implementação da função SHA256
+- [x] Testes com strings de tamanhos variados
+- [x] Medição de tempo de execução
+- [x] Organização inicial da estrutura
 
 ### Fase 2: Lamport OTS (03/10 - 08/10)
-- ✅ Implementação completa do Lamport OTS
-- ✅ Sistema de leitura/escrita de chaves
-- ✅Função de assinatura
-- ✅ Função de verificação
+- [x] Implementação completa do Lamport OTS
+- [x] Sistema de leitura/escrita de chaves
+- [x]Função de assinatura
+- [x] Função de verificação
 
 ### Fase 3: WOTS (10/10 - 20/10)
-- ✅Implementação do WOTS (W=16, L=67)
-- ✅ Sistema de máscaras
-- ✅ Comparação com Lamport OTS
-- ✅ Testes de desempenho
+- [x]Implementação do WOTS (W=16, L=67)
+- [x] Sistema de máscaras
+- [x] Comparação com Lamport OTS
+- [x] Testes de desempenho
 
 ### Fase 4: Reorganização e Testes (21/10 - 29/10)
-- ✅  Reorganização modular do projeto
-- ✅ Criação de makefiles individuais
-- ✅Biblioteca SHA256 separada
-- ✅Script de testes automatizados aprimorado
-- ✅ Coleta detalhada de métricas de desempenho
+- [x]  Reorganização modular do projeto
+- [x] Criação de makefiles individuais
+- [x]Biblioteca SHA256 separada
+- [x]Script de testes automatizados aprimorado
+- [x] Coleta detalhada de métricas de desempenho
 
 ### Fase 5: MSS(29/10 -)
-- ✅Assisti a aula do Christof Paar sobre MSS
-- ✅ Implementando Arvore que gera Hashs 
-- ✅ Corrigindo problemas e gerando assinatura
+- [x]Assisti a aula do Christof Paar sobre MSS
+- [x] Implementando Arvore que gera Hashs 
+- [x] Corrigindo problemas e gerando assinatura
+- [x] implementar verificação da assinatura 
+- [] Corrigir Lamport 
 ---
 
 ## Próximos Passos

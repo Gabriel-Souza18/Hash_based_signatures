@@ -43,6 +43,8 @@ typedef struct{
     int indiceFolha;
     int tamanhoCaminho;
     char caminho[32][SHA256_HEX_SIZE];
+    // Direções: 0 = alvo estava à esquerda (concat: alvo||irmão), 1 = alvo estava à direita (concat: irmão||alvo)
+    unsigned char caminhoDirecao[32];
     
 }AssinaturaMSS;
 
@@ -57,12 +59,14 @@ void criarPai(No *pai);
 void criarAssinatura(AssinaturaMSS* assinatura, No* raiz, 
                     Folha* folhaUsada,int indice, int numFolhas);
 
+int verificarAssinatura(AssinaturaMSS*assinatura, No* Pkey);
+
 // Funcoes auxiliares
 void conectarFolhasAoNo(No *no, Folha *folha_esq, Folha *folha_dir);
 
 void coletarCaminhoAutenticacao(AssinaturaMSS *assinatura, No* raiz);
 int coletarCaminhoRecursivo(No* no, Folha* folhaAlvo, char caminhoAuth[][SHA256_HEX_SIZE], 
-                            int* tamanhoPath, int indiceFolha, int numFolhas);
+                            unsigned char direcoes[], int* tamanhoPath, int indiceFolha, int numFolhas);
 
 
 // Liberação de memória
