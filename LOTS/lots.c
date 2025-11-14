@@ -8,8 +8,8 @@
 #include <stdbool.h>
 #include <time.h> 
 
-void assinarMSG(char* msgHash, SecretKeys *sKeys, char ** assinatura);
-bool verificarMSG(char* msgHash, PublicKeys *pKeys, char** assinatura);
+void assinarMSG(char* msgHash, SecretKeys *sKeys, uint8_t assinatura[256][SECRET_KEY_SIZE]);
+bool verificarMSG(char* msgHash, PublicKeys *pKeys, uint8_t assinatura[256][SECRET_KEY_SIZE]);
 
 void main(){
     int opção;
@@ -48,10 +48,8 @@ void main(){
         char msgHash[SHA256_HEX_SIZE];
         sha256_hex(mensagem,strlen(mensagem), msgHash);
 
-        char** assinatura = (char**)malloc(256 * sizeof(char*));
-        for (int i = 0; i < 256; i++) {
-            assinatura[i] = (char*)malloc(256 * sizeof(char));
-        }
+        // Assinatura agora é array de bytes (32 bytes por posição)
+        uint8_t assinatura[256][SECRET_KEY_SIZE];
 
         clock_t inicioAssin = clock();
         assinarMSG(msgHash,sKeys, assinatura);
@@ -69,10 +67,10 @@ void main(){
         unsigned long tamanho_assinatura = 256 * SHA256_HEX_SIZE;
         printf("Tamanho Assinatura: %lu bytes\n", tamanho_assinatura);
         
-        unsigned long tamanho_secret_keys = 256 * 2 * 256; 
+        unsigned long tamanho_secret_keys = 256 * 2 * SECRET_KEY_SIZE; 
         unsigned long tamanho_public_keys = 256 * 2 * SHA256_HEX_SIZE;
         
-        printf("Tamanho Secretkeys: %lu bytes\n", tamanho_secret_keys);
+        printf("Tamanho Secretkeys: %lu bytes (otimizado com máscaras de bits)\n", tamanho_secret_keys);
         printf("Tamanho Publickeys: %lu bytes\n", tamanho_public_keys);
 
         //printKeys(pKeys, sKeys);
@@ -81,12 +79,6 @@ void main(){
         escreverPkeys("publicKeys.txt", pKeys);
         escreverMensagem("mensagem.txt", mensagem);
         freeKeys(pKeys, sKeys);
-
-
-        for (int i = 0; i < 256; i++) {
-            free(assinatura[i]);
-        }
-        free(assinatura);
         break;
     
     case 2:
@@ -99,7 +91,7 @@ void main(){
 
         
         int tamanhoAssinatura;
-        char** assinaturaVerif = lerAssinatura("assinatura.txt", &tamanhoAssinatura);
+        uint8_t (*assinaturaVerif)[SECRET_KEY_SIZE] = lerAssinatura("assinatura.txt", &tamanhoAssinatura);
 
         bool resultado = verificarMSG(msgLidaHash, pKeysVerif, assinaturaVerif);
         printf("Verificação: %s\n", resultado ? "VÁLIDA" : "INVÁLIDA");
@@ -108,9 +100,6 @@ void main(){
         printf("Total de hashes SHA256: %llu\n", sha256_get_counter());
         
         // Limpeza
-        for (int i = 0; i < tamanhoAssinatura; i++) {
-            if (assinaturaVerif[i]) free(assinaturaVerif[i]);
-        }
         free(assinaturaVerif);
         break;
     default:
@@ -122,9 +111,8 @@ void main(){
 
 }
 
-void assinarMSG(char* msgHash, SecretKeys *sKeys, char **assinatura){
-    int hashLen = strlen(msgHash); // 64 caracteres para SHA256
-    
+void assinarMSG(char* msgHash, SecretKeys *sKeys, uint8_t assinatura[256][SECRET_KEY_SIZE]){
+    // Para cada bit da mensagem (256 bits no total)
     for (int i = 0; i < 256; i++){
         // Calcula qual caractere hex e qual bit dentro dele
         int charIndex = i / 4;  // Cada caractere hex representa 4 bits
@@ -144,19 +132,21 @@ void assinarMSG(char* msgHash, SecretKeys *sKeys, char **assinatura){
         // Extrai o bit específico (do mais significativo para o menos)
         int bit = (hexValue >> (3 - bitIndex)) & 1;
         
+        // Copia a chave secreta correspondente ao bit (máscara de bits)
         if (bit == 1){
-            strcpy(assinatura[i], sKeys->SK1[i]);
+            memcpy(assinatura[i], sKeys->SK1[i], SECRET_KEY_SIZE);
         } else {
-            strcpy(assinatura[i], sKeys->SK0[i]);
+            memcpy(assinatura[i], sKeys->SK0[i], SECRET_KEY_SIZE);
         }
     }   
 }
 
-bool verificarMSG(char* msgHash, PublicKeys *pKeys, char** assinatura){
+bool verificarMSG(char* msgHash, PublicKeys *pKeys, uint8_t assinatura[256][SECRET_KEY_SIZE]){
     for (int i = 0; i < 256; i++) {
         char hashAssinatura[SHA256_HEX_SIZE];
         
-        sha256_hex(assinatura[i], strlen(assinatura[i]), hashAssinatura);
+        // Hash da assinatura (32 bytes)
+        sha256_hex((char*)assinatura[i], SECRET_KEY_SIZE, hashAssinatura);
         
         // Calcula qual bit do hash original
         int charIndex = i / 4;
@@ -174,19 +164,20 @@ bool verificarMSG(char* msgHash, PublicKeys *pKeys, char** assinatura){
         
         int bit = (hexValue >> (3 - bitIndex)) & 1;
         
+        // Verifica se o hash da assinatura corresponde à chave pública correta
         if (bit == 1) {
             if (strcmp(hashAssinatura, pKeys->PK1[i]) != 0) {
-                printf("Falha na verificação no bit %d\n", i);
+                printf("Falha na verificação no bit %d (esperado 1)\n", i);
                 return false;
             }
         } else {
             if (strcmp(hashAssinatura, pKeys->PK0[i]) != 0) {
-                printf("Falha na verificação no bit %d\n", i);
+                printf("Falha na verificação no bit %d (esperado 0)\n", i);
                 return false;
             }
         }
     }
     
-    printf("Todos os 256 bits verificados com sucesso!\n");
+    printf("✓ Todos os 256 bits verificados com sucesso!\n");
     return true;
 }

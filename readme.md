@@ -10,32 +10,10 @@ Este projeto implementa e compara algoritmos de assinatura digital baseados em h
 ```
 sha256_c_cpp/
 ├── SHA256/              # Biblioteca SHA256
-│   ├── sha256.c         # Implementação SHA256
-│   ├── sha256.h         # Header SHA256
-│   └── makefile         # Compilação da biblioteca
-│
 ├── LamportOTS/          # Implementação Lamport OTS
-│   ├── lamport.c        # Programa principal
-│   ├── keys.c/h         # Gerenciamento de chaves
-│   ├── utils.c/h        # Funções utilitárias
-│   └── makefile         # Compilação Lamport
-│
 ├── WOTS/                # Implementação WOTS
-│   ├── wots.c           # Programa principal
-│   ├── keys.c/h         # Gerenciamento de chaves
-│   ├── utils.c/h        # Funções utilitárias
-│   └── makefile         # Compilação WOTS
-│
 ├── MSS/                 # Implementação MSS (Merkle Signature Scheme)
-│   ├── mss.c            # Programa principal
-│   ├── Arvore.c/h       # Estrutura da árvore de Merkle
-│   └── makefile         # Compilação MSS
-│
 ├── TesteHash/           # Testes de hash
-│   ├── main.c           # Programa de testes
-│   ├── dicionario.c/h   # Manipulação de dicionários
-│   └── makefile         # Compilação testes
-│
 ├── makefile             # Makefile principal
 ├── test_algorithms.sh   # Script de testes automatizados
 └── readme.md            # Este arquivo
@@ -109,7 +87,7 @@ valgrind --track-origins=yes --leak-check=full ./WOTS/wots
 - [x]Script de testes automatizados aprimorado
 - [x] Coleta detalhada de métricas de desempenho
 
-### Fase 5: MSS(29/10 -)
+### Fase 5: MSS(29/10 -17/11)
 - [x]Assisti a aula do Christof Paar sobre MSS
 - [x] Implementando Arvore que gera Hashs 
 - [x] Corrigindo problemas e gerando assinatura
@@ -118,9 +96,7 @@ valgrind --track-origins=yes --leak-check=full ./WOTS/wots
 ---
 
 ## Próximos Passos
-- implementar verificação da assinaturaMSS, e um sistema pra escolher quem vc quer ser no p2p
-
-- corrigir implementação do lamporte colocar nome como LOTS, usar memoria igual no WOTS
+- Separar em programas rementente/ destinatario
 
 - ver aula pra fixar WOTS
 

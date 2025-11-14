@@ -56,7 +56,7 @@ testar_lamport() {
     echo -e "${BLUE}Testando Lamport - Teste $teste_num${NC}"
     
     # Teste de assinatura (opção 1)
-    local output_assinatura=$(echo -e "1\n$MENSAGEM_TESTE" | timeout 30 ./LamportOTS/lamport 2>&1)
+    local output_assinatura=$(echo -e "1\n$MENSAGEM_TESTE" | timeout 30 ./LOTS/lots 2>&1)
     
     if [ $? -ne 0 ]; then
         echo -e "${RED}Erro no teste Lamport $teste_num (assinatura)${NC}"
@@ -64,7 +64,7 @@ testar_lamport() {
     fi
     
     # Teste de verificação (opção 2)
-    local output_verificacao=$(echo "2" | timeout 30 ./LamportOTS/lamport 2>&1)
+    local output_verificacao=$(echo "2" | timeout 30 ./LOTS/lots 2>&1)
     
     if [ $? -ne 0 ]; then
         echo -e "${RED}Erro no teste Lamport $teste_num (verificação)${NC}"
@@ -92,7 +92,7 @@ testar_lamport() {
     tamanho_assinatura=${tamanho_assinatura:-"16640"}
     
     # Salva no CSV (Lamport não tem masks, então usa 0)
-    echo "Lamport,$teste_num,$tempo_secret_keys,$tempo_public_keys,0,$tempo_assinatura,$hashes_assinatura,$tamanho_secret,$tamanho_public,$tamanho_assinatura" >> "$RESULTADO_FILE"
+    echo "LOTS,$teste_num,$tempo_secret_keys,$tempo_public_keys,0,$tempo_assinatura,$hashes_assinatura,$tamanho_secret,$tamanho_public,$tamanho_assinatura" >> "$RESULTADO_FILE"
     
     echo -e "${GREEN}Lamport Teste $teste_num: OK${NC}"
     echo "  SK: ${tempo_secret_keys}s | PK: ${tempo_public_keys}s | Assinatura: ${tempo_assinatura}s | Hashes: $hashes_assinatura"

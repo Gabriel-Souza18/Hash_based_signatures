@@ -1,13 +1,13 @@
-# Makefile para Lamport OTS
+# Makefile para lots OTS
 
 CC = gcc
 CFLAGS = -Wall -O2 -I../SHA256
 LDFLAGS = -L../SHA256 -lsha256
 
 # Arquivos fonte
-SRC = lamport.c keys.c utils.c
+SRC = lots.c keys.c utils.c
 OBJ = $(SRC:.c=.o)
-TARGET = lamport
+TARGET = lots
 
 # Target padrão
 all: $(TARGET)
@@ -15,14 +15,14 @@ all: $(TARGET)
 # Compilar executável
 $(TARGET): $(OBJ) ../SHA256/libsha256.a
 	$(CC) $(OBJ) -o $(TARGET) $(LDFLAGS)
-	@echo "Lamport OTS compilado!"
+	@echo "lots OTS compilado!"
 
 # Compilar objetos
 %.o: %.c %.h
 	$(CC) $(CFLAGS) -c $< -o $@
 
-lamport.o: lamport.c utils.h keys.h
-	$(CC) $(CFLAGS) -c lamport.c -o lamport.o
+lots.o: lots.c utils.h keys.h
+	$(CC) $(CFLAGS) -c lots.c -o lots.o
 
 # Garantir que a biblioteca SHA256 está compilada
 ../SHA256/libsha256.a:
@@ -31,7 +31,7 @@ lamport.o: lamport.c utils.h keys.h
 
 # Limpar arquivos gerados
 clean:
-	@echo "Limpando Lamport OTS..."
+	@echo "Limpando lots OTS..."
 	rm -f $(OBJ) $(TARGET)
 	rm -f assinatura.txt mensagem.txt publicKeys.txt
 	@echo "Limpeza concluída!"

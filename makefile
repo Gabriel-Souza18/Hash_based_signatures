@@ -2,7 +2,7 @@
 
 # Diretorios
 SHA256_DIR = SHA256
-LAMPORT_DIR = LamportOTS
+LOTS_DIR = LOTS
 WOTS_DIR = WOTS
 MSS_DIR = MSS
 TESTE_DIR = TesteHash
@@ -18,12 +18,12 @@ sha256:
 	$(MAKE) -C $(SHA256_DIR)
 	@echo ""
 
-# Compilar Lamport OTS
+# Compilar LOTS
 lamport: sha256
 	@echo "================================"
-	@echo "Compilando Lamport OTS..."
+	@echo "Compilando LOTS..."
 	@echo "================================"
-	$(MAKE) -C $(LAMPORT_DIR)
+	$(MAKE) -C $(LOTS_DIR)
 	@echo ""
 
 # Compilar WOTS
@@ -63,7 +63,7 @@ clean:
 	@echo "Limpando projeto completo..."
 	@echo "================================"
 	$(MAKE) -C $(SHA256_DIR) clean
-	$(MAKE) -C $(LAMPORT_DIR) clean
+	$(MAKE) -C $(LOTS_DIR) clean
 	$(MAKE) -C $(WOTS_DIR) clean
 	$(MAKE) -C $(MSS_DIR) clean
 	$(MAKE) -C $(TESTE_DIR) clean
@@ -88,7 +88,7 @@ help:
 	@echo "  make           - Compila biblioteca SHA256, Lamport, WOTS e MSS"
 	@echo "  make all       - Mesmo que 'make'"
 	@echo "  make sha256    - Compila apenas a biblioteca SHA256"
-	@echo "  make lamport   - Compila apenas Lamport OTS"
+	@echo "  make lots  	- Compila apenas LOTS"
 	@echo "  make wots      - Compila apenas WOTS"
 	@echo "  make mss       - Compila apenas MSS"
 	@echo "  make teste     - Compila TesteHash"
@@ -98,4 +98,4 @@ help:
 	@echo "  make help      - Mostra esta mensagem"
 	@echo "================================"
 
-.PHONY: all sha256 lamport wots mss teste test clean rebuild help
+.PHONY: all sha256 lots wots mss teste test clean rebuild help
