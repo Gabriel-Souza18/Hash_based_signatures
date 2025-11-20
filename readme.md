@@ -75,7 +75,7 @@ valgrind --track-origins=yes --leak-check=full ./WOTS/wots
 - [x] Função de verificação
 
 ### Fase 3: WOTS (10/10 - 20/10)
-- [x]Implementação do WOTS (W=16, L=67)
+- [x] Implementação do WOTS (W=16, L=67)
 - [x] Sistema de máscaras
 - [x] Comparação com Lamport OTS
 - [x] Testes de desempenho
@@ -83,16 +83,16 @@ valgrind --track-origins=yes --leak-check=full ./WOTS/wots
 ### Fase 4: Reorganização e Testes (21/10 - 29/10)
 - [x]  Reorganização modular do projeto
 - [x] Criação de makefiles individuais
-- [x]Biblioteca SHA256 separada
-- [x]Script de testes automatizados aprimorado
+- [x] Biblioteca SHA256 separada
+- [x] Script de testes automatizados aprimorado
 - [x] Coleta detalhada de métricas de desempenho
 
 ### Fase 5: MSS(29/10 -17/11)
-- [x]Assisti a aula do Christof Paar sobre MSS
+- [x] Assisti a aula do Christof Paar sobre MSS
 - [x] Implementando Arvore que gera Hashs 
 - [x] Corrigindo problemas e gerando assinatura
 - [x] implementar verificação da assinatura 
-- [] Corrigir Lamport 
+- [x] Corrigir Lamport 
 ---
 
 ## Próximos Passos
