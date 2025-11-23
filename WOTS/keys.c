@@ -1,9 +1,22 @@
 #include "keys.h"
+#include "prf.h"
 #include "../SHA256/sha256.h"
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
+
+unsigned char PK_seed[N] = {0};
+unsigned char SK_seed[N] = {0};
+
+void initializeSeeds() {
+    // Gera seeds aleatórios mudar a funcçao rand
+    srand(clock());
+    for(int i = 0; i < N; i++) {
+        PK_seed[i] = rand() % 256;
+        SK_seed[i] = rand() % 256;
+    }
+}
 
 
 SecretKeys* mallocSkeys(){
@@ -33,20 +46,6 @@ PublicKeys* mallocPkeys(){
     }
     return k;
 }
-Masks* mallocMasks(){
-    Masks* m = (Masks*)malloc(sizeof(Masks));
-    if (m == NULL) {
-        fprintf(stderr, "Erro ao alocar memória para Masks\n");
-        exit(EXIT_FAILURE);
-    }
-    for (int i = 0; i <W-1; i++) {
-        for (int j=0 ;j<N; j++){
-            m->masks[i][j] = 0;  // Inicializa com 0, não NULL
-        }
-    }
-    
-    return m;
-}
 Assinatura* mallocAssinatura() {
     Assinatura* a = (Assinatura*)malloc(sizeof(Assinatura));
     if (a == NULL) {
@@ -63,51 +62,51 @@ Assinatura* mallocAssinatura() {
 }
 
 
-void generateSKeys(SecretKeys* sKeys ){
-        for(int i = 0; i < L; i++) {
-            for(int j = 0; j < N; j++) {
-                sKeys->Sk[i][j] = rand() % 256;
-            }
-        }
+void generateSKeys(SecretKeys* sKeys) {
+    unsigned char ADRS[32];
+    
+    for(int i = 0; i < L; i++) {
+        // Configurar ADRS para WOTS_PRF
+        setADRS_WOTS_PRF(ADRS, i);
+        
+        // Gerar chave secreta usando PRF (não mais rand())
+        PRF_SHA2((unsigned char*)sKeys->Sk[i], PK_seed, SK_seed, ADRS, N);
+    }
 }
 
-void generatePKeys(PublicKeys* pKeys, SecretKeys* sKeys, Masks* masks){
+void generatePKeys(PublicKeys* pKeys, SecretKeys* sKeys) {
+    unsigned char ADRS[32];
+    
     // Para cada uma das L chaves secretas
     for (int i = 0; i < L; i++) {
-      chainFunction(sKeys->Sk[i], W-1, masks, pKeys->PK[i]);
+        // Configurar ADRS para WOTS_HASH
+        setADRS_WOTS_HASH(ADRS, i, 0, 0); // chain_index e hash_index serão atualizados na chain function
+        
+        // Aplicar chain function com W-1 passos (começando do índice 0)
+        chainFunction((unsigned char*)sKeys->Sk[i], W-1, (unsigned char*)pKeys->PK[i], ADRS, 0);
     }
-
 }
-void generateMasks(Masks* masks){
+
+void chainFunction(unsigned char* src, int steps, unsigned char* output, unsigned char* ADRS_base, int start_index) {
+
+    unsigned char ADRS[32];
+    memcpy(ADRS, ADRS_base, 32);
     
-    // Gera W-1 máscaras aleatórias
-    for (int i = 0; i < W-1; i++) {
-        for (int j = 0; j < N; j++) {
-            masks->masks[i][j] = rand() % 256; 
-        }
-
-    }
-}
-
-void chainFunction(char*src, int steps, Masks* masks, char* output){
+    // Copiar src para output
     memcpy(output, src, N);
     
     for (int i = 0; i < steps; i++) {
-        char temp[N];
+        // Atualizar hash do ADRS (start_index + i)
+        int hash_idx = start_index + i;
+        ADRS[28] = (hash_idx >> 24) & 0xFF;
+        ADRS[29] = (hash_idx >> 16) & 0xFF;
+        ADRS[30] = (hash_idx >> 8) & 0xFF;
+        ADRS[31] = hash_idx & 0xFF;
         
-        // XOR com a máscara atual
-        for (int j = 0; j < N; j++) {
-            temp[j] = output[j] ^ masks->masks[i][j];
-        }
-        
- 
-        char hash_result[SHA256_HEX_SIZE];
-        sha256_hex(temp, N, hash_result);
-     
-        for (int j = 0; j < N && j * 2 < SHA256_HEX_SIZE; j++) {
-            char hex_byte[3] = {hash_result[j*2], hash_result[j*2+1], '\0'};
-            output[j] = (char)strtol(hex_byte, NULL, 16);
-        }
+        // Aplicar F
+        unsigned char temp[N];
+        F_function(temp, PK_seed, ADRS, output);
+        memcpy(output, temp, N);
     }
 }
 void mensageForBlocks(char* msgHash, int* output) {
@@ -143,8 +142,7 @@ void calcularChecksum(const int* message_blocks, int* checksum_blocks){
 }
 
 void assinarMensagem(char*msg,  Assinatura* assinatura,
-                                SecretKeys* sKeys, 
-                                Masks* masks){    
+                                SecretKeys* sKeys){    
     int message_blocks[L1];
     int checksum_blocks[L2];
     int b[L];  // mensagem + checksum concatenados
@@ -164,12 +162,14 @@ void assinarMensagem(char*msg,  Assinatura* assinatura,
 
     // Gerar assinatura aplicando chain function
     for (int i = 0; i < L; i++) {
-        chainFunction(sKeys->Sk[i], b[i], masks, assinatura->assinatura[i]);
+        unsigned char ADRS[32];
+        setADRS_WOTS_HASH(ADRS, i, 0, 0);
+        chainFunction((unsigned char*)sKeys->Sk[i], b[i], (unsigned char*)assinatura->assinatura[i], ADRS, 0);
     }
 
 }
 
-int verificarMensagem(char* msg, Assinatura* assinatura, Masks* masks, PublicKeys* pKeys) {
+int verificarMensagem(char* msg, Assinatura* assinatura, PublicKeys* pKeys) {
     printf("\n=== INICIANDO VERIFICAÇÃO ===\n");
     
     int message_blocks[L1];
@@ -187,26 +187,21 @@ int verificarMensagem(char* msg, Assinatura* assinatura, Masks* masks, PublicKey
     }
     
     for (int i = 0; i < L; i++) {
-        char computed_pk[N];
+        unsigned char computed_pk[N];
         int remaining_steps = W - 1 - b[i];
         
         if (remaining_steps > 0) {
-            Masks partial_masks;
-            for (int j = 0; j < remaining_steps; j++) {
-                int mask_index = b[i] + j;  // Começa da máscara b[i], não da 0
-                if (mask_index < W - 1) {
-                    memcpy(partial_masks.masks[j], masks->masks[mask_index], N);
-                }
-            }
-            chainFunction(assinatura->assinatura[i], remaining_steps, &partial_masks, computed_pk);
+            unsigned char ADRS[32];
+            setADRS_WOTS_HASH(ADRS, i, 0, 0);
+            // Continuar da posição b[i] até W-1
+            chainFunction(assinatura->assinatura[i], remaining_steps, computed_pk, ADRS, b[i]);
         } else {
             memcpy(computed_pk, assinatura->assinatura[i], N);
         }
         
         // Comparar com a chave pública
-        if (memcmp(computed_pk, pKeys->PK[i], N) != 0) {
-            printf("ERRO: Verificação falhou no elemento %d (b[%d]=%d, steps=%d)\n", 
-                   i, i, b[i], W-1-b[i]);
+        if (memcmp(computed_pk, (unsigned char*)pKeys->PK[i], N) != 0) {
+            printf("ERRO: Verificação falhou no elemento %d\n", i);
             return 0;
         }
 
