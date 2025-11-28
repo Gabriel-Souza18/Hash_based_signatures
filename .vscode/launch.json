@@ -1,7 +1,6 @@
 {
   "version": "0.2.0",
   "configurations": [
-    
     {
       "name": "Debug MSS",
       "type": "cppdbg",
@@ -21,7 +20,55 @@
           "ignoreFailures": true
         }
       ],
-      "preLaunchTask": "build-mss",
+      "preLaunchTask": "Build MSS Debug",
+      "logging": {
+        "engineLogging": false
+      }
+    },
+    {
+      "name": "Debug WOTS",
+      "type": "cppdbg",
+      "request": "launch",
+      "program": "${workspaceFolder}/WOTS/wots",
+      "args": [],
+      "stopAtEntry": false,
+      "cwd": "${workspaceFolder}/WOTS",
+      "environment": [],
+      "externalConsole": false,
+      "MIMode": "gdb",
+      "miDebuggerPath": "/usr/bin/gdb",
+      "setupCommands": [
+        {
+          "description": "Habilitar pretty-printing para gdb",
+          "text": "-enable-pretty-printing",
+          "ignoreFailures": true
+        }
+      ],
+      "preLaunchTask": "Build WOTS Debug",
+      "logging": {
+        "engineLogging": false
+      }
+    },
+    {
+      "name": "Debug LOTS",
+      "type": "cppdbg",
+      "request": "launch",
+      "program": "${workspaceFolder}/LOTS/lots",
+      "args": [],
+      "stopAtEntry": false,
+      "cwd": "${workspaceFolder}/LOTS",
+      "environment": [],
+      "externalConsole": false,
+      "MIMode": "gdb",
+      "miDebuggerPath": "/usr/bin/gdb",
+      "setupCommands": [
+        {
+          "description": "Habilitar pretty-printing para gdb",
+          "text": "-enable-pretty-printing",
+          "ignoreFailures": true
+        }
+      ],
+      "preLaunchTask": "Build LOTS Debug",
       "logging": {
         "engineLogging": false
       }

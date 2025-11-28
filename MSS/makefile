@@ -9,7 +9,7 @@ SRC = mss.c Arvore.c
 OBJ = $(SRC:.c=.o)
 
 # Objetos do WOTS que precisamos linkar
-WOTS_OBJ = ../WOTS/keys.o ../WOTS/utils.o
+WOTS_OBJ = ../WOTS/keys.o ../WOTS/utils.o ../WOTS/prf.o
 
 TARGET = mss
 

@@ -170,7 +170,6 @@ void assinarMensagem(char*msg,  Assinatura* assinatura,
 }
 
 int verificarMensagem(char* msg, Assinatura* assinatura, PublicKeys* pKeys) {
-    printf("\n=== INICIANDO VERIFICAÇÃO ===\n");
     
     int message_blocks[L1];
     int checksum_blocks[L2];
@@ -193,20 +192,14 @@ int verificarMensagem(char* msg, Assinatura* assinatura, PublicKeys* pKeys) {
         if (remaining_steps > 0) {
             unsigned char ADRS[32];
             setADRS_WOTS_HASH(ADRS, i, 0, 0);
-            // Continuar da posição b[i] até W-1
             chainFunction(assinatura->assinatura[i], remaining_steps, computed_pk, ADRS, b[i]);
         } else {
             memcpy(computed_pk, assinatura->assinatura[i], N);
         }
         
-        // Comparar com a chave pública
         if (memcmp(computed_pk, (unsigned char*)pKeys->PK[i], N) != 0) {
-            printf("ERRO: Verificação falhou no elemento %d\n", i);
             return 0;
         }
-
     }
-    
-    printf("=== VERIFICAÇÃO BEM-SUCEDIDA ===\n");
     return 1;
 }

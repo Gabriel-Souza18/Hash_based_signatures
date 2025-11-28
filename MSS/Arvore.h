@@ -8,8 +8,9 @@ typedef struct {
     int usada; //0 = nao, 1 = sim
     SecretKeys* Skeys;
     PublicKeys* Pkeys;
-    Masks* Masks;
     char hash[SHA256_HEX_SIZE];  // Hash da chave pública
+    unsigned char leaf_PK_seed[32];  // Seeds específicos desta folha
+    unsigned char leaf_SK_seed[32];
 }Folha;
 typedef enum {
     TIPO_NO,      // Filho é um nó interno
@@ -44,7 +45,9 @@ typedef struct{
     char caminho[32][SHA256_HEX_SIZE];
     // Direções: 0 = alvo estava à esquerda (concat: alvo||irmão), 1 = alvo estava à direita (concat: irmão||alvo)
     unsigned char caminhoDirecao[32];
-    
+    // Mensagem e assinatura WOTS
+    char mensagem[1001];
+    Assinatura* wotsSignature;
 }AssinaturaMSS;
 
 // Alocação
@@ -56,9 +59,9 @@ AssinaturaMSS * alocarAssinatura();
 void criarFolhas(Folha *folhas, int quantFolhas);
 void criarPai(No *pai);
 void criarAssinatura(AssinaturaMSS* assinatura, No* raiz, 
-                    Folha* folhaUsada,int indice, int numFolhas);
+                    Folha* folhaUsada,int indice, int numFolhas, char* mensagem);
 
-int verificarAssinatura(AssinaturaMSS*assinatura, char* Pkey);
+int verificarAssinatura(AssinaturaMSS*assinatura, char* Pkey, PublicKeys* folhaPkeys);
 
 // Funcoes auxiliares
 void conectarFolhasAoNo(No *no, Folha *folha_esq, Folha *folha_dir);

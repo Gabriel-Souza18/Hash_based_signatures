@@ -18,13 +18,16 @@ void imprimirMenu();
 
 int main(){
     int opcao = 0;
-    
-    do {
+
+        
+
+               
         imprimirMenu();
         scanf("%d", &opcao);
         getchar(); // Limpa buffer
         
         switch(opcao){
+
             case 1:
                 gerarArvore();
                 break;
@@ -36,24 +39,18 @@ int main(){
                 break;
             case 0:
                 printf("Saindo...\n");
-                break;
+    
             default:
                 printf("Opção inválida!\n");
         }
         
-        if (opcao != 0) {
-            printf("\nPressione ENTER para continuar...");
-            getchar();
-        }
-        
-    } while(opcao != 0);
     
     return 0;
 }
 
 void imprimirMenu() {
     printf("\n");
-    printf("1 - Gerar Nova Árvore\n");
+    printf("1- Criar arvore\n");
     printf("2 - Criar Assinatura\n");
     printf("3 - Verificar Assinatura \n");
     printf("0 - Sair\n");
@@ -73,7 +70,6 @@ void gerarArvore() {
     for(int i = 0; i < NUM_FOLHAS; i++){
         folhas[i].Skeys = mallocSkeys();
         folhas[i].Pkeys = mallocPkeys();
-        folhas[i].Masks = mallocMasks();
     }
     
     printf("Gerando árvore com %d folhas...\n", NUM_FOLHAS);
@@ -91,14 +87,7 @@ void gerarArvore() {
     // Imprime estrutura
     imprimirArvore(raiz);
     
-    // Libera memória
-    limparArvore(raiz);
-    for(int i = 0; i < NUM_FOLHAS; i++){
-        free(folhas[i].Skeys);
-        free(folhas[i].Pkeys);
-        free(folhas[i].Masks);
-    }
-    free(folhas);
+
 }
 
 void criarAssinaturaMenu() {
@@ -115,7 +104,6 @@ void criarAssinaturaMenu() {
     for(int i = 0; i < NUM_FOLHAS; i++){
         folhas[i].Skeys = mallocSkeys();
         folhas[i].Pkeys = mallocPkeys();
-        folhas[i].Masks = mallocMasks();
     }
     
     // Carrega os dados das folhas
@@ -128,7 +116,6 @@ void criarAssinaturaMenu() {
         for(int i = 0; i < NUM_FOLHAS; i++){
             free(folhas[i].Skeys);
             free(folhas[i].Pkeys);
-            free(folhas[i].Masks);
         }
         free(folhas);
         return;
@@ -138,46 +125,35 @@ void criarAssinaturaMenu() {
     No* raiz = NULL;
     lerArvore("arvore.txt", folhas, NUM_FOLHAS, &raiz);
     if (raiz == NULL) {
-        printf("Erro ao carregar árvore. Gere uma árvore primeiro (opção 1).\n");
+        printf("Erro ao carregar árvore.\n");
         for(int i = 0; i < NUM_FOLHAS; i++){
             free(folhas[i].Skeys);
             free(folhas[i].Pkeys);
-            free(folhas[i].Masks);
         }
         free(folhas);
         return;
     }
     
     // Escolhe folha
-    printf("\nFolhas disponíveis:\n");
-    for(int i = 0; i < NUM_FOLHAS; i++){
-        printf("  [%d] Hash: %.16s... %s\n", i, folhas[i].hash, 
-               folhas[i].usada ? "(USADA)" : "(Disponível)");
-    }
-    
+        
     int indiceFolha;
-    printf("\nEscolha o índice da folha (0-%d): ", NUM_FOLHAS-1);
-    scanf("%d", &indiceFolha);
-    
-    if (indiceFolha < 0 || indiceFolha >= NUM_FOLHAS) {
-        printf("Índice inválido!\n");
-        limparArvore(raiz);
-        for(int i = 0; i < NUM_FOLHAS; i++){
-            free(folhas[i].Skeys);
-            free(folhas[i].Pkeys);
-            free(folhas[i].Masks);
+
+    for(int i = 0; i < NUM_FOLHAS; i++){
+        if (folhas[i].usada == 0) {
+               printf("\nFolhas que sera usada:%d\n", i);
+               indiceFolha = i;
+               break;
         }
-        free(folhas);
-        return;
     }
-    
-    if (folhas[indiceFolha].usada) {
-        printf("Aviso: Esta folha já foi usada!\n");
-    }
-    
+
+    char mensagem[1001];
+    printf("Digite a mensagem a ser assinada (max 1000 caracteres): ");
+    fgets(mensagem, sizeof(mensagem), stdin);
+    mensagem[strcspn(mensagem, "\n")] = 0;  // Remove quebra de linha
+
     // Cria assinatura
     AssinaturaMSS* assinatura = alocarAssinatura();
-    criarAssinatura(assinatura, raiz, &folhas[indiceFolha], indiceFolha, NUM_FOLHAS);
+    criarAssinatura(assinatura, raiz, &folhas[indiceFolha], indiceFolha, NUM_FOLHAS, mensagem);
     
     // Mostra assinatura
     printf("\nAssinatura criada com sucesso!\n");
@@ -188,15 +164,6 @@ void criarAssinaturaMenu() {
     // Atualiza folhas (marca como usada)
     escreverFolhas("folhas.txt", folhas, NUM_FOLHAS);
     
-    // Libera memória
-    free(assinatura);
-    limparArvore(raiz);
-    for(int i = 0; i < NUM_FOLHAS; i++){
-        free(folhas[i].Skeys);
-        free(folhas[i].Pkeys);
-        free(folhas[i].Masks);
-    }
-    free(folhas);
 }
 
 void verificarAssinaturaMenu() {
@@ -208,15 +175,36 @@ void verificarAssinaturaMenu() {
     
     printf("\nAssinatura carregada:\n");
     printf("  Índice da Folha: %d\n", assinatura->indiceFolha);
+    printf("  Mensagem: %s\n", assinatura->mensagem);
     printf("  Public Key: %.64s...\n", assinatura->PublicKeysGeral);
     printf("  Tamanho do caminho: %d\n", assinatura->tamanhoCaminho);
     
-    // Carrega a chave pública geral do arquivo e atualiza a assinatura
+    // Carrega a chave pública geral do arquivo
     char publicKey[SHA256_HEX_SIZE];
     lerPublicKey("public_key.txt", publicKey);
 
+    // Carrega as folhas para pegar a chave pública WOTS
+    Folha *folhas = malloc(NUM_FOLHAS * sizeof(Folha));
+    if (!folhas) {
+        fprintf(stderr, "Erro ao alocar folhas\n");
+        free(assinatura);
+        return;
+    }
+    
+    for(int i = 0; i < NUM_FOLHAS; i++){
+        folhas[i].Skeys = mallocSkeys();
+        folhas[i].Pkeys = mallocPkeys();
+    }
+    
+    int numFolhasLidas;
+    lerFolhas("folhas.txt", folhas, &numFolhasLidas);
+    
+    // Carrega os seeds da folha que assinou
+    memcpy(PK_seed, folhas[assinatura->indiceFolha].leaf_PK_seed, 32);
+    memcpy(SK_seed, folhas[assinatura->indiceFolha].leaf_SK_seed, 32);
+    
     // Verifica (compara com a chave pública lida)
-    int resultado = verificarAssinatura(assinatura, publicKey);
+    int resultado = verificarAssinatura(assinatura, publicKey, folhas[assinatura->indiceFolha].Pkeys);
     
     printf("\n");
     if (resultado == 1) {
@@ -225,8 +213,7 @@ void verificarAssinaturaMenu() {
         printf("ASSINATURA INVÁLIDA!\n");
     }
     
-    // assinatura não possui ponteiro para folha mais; apenas libera assinatura
-    free(assinatura);
+
 }
 
 No* mssTree(Folha* folhas){
