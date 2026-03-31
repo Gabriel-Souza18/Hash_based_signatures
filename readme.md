@@ -100,11 +100,10 @@ valgrind --track-origins=yes --leak-check=full ./WOTS/wots
 ---
 
 ## Próximos Passos
-- Separar em programas rementente/ destinatario
-
-- ver aula pra fixar WOTS
-
-- Testar em arduino(aprender como rodar isso em arduino)
+- Testar outros algortimos do artigo
+- Começar a escrever o artigo
+- Terminar artigo ate final de maio
+  
 
 ---
 
