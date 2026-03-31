@@ -31,6 +31,8 @@ make lamport   # Compila apenas Lamport OTS
 make wots      # Compila apenas WOTS
 make mss       # Compila apenas MSS
 make teste     # Compila TesteHash
+```
+
 ```bash
 make sha256    # Compila apenas a biblioteca SHA256
 make lamport   # Compila apenas Lamport OTS
@@ -40,6 +42,7 @@ make teste     # Compila TesteHash
 
 ### Testes e limpeza
 ```bash
+
 make test      # Compila e executa testes automatizados
 make clean     # Remove todos os arquivos compilados
 make rebuild   # Limpa e recompila tudo
@@ -51,6 +54,7 @@ make help      # Mostra ajuda
 
 ### Valgrind (verificação de memória)
 ```bash
+
 make lamport
 valgrind --track-origins=yes --leak-check=full ./LamportOTS/lamport
 
@@ -71,7 +75,7 @@ valgrind --track-origins=yes --leak-check=full ./WOTS/wots
 ### Fase 2: Lamport OTS (03/10 - 08/10)
 - [x] Implementação completa do Lamport OTS
 - [x] Sistema de leitura/escrita de chaves
-- [x]Função de assinatura
+- [x] Função de assinatura
 - [x] Função de verificação
 
 ### Fase 3: WOTS (10/10 - 20/10)
