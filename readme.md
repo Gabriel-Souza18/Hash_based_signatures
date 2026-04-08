@@ -94,14 +94,25 @@ valgrind --track-origins=yes --leak-check=full ./WOTS/wots
 - [x] implementar verificação da assinatura 
 - [x] Corrigir Lamport 
 ---
+# Fase 6: TESTES(18/11)
+- [x] Colocar no padrao do NIST FIPS ( NAO COLOQUEI O MSS)
+- [x] Realizar teste de memoria com valgrind
+
+
+# Fase 7: HORS e artigo
+
+- [] Procurar mais artigos com assunto relacionados para colocar no artigo.
+- [] Inicar a escrita do artigo com alguns resultados preliminares e trabalhos relacionados 
+- [] Implementar algoritmo HORS e HORST
+- [] Testar algoritmos implementados 
+- 
 
 ## Próximos Passos
 - Separar em programas rementente/ destinatario
 
-- ver aula pra fixar WOTS
+- Ver aula pra fixar WOTS
 
-- Testar em arduino(aprender como rodar isso em arduino)
-
+- 
 ---
 
 ## 📚 Referência Principal 
@@ -111,6 +122,8 @@ valgrind --track-origins=yes --leak-check=full ./WOTS/wots
 - National Institute of Technology Jamshedpur, India /Nanyang Technological University, Singapore
 
 ### Aulas do youtube do Christof Paar
+
+### https://asecuritysite.com/hashsig/
 ---
 ## Autor- Gabriel da Silva Souza
 
