@@ -7,8 +7,12 @@ WOTS_DIR = WOTS
 MSS_DIR = MSS
 TESTE_DIR = TesteHash
 
+# Arquivo de teste libsodium
+SODIUM_TEST_SRC = libsodium_test.c
+SODIUM_TEST_BIN = libsodium_test
+
 # Target padrao: compilar tudo
-all: sha256 lamport wots mss
+all: sha256 lamport wots mss sodium
 
 # Compilar biblioteca SHA256
 sha256:
@@ -40,6 +44,12 @@ teste: sha256
 	$(MAKE) -C $(TESTE_DIR)
 	@echo ""
 
+# Compilar teste do libsodium
+sodium:
+	@echo "Compilando teste libsodium..."
+	gcc -Wall -Wextra -O2 $(SODIUM_TEST_SRC) -lsodium -o $(SODIUM_TEST_BIN)
+	@echo ""
+
 # Executar testes automatizados
 test: all
 	@echo "Executando testes..."
@@ -53,6 +63,7 @@ clean:
 	$(MAKE) -C $(WOTS_DIR) clean
 	$(MAKE) -C $(MSS_DIR) clean
 	$(MAKE) -C $(TESTE_DIR) clean
+	rm -f $(SODIUM_TEST_BIN)
 	@echo ""
 	@echo "Removendo arquivos txt..."
 
@@ -78,9 +89,10 @@ help:
 	@echo "  make wots      - Compila apenas WOTS"
 	@echo "  make mss       - Compila apenas MSS"
 	@echo "  make teste     - Compila TesteHash"
+	@echo "  make sodium    - Compila o teste do libsodium"
 	@echo "  make test      - Compila e executa testes automatizados"
 	@echo "  make clean     - Remove todos os arquivos compilados"
 	@echo "  make rebuild   - Limpa e recompila tudo"
 	@echo "  make help      - Mostra esta mensagem"
 
-.PHONY: all sha256 lots wots mss teste test clean rebuild help
+.PHONY: all sha256 lots wots mss teste sodium test clean rebuild help
