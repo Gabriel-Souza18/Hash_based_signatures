@@ -8,37 +8,30 @@
 
 // Função para ler chaves públicas de um arquivo
 PublicKeys* lerPkeys(char* caminho){
-    FILE *arquivo = fopen(caminho, "r");
+    FILE *arquivo = fopen(caminho, "rb");
+    if (!arquivo) {
+        printf("Erro: não foi possível abrir o arquivo %s\n", caminho);
+        return NULL;
+    }
 
     PublicKeys *pKeys = malloc_Pkeys();
+    if (!pKeys) {
+        fclose(arquivo);
+        return NULL;
+    }
 
-    char linha[1024];
-    int indice = 0;
-    
-    while (fgets(linha, sizeof(linha), arquivo) && indice < 256) {
+    size_t lidos0 = fread(pKeys->PK0, sizeof(uint8_t), 256 * KEY_SIZE, arquivo);
+    size_t lidos1 = fread(pKeys->PK1, sizeof(uint8_t), 256 * KEY_SIZE, arquivo);
 
-        linha[strcspn(linha, "\n")] = 0;
-        
-        char *separador = strchr(linha, '|');
-        if (!separador) continue;
-        
-        *separador = '\0';
-        char *pk0 = linha;
-        char *pk1 = separador + 1;
-        
-        pKeys->PK0[indice] = malloc(strlen(pk0) + 1);
-        if (pKeys->PK0[indice]) {
-            strcpy(pKeys->PK0[indice], pk0);
-        }
-        pKeys->PK1[indice] = malloc(strlen(pk1) + 1);
-        if (pKeys->PK1[indice]) {
-            strcpy(pKeys->PK1[indice], pk1);
-        }
-        indice++;
+    if (lidos0 != 256 * KEY_SIZE || lidos1 != 256 * KEY_SIZE) {
+        printf("Erro: arquivo de public keys incompleto\n");
+        free(pKeys);
+        fclose(arquivo);
+        return NULL;
     }
     
     fclose(arquivo);
-    printf("Chaves públicas carregadas: %d pares\n", indice);
+    printf("Chaves públicas carregadas: 256 pares\n");
     return pKeys;
 }
 void lerMensagem(char* caminho, char *mensagem){
@@ -62,6 +55,9 @@ void lerMensagem(char* caminho, char *mensagem){
     
     // Lê o conteúdo completo
     size_t bytesLidos = fread(contMensagem, 1, tamanho, arquivo);
+    if (bytesLidos != (size_t)tamanho) {
+        printf("Aviso: leitura parcial da mensagem em %s\n", caminho);
+    }
     contMensagem[bytesLidos] = '\0';
     
     fclose(arquivo);
@@ -90,20 +86,21 @@ void escreverMensagem(char*caminho, char* mensagem){
 }
 
 void escreverPkeys(char* caminho, PublicKeys *pKeys){
-    FILE *arquivo = fopen(caminho, "w");
-
-    for (int i = 0; i < 256; i++) {
-        if (pKeys->PK0[i] && pKeys->PK1[i]) {
-            fprintf(arquivo, "%s|%s\n", pKeys->PK0[i], pKeys->PK1[i]);
-        }
+    FILE *arquivo = fopen(caminho, "wb");
+    if (!arquivo) {
+        printf("Erro: não foi possível criar o arquivo %s\n", caminho);
+        return;
     }
+
+    fwrite(pKeys->PK0, sizeof(uint8_t), 256 * KEY_SIZE, arquivo);
+    fwrite(pKeys->PK1, sizeof(uint8_t), 256 * KEY_SIZE, arquivo);
     
     fclose(arquivo);
     printf("Chaves públicas salvas em: %s\n", caminho);
 }
 
 // Função para escrever assinatura em arquivo (formato binário otimizado)
-void escreverAssinatura(char* caminho, uint8_t assinatura[256][SECRET_KEY_SIZE], int tamanho){
+void escreverAssinatura(char* caminho, uint8_t assinatura[256][KEY_SIZE], int tamanho){
     FILE *arquivo = fopen(caminho, "wb");  // Modo binário
     if (!arquivo) {
         printf("Erro: não foi possível criar o arquivo %s\n", caminho);
@@ -115,16 +112,16 @@ void escreverAssinatura(char* caminho, uint8_t assinatura[256][SECRET_KEY_SIZE],
     
     // Escreve todas as 256 chaves de 32 bytes cada
     for (int i = 0; i < tamanho; i++) {
-        fwrite(assinatura[i], sizeof(uint8_t), SECRET_KEY_SIZE, arquivo);
+        fwrite(assinatura[i], sizeof(uint8_t), KEY_SIZE, arquivo);
     }
     
     fclose(arquivo);
     printf("Assinatura salva em: %s (formato binário, %d x %d bytes)\n", 
-           caminho, tamanho, SECRET_KEY_SIZE);
+           caminho, tamanho, KEY_SIZE);
 }
 
 // Função para ler assinatura de arquivo (formato binário)
-uint8_t (*lerAssinatura(char* caminho, int *tamanho))[SECRET_KEY_SIZE]{
+uint8_t (*lerAssinatura(char* caminho, int *tamanho))[KEY_SIZE]{
     FILE *arquivo = fopen(caminho, "rb");  // Modo binário
     if (!arquivo) {
         printf("Erro: não foi possível abrir o arquivo %s\n", caminho);
@@ -133,10 +130,14 @@ uint8_t (*lerAssinatura(char* caminho, int *tamanho))[SECRET_KEY_SIZE]{
 
     // Lê o número de assinaturas
     int count;
-    fread(&count, sizeof(int), 1, arquivo);
+    if (fread(&count, sizeof(int), 1, arquivo) != 1) {
+        printf("Erro: arquivo de assinatura inválido\n");
+        fclose(arquivo);
+        return NULL;
+    }
     
     // Aloca memória para as assinaturas
-    uint8_t (*assinatura)[SECRET_KEY_SIZE] = malloc(count * sizeof(uint8_t[SECRET_KEY_SIZE]));
+    uint8_t (*assinatura)[KEY_SIZE] = malloc(count * sizeof(uint8_t[KEY_SIZE]));
     if (!assinatura) {
         printf("Erro ao alocar memória para assinatura\n");
         fclose(arquivo);
@@ -145,11 +146,16 @@ uint8_t (*lerAssinatura(char* caminho, int *tamanho))[SECRET_KEY_SIZE]{
     
     // Lê todas as chaves
     for (int i = 0; i < count; i++) {
-        fread(assinatura[i], sizeof(uint8_t), SECRET_KEY_SIZE, arquivo);
+        if (fread(assinatura[i], sizeof(uint8_t), KEY_SIZE, arquivo) != KEY_SIZE) {
+            printf("Erro: assinatura incompleta no arquivo\n");
+            free(assinatura);
+            fclose(arquivo);
+            return NULL;
+        }
     }
     
     fclose(arquivo);
     if (tamanho) *tamanho = count;
-    printf("Assinatura carregada: %d elementos de %d bytes cada\n", count, SECRET_KEY_SIZE);
+    printf("Assinatura carregada: %d elementos de %d bytes cada\n", count, KEY_SIZE);
     return assinatura;
 }

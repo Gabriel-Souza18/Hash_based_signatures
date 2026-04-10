@@ -3,18 +3,15 @@
 
 #include <stdint.h>
 
-#define SECRET_KEY_SIZE 32  // 256 bits = 32 bytes
-
-// Chaves secretas agora são arrays de bytes (máscaras de bits)
+#define KEY_SIZE 32  // 256 bits = 32 bytes 
 typedef struct {
-    uint8_t SK0[256][SECRET_KEY_SIZE];  // 256 chaves de 32 bytes cada
-    uint8_t SK1[256][SECRET_KEY_SIZE];  // 256 chaves de 32 bytes cada
+    uint8_t SK0[256][KEY_SIZE];  // 256 chaves de 32 bytes cada
+    uint8_t SK1[256][KEY_SIZE];  // 256 chaves de 32 bytes cada
 } SecretKeys;
 
-// Chaves públicas continuam como strings hex do SHA256
 typedef struct{
-    char* PK0[256]; 
-    char* PK1[256];
+    uint8_t PK0[256][KEY_SIZE]; 
+    uint8_t PK1[256][KEY_SIZE];
 } PublicKeys;
 
 SecretKeys *malloc_Skeys();
