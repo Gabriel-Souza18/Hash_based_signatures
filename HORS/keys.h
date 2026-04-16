@@ -8,7 +8,7 @@
 #define HORS_T 1024
 #endif
 
-#define HORS_K 16
+#define HORS_K 25
 #define HORS_N 32
 #define KEY_SIZE 32
 
