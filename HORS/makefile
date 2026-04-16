@@ -5,7 +5,7 @@ CFLAGS = -Wall -O2 -I../SHA256 -DHORS_T=1024
 LDFLAGS = -L../SHA256 -lsha256 -lsodium -Wl,-rpath,/usr/local/lib
 
 # Arquivos fonte
-SRC = keys.c
+SRC = keys.c hors.c
 OBJ = $(SRC:.c=.o)
 TARGET = hors
 

@@ -63,5 +63,7 @@
     "arvore.h": "c",
     "string.h": "c"
   },
-  "github.copilot.advanced": {}
+  "github.copilot.advanced": {},
+  "github.copilot.nextEditSuggestions.fixes": false,
+  "github.copilot.nextEditSuggestions.enabled": false
 }
