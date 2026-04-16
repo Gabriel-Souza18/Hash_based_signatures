@@ -6,7 +6,7 @@
 #define W 16
 #define N 32
 
-// Cálculos corretos baseados no FIPS 205
+// Calculos baseados no FIPS 205
 #define L1 64//(int)ceil((8 * N) / log2(W))  // = 64
 #define L2 3 //(int)(floor(log2(L1 * (W-1)) / log2(W)) + 1)  // = 3
 #define L (L1 + L2)  // = 67
