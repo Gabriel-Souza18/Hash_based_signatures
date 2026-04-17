@@ -2,20 +2,26 @@
 
 CC = gcc
 CFLAGS = -Wall -O2 -I../SHA256 -DHORS_T=1024
-LDFLAGS = -L../SHA256 -lsha256 -lsodium -Wl,-rpath,/usr/local/lib
+LDFLAGS = -lm -L../SHA256 -lsha256 -lsodium -Wl,-rpath,/usr/local/lib
 
 # Arquivos fonte
 SRC = keys.c hors.c
 OBJ = $(SRC:.c=.o)
 TARGET = hors
+TEST_TARGET = testeHors
 
 # Target padrão
 all: $(TARGET)
 
-# Compilar executável
+# Compilar executável principal
 $(TARGET): $(OBJ) ../SHA256/libsha256.a
 	$(CC) $(OBJ) -o $(TARGET) $(LDFLAGS)
 	@echo "HORS compilado com HORS_T=1024!"
+
+# Compilar teste
+test: keys.o testeHors.o ../SHA256/libsha256.a
+	$(CC) keys.o testeHors.o -o $(TEST_TARGET) $(LDFLAGS)
+	@echo "testeHors compilado!"
 
 # Compilar objetos
 %.o: %.c %.h
@@ -23,6 +29,9 @@ $(TARGET): $(OBJ) ../SHA256/libsha256.a
 
 keys.o: keys.c keys.h
 	$(CC) $(CFLAGS) -c keys.c -o keys.o
+
+testeHors.o: testeHors.c keys.h
+	$(CC) $(CFLAGS) -c testeHors.c -o testeHors.o
 
 # Garantir que a biblioteca SHA256 está compilada
 ../SHA256/libsha256.a:
@@ -32,9 +41,9 @@ keys.o: keys.c keys.h
 # Limpar arquivos gerados
 clean:
 	@echo "Limpando HORS..."
-	rm -f $(OBJ) $(TARGET)
+	rm -f $(OBJ) testeHors.o $(TARGET) $(TEST_TARGET)
 	rm -f assinatura.txt mensagem.txt publicKeys.txt secretKeys.txt
 	@echo "Limpeza concluída!"
 
-.PHONY: all clean
+.PHONY: all test clean
 

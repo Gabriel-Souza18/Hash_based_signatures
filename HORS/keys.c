@@ -7,7 +7,7 @@
 #include <string.h>
 
 void gerarKeys(Keys* keys){
-        if(sodium_init() < 0){
+    if(sodium_init() < 0){
         fprintf(stderr, "Erro: falha ao inicializar libsodium.\n");
         exit(EXIT_FAILURE);
     }
