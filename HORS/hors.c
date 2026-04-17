@@ -34,5 +34,16 @@ int main(void) {
     // Imprime a assinatura
     imprimirAssinatura(&assinatura);
     
+
+    // TESTE VERIFICAÇÂO
+
+    int verificação = verificarAssinatura(mensagem,(int)len,&assinatura,keys.PKeys);
+    verificação ? printf("SUCESSO\n") : printf("ERRO\n"); //é pra passar nesse
+
+
+    mensagem[0]= ' ';
+    int verificação2 = verificarAssinatura(mensagem,(int)len,&assinatura,keys.PKeys);
+    verificação2 ? printf("SUCESSO\n") : printf("ERRO\n"); //nao é pra passar nesse
+
     return EXIT_SUCCESS;
 }

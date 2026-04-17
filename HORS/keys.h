@@ -41,7 +41,9 @@ int selecionarIndices(unsigned char *hash, int *indices);
 void assinarMensagem(const char* msg,int msg_len, 
                     Assinatura* assinatura, 
                     const unsigned char SKeys[HORS_T][HORS_N]);
-int verificarAssinatura(const char* msg, const Assinatura* assinatura, const unsigned char PKeys[HORS_T][HORS_N]);
+int verificarAssinatura(const char* msg, int msg_len,
+                        const Assinatura* assinatura, 
+                        const unsigned char PKeys[HORS_T][HORS_N]);
 void imprimirAssinatura(const Assinatura* assinatura);
 
 #endif

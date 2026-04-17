@@ -32,6 +32,29 @@ void assinarMensagem(const char* msg,int msg_len,
     }
 }
 
+int verificarAssinatura(const char* msg, int msg_len,
+                        const Assinatura* assinatura,
+                        const unsigned char PKeys[HORS_T][HORS_N]){
+        unsigned char hash_msg[32];
+        sha256_bytes(msg, msg_len, hash_msg);
+
+        int indices[HORS_K];
+        selecionarIndices(hash_msg, indices);
+
+        for(int i =0; i<HORS_K; i++){
+            unsigned char computed[KEY_SIZE];
+
+            //hash da Assinatura e comparar com a pkey[i]
+            sha256_bytes(assinatura->assinatura[i], KEY_SIZE, computed);
+
+            if(memcmp(computed, PKeys[indices[i]],KEY_SIZE)!=0){
+                return 0; //falha
+            }
+        }
+    
+    return 1;
+}
+
 int selecionarIndices(unsigned char *hash, int *indices){
     int bits_por_indice = HORS_BITS_PER_INDEX;
     int hash_bits = 256;
@@ -57,11 +80,6 @@ int selecionarIndices(unsigned char *hash, int *indices){
 }
 
 
-int verificarAssinatura(const char* msg, 
-                        const Assinatura* assinatura,
-                        const unsigned char PKeys[HORS_T][HORS_N]){
-    return 1;
-}
 
 
 void imprimirAssinatura(const Assinatura* assinatura) {
