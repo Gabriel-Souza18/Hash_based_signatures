@@ -105,15 +105,18 @@ valgrind --track-origins=yes --leak-check=full ./WOTS/wots
 
 # Fase 7: HORS e artigo
 
-- [] Procurar mais artigos com assunto relacionados para colocar no artigo.
+- [x] Procurar mais artigos com assunto relacionados para colocar no artigo.
 - [] Inicar a escrita do artigo com alguns resultados preliminares e trabalhos relacionados 
-- [] Implementar algoritmo HORS e HORST
+- [x] Implementar algoritmo HORS
+- [] Implementar HORTS
 - [] Testar algoritmos implementados 
 - 
 
 ## Próximos Passos
 
 ---
+## Strings de busca usadas
+- hash AND signature AND digital AND (ESP32 OR arduino OR iot)
 
 ## 📚 Referência Principal 
 
