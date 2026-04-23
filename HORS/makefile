@@ -5,7 +5,7 @@ CFLAGS = -Wall -O2 -I../SHA256 -DHORS_T=1024
 LDFLAGS = -lm -L../SHA256 -lsha256 -lsodium -Wl,-rpath,/usr/local/lib
 
 # Arquivos fonte
-SRC = keys.c hors.c
+SRC = keys.c hors.c utils.c
 OBJ = $(SRC:.c=.o)
 TARGET = hors
 TEST_TARGET = testeHors
@@ -43,6 +43,7 @@ clean:
 	@echo "Limpando HORS..."
 	rm -f $(OBJ) testeHors.o $(TARGET) $(TEST_TARGET)
 	rm -f assinatura.txt mensagem.txt publicKeys.txt secretKeys.txt
+	rm -f assinatura.bin publicKeys.bin
 	@echo "Limpeza concluída!"
 
 .PHONY: all test clean
