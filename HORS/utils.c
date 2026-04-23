@@ -3,8 +3,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "../SHA256/sha256.h"
 
-// Salva a mensagem em arquivo de texto
 void salvarMensagem(char* mensagem) {
     FILE *f = fopen("mensagem.txt", "w");
     if (!f) {
@@ -14,7 +14,6 @@ void salvarMensagem(char* mensagem) {
     
     fprintf(f, "%s", mensagem);
     fclose(f);
-    printf("✓ Mensagem salva em mensagem.txt\n");
 }
 
 // Lê a mensagem do arquivo de texto
@@ -32,11 +31,9 @@ void lerMensagem(char* mensagem) {
     }
     
     fclose(f);
-    printf("✓ Mensagem lida de mensagem.txt\n");
+
 }
 
-// Salva as chaves públicas em arquivo binário
-// PKeys é um array 2D: unsigned char PKeys[HORS_T][HORS_N]
 void salvarPkeys(unsigned char *PKeys) {
     FILE *f = fopen("publicKeys.bin", "wb");
     if (!f) {
@@ -53,8 +50,6 @@ void salvarPkeys(unsigned char *PKeys) {
     }
     
     fclose(f);
-    printf("✓ Chaves públicas salvas em publicKeys.bin (%d chaves, %d bytes cada)\n", 
-           HORS_T, HORS_N);
 }
 
 // Lê as chaves públicas do arquivo binário
@@ -74,7 +69,6 @@ void lerPkeys(unsigned char *PKeys) {
     }
     
     fclose(f);
-    printf("✓ Chaves públicas lidas de publicKeys.bin\n");
 }
 
 // Salva a assinatura em arquivo binário
@@ -94,8 +88,6 @@ void salvarAssinatura(Assinatura *assinatura) {
     }
     
     fclose(f);
-    printf("Assinatura salva em assinatura.bin (%d componentes, %d bytes cada)\n", 
-           HORS_K, HORS_N);
 }
 
 // Lê a assinatura do arquivo binário
@@ -115,5 +107,12 @@ void lerAssinatura(Assinatura *assinatura) {
     }
     
     fclose(f);
-    printf("Assinatura lida de assinatura.bin\n");
+
+}
+
+void iniciar_metricas(){
+    sha256_reset_counter();
+}
+void printar_metricas(){
+    printf("Total de hashes SHA256: %llu\n", sha256_get_counter());
 }
