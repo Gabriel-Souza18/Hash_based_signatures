@@ -109,10 +109,3 @@ void lerAssinatura(Assinatura *assinatura) {
     fclose(f);
 
 }
-
-void iniciar_metricas(){
-    sha256_reset_counter();
-}
-void printar_metricas(){
-    printf("Total de hashes SHA256: %llu\n", sha256_get_counter());
-}

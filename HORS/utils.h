@@ -15,6 +15,4 @@ void lerPkeys(unsigned char *PKeys);
 void salvarAssinatura(Assinatura *assinatura);
 void lerAssinatura(Assinatura *assinatura);
 
-void iniciar_metricas();
-void printar_metricas();
 #endif
