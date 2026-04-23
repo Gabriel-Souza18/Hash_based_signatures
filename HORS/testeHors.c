@@ -6,7 +6,7 @@
 
 #include "keys.h"
 
-#define TESTES 21
+#define TESTES 1000
 #define LEN_MSG 32
 
 // vou testar o hors com multiplas assinatras e testar o conflito de componentes
@@ -32,10 +32,6 @@ int main(){
 
     for(int i=0; i<TESTES; i++){
         randombytes_buf((unsigned char*)mensagens[i], LEN_MSG);
-        for(int j = 0; j < 8; j++) {
-            printf("%02x", mensagens[i][j]);
-        }
-        printf("... (truncado)\n");
     }
 
     unsigned char componentes_usados [TESTES][HORS_K][HORS_N];
@@ -51,7 +47,7 @@ int main(){
         assinarMensagem(mensagens[i], LEN_MSG, assinatura, keys.SKeys);
 
         int validacao = verificarAssinatura(mensagens[i], LEN_MSG, assinatura, keys.PKeys);
-        validacao? printf("OK\n"): printf("ERRO\n");
+        validacao? : printf("ERRO\n");
 
         
         for (int j=0;j<HORS_K;j++){
@@ -69,18 +65,13 @@ int main(){
     //P(colisão) = 1 - e^(-(n×k)² / (2×t))
     float conflitos_esperados= calcularConflitosEsperados();
 
-    printf("\n=== Comparando assinaturas ===\n");
+    printf("\n Comparando assinaturas \n");
     for (int i=0 ; i< TESTES;i++ ){
         for (int j=i+1; j< TESTES; j++){
             for (int k=0 ; k<HORS_K; k++){
                 comparacoes_totais++;
                 if( memcmp(componentes_usados[i][k], componentes_usados[j][k], HORS_N)==0 ){
                     conflitos_contados++;
-                    // Debug: mostra os primeiros 5 conflitos
-                    if (conflitos_contados <= 5) {
-                        printf("Conflito %d: Assinatura[%d][%d] == Assinatura[%d][%d]\n", 
-                               conflitos_contados, i, k, j, k);
-                    }
                 }
             }
         }
