@@ -13,6 +13,8 @@ sha256_c_cpp/
 ├── LamportOTS/          # Implementação Lamport OTS
 ├── WOTS/                # Implementação WOTS
 ├── MSS/                 # Implementação MSS (Merkle Signature Scheme)
+├──HORS/
+├──HORST/
 ├── TesteHash/           # Testes de hash
 ├── makefile             # Makefile principal
 ├── test_algorithms.sh   # Script de testes automatizados
