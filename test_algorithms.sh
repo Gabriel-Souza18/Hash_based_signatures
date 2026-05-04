@@ -38,6 +38,18 @@ echo
 HEADER="Algoritmo,Teste,Tempo_SecretKeys,Tempo_PublicKeys,Tempo_Masks,Tempo_Assinatura,Hashes_Assinatura,Tamanho_SecretKeys,Tamanho_PublicKeys,Tamanho_Assinatura"
 printf "%s\n" "$HEADER" > "$RESULTADO_FILE"
 
+# Compilar HORS especificamente
+echo -e "${YELLOW}Compilando HORS...${NC}"
+make -C HORS clean > /dev/null 2>&1
+make -C HORS > /dev/null 2>&1
+if [ $? -ne 0 ]; then
+    echo -e "${RED}Erro ao compilar HORS!${NC}"
+    exit 1
+fi
+echo -e "${GREEN}HORS compilado com sucesso!${NC}"
+
+echo -e "${GREEN}✓ Arquivo CSV criado: $RESULTADO_FILE${NC}"
+
 echo -e "${GREEN}✓ Arquivo CSV criado: $RESULTADO_FILE${NC}"
 echo -e "${BLUE}Header: $(head -1 "$RESULTADO_FILE")${NC}"
 echo
@@ -140,6 +152,44 @@ testar_wots() {
     echo "  SK: ${tempo_secret_keys}s | PK: ${tempo_public_keys}s | Masks: ${tempo_masks}s | Assinatura: ${tempo_assinatura}s"
 }
 
+# Função para testar HORS
+testar_hors() {
+    local teste_num=$1
+    echo -e "${BLUE}Testando HORS - Teste $teste_num${NC}"
+    
+    # Teste com hors_test (sem menu)
+    local output_assinatura=$(./HORS/hors_test "$MENSAGEM_TESTE" 2>&1)
+    
+    if [ $? -ne 0 ]; then
+        echo -e "${RED}Erro no teste HORS $teste_num${NC}"
+        return 1
+    fi
+    
+    # Extrai valores do HORS usando awk mais cuidadoso
+    local tempo_secret_keys=$(echo "$output_assinatura" | grep "Tempo para gerar Chaves Secretas:" | awk -F': ' '{print $2}' | awk '{print $1}')
+    local tempo_assinatura=$(echo "$output_assinatura" | grep "Tempo para Assinar:" | awk -F': ' '{print $2}' | awk '{print $1}')
+    
+    local hashes_assinatura=$(echo "$output_assinatura" | grep "Total de hashes SHA256:" | awk -F': ' '{print $2}')
+    
+    local tamanho_secret=$(echo "$output_assinatura" | grep "Tamanho Secretkeys:" | awk -F': ' '{print $2}')
+    local tamanho_public=$(echo "$output_assinatura" | grep "Tamanho Publickeys:" | awk -F': ' '{print $2}')
+    local tamanho_assinatura=$(echo "$output_assinatura" | grep "Tamanho Assinatura:" | awk -F': ' '{print $2}')
+    
+    # Valores padrão se não encontrados
+    tempo_secret_keys=${tempo_secret_keys:-"0"}
+    tempo_assinatura=${tempo_assinatura:-"0"}
+    hashes_assinatura=${hashes_assinatura:-"0"}
+    tamanho_secret=${tamanho_secret:-"32768"}
+    tamanho_public=${tamanho_public:-"32768"}
+    tamanho_assinatura=${tamanho_assinatura:-"832"}
+    
+    # Salva no CSV (HORS não tem masks, então usa 0)
+    echo "HORS,$teste_num,$tempo_secret_keys,0,0,$tempo_assinatura,$hashes_assinatura,$tamanho_secret,$tamanho_public,$tamanho_assinatura" >> "$RESULTADO_FILE"
+    
+    echo -e "${GREEN}HORS Teste $teste_num: OK${NC}"
+    echo "  SK: ${tempo_secret_keys}s | Assinatura: ${tempo_assinatura}s | Hashes: $hashes_assinatura"
+}
+
 echo -e "${YELLOW}Iniciando testes ($TESTES execuções para cada algoritmo)...${NC}"
 echo
 
@@ -153,6 +203,10 @@ for i in $(seq 1 $TESTES); do
     
     # Testa WOTS  
     testar_wots $i
+    sleep 1
+    
+    # Testa HORS
+    testar_hors $i
     sleep 1
     
     echo

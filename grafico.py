@@ -17,6 +17,11 @@ class Resultado:
             'assinatura': [],
             'total': []
         }
+        self.tempos_HORS = {
+            'secret_keys': [],
+            'assinatura': [],
+            'total': []
+        }
         self.tamanho_LOTS = {
             'secret_keys': 0,
             'public_keys': 0,
@@ -27,15 +32,22 @@ class Resultado:
             'public_keys': 0,
             'assinatura': 0
         }
+        self.tamanho_HORS = {
+            'secret_keys': 0,
+            'public_keys': 0,
+            'assinatura': 0
+        }
         self.quantHashs_LOTS = []
         self.quantHashs_WOTS = []
+        self.quantHashs_HORS = []
         self.timestamp = ""
         
     def calcular_medias(self):
         """Calcula as médias dos tempos"""
         medias = {
             'LOTS': {},
-            'WOTS': {}
+            'WOTS': {},
+            'HORS': {}
         }
         
         # Médias LOTS
@@ -52,6 +64,12 @@ class Resultado:
             medias['WOTS']['masks'] = sum(self.tempos_WOTS['masks']) / len(self.tempos_WOTS['masks'])
             medias['WOTS']['assinatura'] = sum(self.tempos_WOTS['assinatura']) / len(self.tempos_WOTS['assinatura'])
             medias['WOTS']['total'] = sum(self.tempos_WOTS['total']) / len(self.tempos_WOTS['total'])
+        
+        # Médias HORS
+        if self.tempos_HORS['total']:
+            medias['HORS']['secret_keys'] = sum(self.tempos_HORS['secret_keys']) / len(self.tempos_HORS['secret_keys'])
+            medias['HORS']['assinatura'] = sum(self.tempos_HORS['assinatura']) / len(self.tempos_HORS['assinatura'])
+            medias['HORS']['total'] = sum(self.tempos_HORS['total']) / len(self.tempos_HORS['total'])
         
         return medias
 
@@ -153,8 +171,17 @@ def ler_resultados(arquivo_csv):
                 resultado.tamanho_WOTS['secret_keys'] = tamanho_sk
                 resultado.tamanho_WOTS['public_keys'] = tamanho_pk
                 resultado.tamanho_WOTS['assinatura'] = tamanho_assinatura
+            
+            elif algoritmo == 'HORS':
+                resultado.tempos_HORS['secret_keys'].append(tempo_sk)
+                resultado.tempos_HORS['assinatura'].append(tempo_assinatura)
+                resultado.tempos_HORS['total'].append(tempo_sk + tempo_assinatura)
+                resultado.quantHashs_HORS.append(hashes)
+                resultado.tamanho_HORS['secret_keys'] = tamanho_sk
+                resultado.tamanho_HORS['public_keys'] = tamanho_pk
+                resultado.tamanho_HORS['assinatura'] = tamanho_assinatura
         
-        print(f"Dados carregados: {len(resultado.tempos_LOTS['total'])} testes LOTS, {len(resultado.tempos_WOTS['total'])} testes WOTS\n")
+        print(f"Dados carregados: {len(resultado.tempos_LOTS['total'])} testes LOTS, {len(resultado.tempos_WOTS['total'])} testes WOTS, {len(resultado.tempos_HORS['total'])} testes HORS\n")
         
         return resultado
         
@@ -163,7 +190,7 @@ def ler_resultados(arquivo_csv):
         return None
 
 def criar_graficos(resultado):
-    """Cria gráficos comparativos entre LOTS e WOTS"""
+    """Cria gráficos comparativos entre LOTS, WOTS e HORS"""
     
     # Calcula médias
     medias = resultado.calcular_medias()
@@ -176,17 +203,16 @@ def criar_graficos(resultado):
         titulo_data = resultado.timestamp
     
     # Cria figura com 3 subplots
-    fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(20, 6))
-    fig.suptitle(f'Comparação LOTS vs WOTS - Resultados de {titulo_data}', 
+    fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(22, 6))
+    fig.suptitle(f'Comparação LOTS vs WOTS vs HORS - Resultados de {titulo_data}', 
                  fontsize=16, fontweight='bold')
     
     # ========== GRÁFICO 1: Comparação de Tempos ==========
-    categorias = ['Secret Keys', 'Public Keys', 'Masks/Extra', 'Assinatura', 'Total']
+    categorias = ['Secret Keys', 'Public Keys', 'Assinatura', 'Total']
     
     tempos_lots = [
-        medias['LOTS'].get('secret_keys', 0) * 1000,  # Converte para ms
+        medias['LOTS'].get('secret_keys', 0) * 1000,
         medias['LOTS'].get('public_keys', 0) * 1000,
-        0,  # LOTS não tem masks
         medias['LOTS'].get('assinatura', 0) * 1000,
         medias['LOTS'].get('total', 0) * 1000
     ]
@@ -194,21 +220,27 @@ def criar_graficos(resultado):
     tempos_wots = [
         medias['WOTS'].get('secret_keys', 0) * 1000,
         medias['WOTS'].get('public_keys', 0) * 1000,
-        medias['WOTS'].get('masks', 0) * 1000,
         medias['WOTS'].get('assinatura', 0) * 1000,
         medias['WOTS'].get('total', 0) * 1000
     ]
     
+    tempos_hors = [
+        medias['HORS'].get('secret_keys', 0) * 1000,
+        0,  # HORS não calcula PK separadamente
+        medias['HORS'].get('assinatura', 0) * 1000,
+        medias['HORS'].get('total', 0) * 1000
+    ]
+    
     x = range(len(categorias))
-    largura = 0.35
+    largura = 0.25
     
-    bars1 = ax1.bar([i - largura/2 for i in x], tempos_lots, largura, 
+    bars1 = ax1.bar([i - largura for i in x], tempos_lots, largura, 
                     label='LOTS', color='#3498db', alpha=0.8)
-    bars2 = ax1.bar([i + largura/2 for i in x], tempos_wots, largura, 
+    bars2 = ax1.bar([i for i in x], tempos_wots, largura, 
                     label='WOTS', color='#e74c3c', alpha=0.8)
+    bars3 = ax1.bar([i + largura for i in x], tempos_hors, largura, 
+                    label='HORS', color='#2ecc71', alpha=0.8)
     
-    ax1.set_xlabel('Operações', fontweight='bold')
-    ax1.set_ylabel('Tempo (ms)', fontweight='bold')
     ax1.set_xlabel('Operações', fontweight='bold')
     ax1.set_ylabel('Tempo (ms)', fontweight='bold')
     ax1.set_title('Comparação de Tempos de Execução', fontweight='bold', pad=15)
@@ -216,19 +248,20 @@ def criar_graficos(resultado):
     ax1.set_xticklabels(categorias, rotation=15, ha='right')
     ax1.legend()
     ax1.grid(axis='y', alpha=0.3, linestyle='--')
-    for bars in [bars1, bars2]:
+    
+    for bars in [bars1, bars2, bars3]:
         for bar in bars:
             height = bar.get_height()
             if height > 0:
                 ax1.text(bar.get_x() + bar.get_width()/2., height,
                         f'{height:.2f}',
-                        ha='center', va='bottom', fontsize=8)
+                        ha='center', va='bottom', fontsize=7)
     
     # ========== GRÁFICO 2: Comparação de Tamanhos ==========
     categorias_tam = ['Secret Keys', 'Public Keys', 'Assinatura']
     
     tamanhos_lots = [
-        resultado.tamanho_LOTS['secret_keys'] / 1024,  # Converte para KB
+        resultado.tamanho_LOTS['secret_keys'] / 1024,
         resultado.tamanho_LOTS['public_keys'] / 1024,
         resultado.tamanho_LOTS['assinatura'] / 1024
     ]
@@ -239,15 +272,21 @@ def criar_graficos(resultado):
         resultado.tamanho_WOTS['assinatura'] / 1024
     ]
     
+    tamanhos_hors = [
+        resultado.tamanho_HORS['secret_keys'] / 1024,
+        resultado.tamanho_HORS['public_keys'] / 1024,
+        resultado.tamanho_HORS['assinatura'] / 1024
+    ]
+    
     x2 = range(len(categorias_tam))
     
-    bars3 = ax2.bar([i - largura/2 for i in x2], tamanhos_lots, largura, 
+    bars4 = ax2.bar([i - largura for i in x2], tamanhos_lots, largura, 
                     label='LOTS', color='#3498db', alpha=0.8)
-    bars4 = ax2.bar([i + largura/2 for i in x2], tamanhos_wots, largura, 
+    bars5 = ax2.bar([i for i in x2], tamanhos_wots, largura, 
                     label='WOTS', color='#e74c3c', alpha=0.8)
+    bars6 = ax2.bar([i + largura for i in x2], tamanhos_hors, largura, 
+                    label='HORS', color='#2ecc71', alpha=0.8)
     
-    ax2.set_xlabel('Componentes', fontweight='bold')
-    ax2.set_ylabel('Tamanho (KB)', fontweight='bold')
     ax2.set_xlabel('Componentes', fontweight='bold')
     ax2.set_ylabel('Tamanho (KB)', fontweight='bold')
     ax2.set_title('Comparação de Tamanhos', fontweight='bold', pad=15)
@@ -255,45 +294,44 @@ def criar_graficos(resultado):
     ax2.set_xticklabels(categorias_tam, rotation=15, ha='right')
     ax2.legend()
     ax2.grid(axis='y', alpha=0.3, linestyle='--')
-    for bars in [bars3, bars4]:
+    
+    for bars in [bars4, bars5, bars6]:
         for bar in bars:
             height = bar.get_height()
             if height > 0:
                 ax2.text(bar.get_x() + bar.get_width()/2., height,
                         f'{height:.1f}',
-                        ha='center', va='bottom', fontsize=8)
+                        ha='center', va='bottom', fontsize=7)
     
     # ========== GRÁFICO 3: Comparação de Número de Hashes ==========
-    categorias_hash = ['Public Keys', 'Assinatura']
+    categorias_hash = ['Assinatura']
     
-    # Número de hashes para gerar chaves públicas
-    hashes_pk_lots = 512  # 256 bits × 2 hashes por bit
-    hashes_pk_wots = 1072  # 67 posições × 16 iterações
-    
-    # Número de hashes para assinatura (média dos testes)
     hashes_sig_lots = sum(resultado.quantHashs_LOTS) / len(resultado.quantHashs_LOTS) if resultado.quantHashs_LOTS else 0
     hashes_sig_wots = sum(resultado.quantHashs_WOTS) / len(resultado.quantHashs_WOTS) if resultado.quantHashs_WOTS else 0
+    hashes_sig_hors = sum(resultado.quantHashs_HORS) / len(resultado.quantHashs_HORS) if resultado.quantHashs_HORS else 0
     
-    hashes_lots = [hashes_pk_lots, hashes_sig_lots]
-    hashes_wots = [hashes_pk_wots, hashes_sig_wots]
+    hashes_lots = [hashes_sig_lots]
+    hashes_wots = [hashes_sig_wots]
+    hashes_hors = [hashes_sig_hors]
     
     x3 = range(len(categorias_hash))
     
-    bars5 = ax3.bar([i - largura/2 for i in x3], hashes_lots, largura, 
+    bars7 = ax3.bar([i - largura for i in x3], hashes_lots, largura, 
                     label='LOTS', color='#3498db', alpha=0.8)
-    bars6 = ax3.bar([i + largura/2 for i in x3], hashes_wots, largura, 
+    bars8 = ax3.bar([i for i in x3], hashes_wots, largura, 
                     label='WOTS', color='#e74c3c', alpha=0.8)
+    bars9 = ax3.bar([i + largura for i in x3], hashes_hors, largura, 
+                    label='HORS', color='#2ecc71', alpha=0.8)
     
     ax3.set_xlabel('Operações', fontweight='bold')
     ax3.set_ylabel('Número de Hashes SHA256', fontweight='bold')
     ax3.set_title('Comparação de Quantidade de Hashes', fontweight='bold', pad=15)
     ax3.set_xticks(x3)
-    ax3.set_xticklabels(categorias_hash, rotation=15, ha='right')
+    ax3.set_xticklabels(categorias_hash)
     ax3.legend()
     ax3.grid(axis='y', alpha=0.3, linestyle='--')
     
-    # Adiciona valores nas barras
-    for bars in [bars5, bars6]:
+    for bars in [bars7, bars8, bars9]:
         for bar in bars:
             height = bar.get_height()
             if height > 0:
@@ -306,15 +344,13 @@ def criar_graficos(resultado):
     
     # Salva o gráfico
     nome_arquivo = f'grafico_{resultado.timestamp}.png'
-    # Salva o gráfico
-    nome_arquivo = f'grafico_{resultado.timestamp}.png'
     plt.savefig(nome_arquivo, dpi=300, bbox_inches='tight')
     print(f"Gráfico salvo: {nome_arquivo}")
     
     # Exibe informações adicionais
-    print("\n" + "="*60)
+    print("\n" + "="*70)
     print("  RESUMO DOS RESULTADOS")
-    print("="*60)
+    print("="*70)
     print(f"\nLOTS (Lamport OTS):")
     print(f"   Tempo médio total: {medias['LOTS'].get('total', 0)*1000:.2f} ms")
     print(f"   Tamanho total: {sum(resultado.tamanho_LOTS.values())/1024:.1f} KB")
@@ -327,16 +363,14 @@ def criar_graficos(resultado):
     if resultado.quantHashs_WOTS:
         print(f"   Hashes por assinatura: {resultado.quantHashs_WOTS[0]}")
     
-    # Calcula economia
-    if medias['LOTS'].get('total', 0) > 0 and medias['WOTS'].get('total', 0) > 0:
-        economia_tempo = (1 - medias['WOTS']['total'] / medias['LOTS']['total']) * 100
-        print(f"\nWOTS é {abs(economia_tempo):.1f}% {'mais rápido' if economia_tempo > 0 else 'mais lento'} que LOTS")
+    print(f"\nHORS (Hash to Obtain Random Subset):")
+    print(f"   Tempo médio total: {medias['HORS'].get('total', 0)*1000:.2f} ms")
+    print(f"   Tamanho total: {sum(resultado.tamanho_HORS.values())/1024:.1f} KB")
+    if resultado.quantHashs_HORS:
+        print(f"   Hashes por assinatura: {int(resultado.quantHashs_HORS[0])}")
     
-    tamanho_total_lots = sum(resultado.tamanho_LOTS.values())
-    tamanho_total_wots = sum(resultado.tamanho_WOTS.values())
-    if tamanho_total_lots > 0:
-        economia_espaco = (1 - tamanho_total_wots / tamanho_total_lots) * 100
-        print(f"WOTS economiza {economia_espaco:.1f}% de espaço em relação ao LOTS")
+    print("\n" + "="*70)
+    print("="*70)
     
 
 def main():
@@ -355,7 +389,9 @@ def main():
     
     # Cria os gráficos
     criar_graficos(resultado)
+    
+    # Exibe o gráfico
+    plt.show()
 
 if __name__ == "__main__":
     main()
-    

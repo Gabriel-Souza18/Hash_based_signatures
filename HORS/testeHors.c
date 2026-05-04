@@ -9,18 +9,8 @@
 #define M_PI 3.14159265358979323846
 #define LEN_MSG 32
 
-// Função para calcular conflitos esperados
 double calcularConflitosEsperados(int num_testes) {
-    // Cada assinatura usa k índices de um total de t chaves
-    // Para n assinaturas, temos n(n-1)/2 pares
-    // Para cada par, comparamos todos os k² índices (cada índice de um com cada índice do outro)
-    // Probabilidade de dois índices serem iguais: 1/t
-    // E[C] = (k² × n × (n-1)) / (2 × t)
-    // Onde:
-    //   k = HORS_K (índices por assinatura)
-    //   n = num_testes (número de assinaturas)
-    //   t = HORS_T (total de chaves)
-    
+
     double numerador = (double)HORS_K * HORS_K * num_testes * (num_testes - 1);
     double conflitos_esperados = numerador / (2.0 * HORS_T);
     return conflitos_esperados;
@@ -28,8 +18,7 @@ double calcularConflitosEsperados(int num_testes) {
 
 int main(int argc, char *argv[]){
     int TESTES = 25;  // valor padrão
-    
-    // Verifica se foi passado parâmetro
+
     if(argc > 1){
         TESTES = atoi(argv[1]);
         if(TESTES <= 0){
@@ -45,7 +34,7 @@ int main(int argc, char *argv[]){
         return 1;
     }
 
-    // Alocar dinamicamente os arrays
+
     char (*mensagens)[LEN_MSG] = malloc(TESTES * LEN_MSG);
     int (*indices_usados)[HORS_K] = malloc(TESTES * HORS_K * sizeof(int));
     
@@ -132,15 +121,6 @@ int main(int argc, char *argv[]){
     printf("Indices comprometidos (freq > 1): %d / %d (%.2f%%)\n", 
            indices_reutilizados, HORS_T, (100.0 * indices_reutilizados) / HORS_T);
     
-    // Análise de segurança baseada nos conflitos OBSERVADOS
-    // Cada conflito representa um índice que foi usado mais de uma vez
-    // Quanto mais índices reutilizados, menos SK secretas restam não-comprometidas
-    
-    // Calcular porcentagem de SK comprometidas
-    // Uma SK é comprometida quando seu índice é selecionado mais de uma vez
-    // Total de índices selecionados = TESTES * HORS_K
-    // Índices únicos reutilizados = indices_reutilizados
-    // Porcentagem de SK comprometida = (indices_reutilizados / HORS_T) * 100
     
     double sk_comprometidas_percent = (100.0 * indices_reutilizados) / HORS_T;
     double sk_disponivel_percent = 100.0 - sk_comprometidas_percent;
@@ -163,7 +143,7 @@ int main(int argc, char *argv[]){
         printf("Status: INSEGURO (%.2f%% de SK comprometida)\n", sk_comprometidas_percent);
     }
 
-    // Liberar memória alocada
+ 
     free(mensagens);
     free(indices_usados);
 
