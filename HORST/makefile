@@ -20,5 +20,5 @@ test: all
 
 clean:
 	rm -f $(OBJS) $(TARGET)
-
+	rm -f *.bin
 .PHONY: all test clean
