@@ -114,6 +114,10 @@ valgrind --track-origins=yes --leak-check=full ./WOTS/wots
 - [] Testar algoritmos implementados 
 - 
 
+# Fase 8
+- refazer testes com valgrind
+- focar no artigo
+
 ## Próximos Passos
 Implementar arquivo que salvaria componentes ja ultilizados da Skey no HORST, e verificar segurança.
 ---
