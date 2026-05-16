@@ -113,7 +113,7 @@ int assinarMsg() {
     
     // Reconstruir árvore a partir das chaves secretas
     printf("Reconstruindo árvore de Merkle...\n");
-    MerkleNode* raiz = construirArvore(keys.SKeys, 0, HORST_T - 1);
+    struct ArvoreHorst* raiz = construirArvore(keys.SKeys);
     
     // Assinar mensagem
     Assinatura assinatura;

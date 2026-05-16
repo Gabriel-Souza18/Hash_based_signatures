@@ -1,4 +1,5 @@
 #include "keys.h"
+#include "horst_tree.h"
 #include "../SHA256/sha256.h"
 #include <stdlib.h>
 #include <stdio.h>
@@ -6,136 +7,19 @@
 #include <string.h>
 
 
-
-MerkleNode* criarNo(int eh_folha, int indice) {
-    MerkleNode* no = malloc(sizeof(MerkleNode));
-    if (!no) {
-        fprintf(stderr, "Erro ao alocar nó\n");
-        return NULL;
-    }
-    no->eh_folha = eh_folha;
-    no->indice_folha = indice;
-    no->esq = NULL;
-    no->dir = NULL;
-    memset(no->hash, 0, HORST_N);
-    return no;
+struct ArvoreHorst* construirArvore(const unsigned char SKeys[HORST_T][HORST_N]) {
+    return criarArvoreHorst(SKeys);
 }
 
-void liberarArvore(MerkleNode* no) {
-    if (!no) return;
-    if (no->esq) liberarArvore(no->esq);
-    if (no->dir) liberarArvore(no->dir);
-    free(no);
+void obterRaizArvore(const struct ArvoreHorst* raiz, unsigned char *root) {
+    if (!raiz) return;
+    obterRaizArvoreHorst(raiz, root);
 }
 
-
-void calcularHashNo(MerkleNode* no) {
-    if (!no) return;
-    
-    // Se é folha, o hash já foi calculado (F(sk_i))
-    if (no->eh_folha) return;
-    
-    // Concatenar hashes dos filhos
-    unsigned char concatenado[HORST_N * 2];
-    memcpy(concatenado, no->esq->hash, HORST_N);
-    memcpy(concatenado + HORST_N, no->dir->hash, HORST_N);
-    
-    // Hash da concatenação
-    sha256_bytes(concatenado, HORST_N * 2, no->hash);
-}
-
-
-MerkleNode* construirArvore(unsigned char SKeys[HORST_T][HORST_N], int inicio, int fim) {
-    if (inicio == fim) {
-        MerkleNode* folha = criarNo(1, inicio);
-        sha256_bytes(SKeys[inicio], HORST_N, folha->hash);
-        return folha;
-    }
-    
-    // Caso recursivo: dividir em duas subárvores
-    int meio = (inicio + fim) / 2;
-    
-    MerkleNode* no = criarNo(0, -1);
-    no->esq = construirArvore(SKeys, inicio, meio);
-    no->dir = construirArvore(SKeys, meio + 1, fim);
-    
-    calcularHashNo(no);
-    
-    return no;
-}
-
-/**
- * Obter a raiz da árvore
- */
-void obterRaizArvore(MerkleNode* raiz, unsigned char *root) {
-    if (raiz) {
-        memcpy(root, raiz->hash, HORST_N);
-    }
-}
-
-
-int _temFolha(MerkleNode* no, int indice) {
-    if (!no) return 0;
-    if (no->eh_folha) return no->indice_folha == indice;
-    
-    return _temFolha(no->esq, indice) || _temFolha(no->dir, indice);
-}
-
-void _obterCaminhoRecursivo(MerkleNode* no, int indice, AuthPath* path, int profundidade) {
-    if (!no || profundidade >= HORST_TAU) return;
-    
-    // Se é uma folha, retornar sem fazer nada
-    if (no->eh_folha) {
-        return;
-    }
-    
-    // Verificar se a folha está à esquerda ou direita
-    int temFolhaEsq = _temFolha(no->esq, indice);
-    int temFolhaDir = _temFolha(no->dir, indice);
-    
-    // Uma das duas subárvores deve conter a folha
-    if (temFolhaEsq) {
-        // Folha está à esquerda, armazenar hash do nó direito
-        if (no->dir) {
-            memcpy(path->path[profundidade], no->dir->hash, HORST_N);
-        }
-        _obterCaminhoRecursivo(no->esq, indice, path, profundidade + 1);
-    } else if (temFolhaDir) {
-        // Folha está à direita, armazenar hash do nó esquerdo
-        if (no->esq) {
-            memcpy(path->path[profundidade], no->esq->hash, HORST_N);
-        }
-        _obterCaminhoRecursivo(no->dir, indice, path, profundidade + 1);
-    }
-}
-
-/**
- * Wrapper para obter caminho de autenticação
- */
-void obterCaminhoAutenticacao(MerkleNode* raiz, int indice, AuthPath* path) {
-    AuthPath temp_path;
-    memset(temp_path.path, 0, HORST_TAU * HORST_N);
-    memset(path->path, 0, HORST_TAU * HORST_N);
-    
-    _obterCaminhoRecursivo(raiz, indice, &temp_path, 0);
-    
-    // Encontrar o número de elementos no caminho
-    int num_elementos = 0;
-    for (int i = 0; i < HORST_TAU; i++) {
-        int is_zero = 1;
-        for (int j = 0; j < HORST_N; j++) {
-            if (temp_path.path[i][j] != 0) {
-                is_zero = 0;
-                break;
-            }
-        }
-        if (!is_zero) num_elementos++;
-    }
-    
-    // Reverter a ordem
-    for (int i = 0; i < num_elementos; i++) {
-        memcpy(path->path[i], temp_path.path[num_elementos - 1 - i], HORST_N);
-    }
+void obterCaminhoAutenticacao(const struct ArvoreHorst* raiz, int indice, AuthPath* path) {
+    if (!raiz || !path) return;
+    for (int i = 0; i < HORST_TAU; i++) memset(path->path[i], 0, HORST_N);
+    obterCaminhoAutenticacaoHorst(raiz, indice, path);
 }
 
 int selecionarIndices(unsigned char *hash, int *indices) {
@@ -175,7 +59,7 @@ void gerarKeys(Keys* keys) {
     printf("Construindo árvore de Merkle com altura %d...\n", HORST_TAU);
     
     // Construir árvore
-    MerkleNode* raiz = construirArvore(keys->SKeys, 0, HORST_T - 1);
+    struct ArvoreHorst* raiz = construirArvore(keys->SKeys);
     
     // Extrair raiz como chave pública
     obterRaizArvore(raiz, keys->PKey.root);
@@ -193,7 +77,7 @@ void gerarKeys(Keys* keys) {
 void assinarMensagem(const char* msg, int msg_len,
                      Assinatura* assinatura,
                      const unsigned char SKeys[HORST_T][HORST_N],
-                     MerkleNode* raiz) {
+                     const struct ArvoreHorst* raiz) {
     unsigned char hash_msg[32];
     sha256_bytes((unsigned char*)msg, msg_len, hash_msg);
     
@@ -292,6 +176,12 @@ void imprimirAssinatura(const Assinatura* assinatura) {
         printf("  Caminho: %d nós\n", HORST_TAU);
     }
     printf("=======================\n");
+}
+
+
+// Wrapper para liberar árvore (API do módulo HORST)
+void liberarArvore(struct ArvoreHorst* no) {
+    liberarArvoreHorst(no);
 }
 
 

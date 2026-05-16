@@ -55,32 +55,26 @@ typedef struct {
     PublicKey PKey;                     
 } Keys;
 
-typedef struct MerkleNode {
-    unsigned char hash[HORST_N];
-    struct MerkleNode *esq;
-    struct MerkleNode *dir;
-    int eh_folha;
-    int indice_folha;  
-} MerkleNode;
-
+// Estrutura de árvore HORST definida em `horst_tree.h` (implementação separada)
+struct HorstTree;
 
 void gerarKeys(Keys* keys);
-MerkleNode* construirArvore(unsigned char SKeys[HORST_T][HORST_N], int inicio, int fim);
-void obterRaizArvore(MerkleNode* raiz, unsigned char *root);
-void obterCaminhoAutenticacao(MerkleNode* raiz, int indice, AuthPath* path);
+struct ArvoreHorst* construirArvore(const unsigned char SKeys[HORST_T][HORST_N]);
+void obterRaizArvore(const struct ArvoreHorst* raiz, unsigned char *root);
+void obterCaminhoAutenticacao(const struct ArvoreHorst* raiz, int indice, AuthPath* path);
 
 int selecionarIndices(unsigned char *hash, int *indices);
 
 void assinarMensagem(const char* msg, int msg_len,
                      Assinatura* assinatura,
                      const unsigned char SKeys[HORST_T][HORST_N],
-                     MerkleNode* raiz);
+                     const struct ArvoreHorst* raiz);
 
 int verificarAssinatura(const char* msg, int msg_len,
                         const Assinatura* assinatura,
                         const PublicKey* pk);
 
-void liberarArvore(MerkleNode* no);
+void liberarArvore(struct ArvoreHorst* no);
 
 void imprimirChavePublica(const PublicKey* pk);
 void imprimirAssinatura(const Assinatura* assinatura);

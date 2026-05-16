@@ -3,7 +3,7 @@ CFLAGS = -Wall -O2 -I../SHA256 -DHORST_T=1024
 LDFLAGS = -lm -L../SHA256 -lsha256 -lsodium -Wl,-rpath,/usr/local/lib
 
 # Arquivos
-SRCS = keys.c utils.c testeHORST.c
+SRCS = keys.c utils.c horst_tree.c testeHORST.c
 OBJS = $(SRCS:.c=.o)
 TARGET = testeHORST
 
