@@ -108,15 +108,15 @@ valgrind --track-origins=yes --leak-check=full ./WOTS/wots
 # Fase 7: HORS e artigo
 
 - [x] Procurar mais artigos com assunto relacionados para colocar no artigo.
-- [] Inicar a escrita do artigo com alguns resultados preliminares e trabalhos relacionados 
+- [x] Inicar a escrita do artigo com alguns resultados preliminares e trabalhos relacionados 
 - [x] Implementar algoritmo HORS
 - [x] Implementar HORTS
-- [] Testar algoritmos implementados 
+- [x] Testar algoritmos implementados 
 - 
 
 # Fase 8
-- []refazer testes com valgrind
-- [] focar no artigo
+- [x] Refazer testes com valgrind
+- [] Focar no artigo
 
 ## Próximos Passos
 Implementar arquivo que salvaria componentes ja ultilizados da Skey no HORST, e verificar segurança.
