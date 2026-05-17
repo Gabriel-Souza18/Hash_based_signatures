@@ -1,0 +1,16 @@
+
+1- Criar arvore
+2 - Criar Assinatura
+3 - Verificar Assinatura 
+0 - Sair
+Escolha uma opção: 
+=== CRIAR ASSINATURA ===
+Folhas carregadas de: folhas.txt (8 folhas)
+Árvore carregada de: arvore.txt
+
+Folhas que sera usada:0
+Digite a mensagem a ser assinada (max 1000 caracteres): Memória para assinatura alocada com sucesso
+
+Assinatura criada com sucesso!
+Assinatura salva em: assinatura.txt
+Folhas salvas em: folhas.txt

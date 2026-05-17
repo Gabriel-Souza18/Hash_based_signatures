@@ -1,0 +1,15 @@
+Digite uma Opção:
+1-Gerar Mensagem
+2-Verificar Mensagem
+Memória para assinatura alocada com sucesso
+Digite sua mensagem:
+Assinatura salva em: Assinatura.txt
+Mensagem salva em: Mensagem.txt
+Chaves públicas salvas em: PublicKeys.txt
+Tempo para gerar Chaves Secretas: 0.028824s
+Tempo para gerar Chaves Public: 0.123526s
+Tempo para Assinar: 0.045990s
+Total de hashes SHA256: 1373
+Tamanho Assinatura: 2144 bytes
+Tamanho Secretkeys: 2144 bytes
+Tamanho Publickeys: 2144 bytes

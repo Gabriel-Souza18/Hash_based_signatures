@@ -1,0 +1,14 @@
+==8238== Memcheck, a memory error detector
+==8238== Copyright (C) 2002-2022, and GNU GPL'd, by Julian Seward et al.
+==8238== Using Valgrind-3.22.0 and LibVEX; rerun with -h for copyright info
+==8238== Command: ./wots
+==8238== 
+==8238== 
+==8238== HEAP SUMMARY:
+==8238==     in use at exit: 0 bytes in 0 blocks
+==8238==   total heap usage: 11 allocs, 11 frees, 26,230 bytes allocated
+==8238== 
+==8238== All heap blocks were freed -- no leaks are possible
+==8238== 
+==8238== For lists of detected and suppressed errors, rerun with: -s
+==8238== ERROR SUMMARY: 0 errors from 0 contexts (suppressed: 0 from 0)

@@ -1,0 +1,265 @@
+==8404== Memcheck, a memory error detector
+==8404== Copyright (C) 2002-2022, and GNU GPL'd, by Julian Seward et al.
+==8404== Using Valgrind-3.22.0 and LibVEX; rerun with -h for copyright info
+==8404== Command: ./mss
+==8404== 
+==8404== Conditional jump or move depends on uninitialised value(s)
+==8404==    at 0x49C10CB: __printf_buffer (vfprintf-process-arg.c:58)
+==8404==    by 0x49C273A: __vfprintf_internal (vfprintf-internal.c:1544)
+==8404==    by 0x49B65FB: fprintf (fprintf.c:32)
+==8404==    by 0x10DFA5: escreverArvoreRecursivo (Arvore.c:707)
+==8404==    by 0x10DFC4: escreverArvoreRecursivo (Arvore.c:709)
+==8404==    by 0x10DFC4: escreverArvoreRecursivo (Arvore.c:709)
+==8404==    by 0x10E0D9: escreverArvore (Arvore.c:730)
+==8404==    by 0x10A885: gerarArvore (mss.c:82)
+==8404==    by 0x10A69E: main (mss.c:32)
+==8404==  Uninitialised value was created by a heap allocation
+==8404==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==8404==    by 0x10A77C: gerarArvore (mss.c:63)
+==8404==    by 0x10A69E: main (mss.c:32)
+==8404== 
+==8404== Use of uninitialised value of size 8
+==8404==    at 0x49B60BB: _itoa_word (_itoa.c:183)
+==8404==    by 0x49C0C9B: __printf_buffer (vfprintf-process-arg.c:155)
+==8404==    by 0x49C273A: __vfprintf_internal (vfprintf-internal.c:1544)
+==8404==    by 0x49B65FB: fprintf (fprintf.c:32)
+==8404==    by 0x10DFA5: escreverArvoreRecursivo (Arvore.c:707)
+==8404==    by 0x10DFC4: escreverArvoreRecursivo (Arvore.c:709)
+==8404==    by 0x10DFC4: escreverArvoreRecursivo (Arvore.c:709)
+==8404==    by 0x10E0D9: escreverArvore (Arvore.c:730)
+==8404==    by 0x10A885: gerarArvore (mss.c:82)
+==8404==    by 0x10A69E: main (mss.c:32)
+==8404==  Uninitialised value was created by a heap allocation
+==8404==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==8404==    by 0x10A77C: gerarArvore (mss.c:63)
+==8404==    by 0x10A69E: main (mss.c:32)
+==8404== 
+==8404== Conditional jump or move depends on uninitialised value(s)
+==8404==    at 0x49B60CC: _itoa_word (_itoa.c:183)
+==8404==    by 0x49C0C9B: __printf_buffer (vfprintf-process-arg.c:155)
+==8404==    by 0x49C273A: __vfprintf_internal (vfprintf-internal.c:1544)
+==8404==    by 0x49B65FB: fprintf (fprintf.c:32)
+==8404==    by 0x10DFA5: escreverArvoreRecursivo (Arvore.c:707)
+==8404==    by 0x10DFC4: escreverArvoreRecursivo (Arvore.c:709)
+==8404==    by 0x10DFC4: escreverArvoreRecursivo (Arvore.c:709)
+==8404==    by 0x10E0D9: escreverArvore (Arvore.c:730)
+==8404==    by 0x10A885: gerarArvore (mss.c:82)
+==8404==    by 0x10A69E: main (mss.c:32)
+==8404==  Uninitialised value was created by a heap allocation
+==8404==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==8404==    by 0x10A77C: gerarArvore (mss.c:63)
+==8404==    by 0x10A69E: main (mss.c:32)
+==8404== 
+==8404== Conditional jump or move depends on uninitialised value(s)
+==8404==    at 0x49C0D85: __printf_buffer (vfprintf-process-arg.c:186)
+==8404==    by 0x49C273A: __vfprintf_internal (vfprintf-internal.c:1544)
+==8404==    by 0x49B65FB: fprintf (fprintf.c:32)
+==8404==    by 0x10DFA5: escreverArvoreRecursivo (Arvore.c:707)
+==8404==    by 0x10DFC4: escreverArvoreRecursivo (Arvore.c:709)
+==8404==    by 0x10DFC4: escreverArvoreRecursivo (Arvore.c:709)
+==8404==    by 0x10E0D9: escreverArvore (Arvore.c:730)
+==8404==    by 0x10A885: gerarArvore (mss.c:82)
+==8404==    by 0x10A69E: main (mss.c:32)
+==8404==  Uninitialised value was created by a heap allocation
+==8404==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==8404==    by 0x10A77C: gerarArvore (mss.c:63)
+==8404==    by 0x10A69E: main (mss.c:32)
+==8404== 
+==8404== Conditional jump or move depends on uninitialised value(s)
+==8404==    at 0x49C10CB: __printf_buffer (vfprintf-process-arg.c:58)
+==8404==    by 0x49C273A: __vfprintf_internal (vfprintf-internal.c:1544)
+==8404==    by 0x49B65FB: fprintf (fprintf.c:32)
+==8404==    by 0x10E007: escreverArvoreRecursivo (Arvore.c:714)
+==8404==    by 0x10DFC4: escreverArvoreRecursivo (Arvore.c:709)
+==8404==    by 0x10DFC4: escreverArvoreRecursivo (Arvore.c:709)
+==8404==    by 0x10E0D9: escreverArvore (Arvore.c:730)
+==8404==    by 0x10A885: gerarArvore (mss.c:82)
+==8404==    by 0x10A69E: main (mss.c:32)
+==8404==  Uninitialised value was created by a heap allocation
+==8404==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==8404==    by 0x10A77C: gerarArvore (mss.c:63)
+==8404==    by 0x10A69E: main (mss.c:32)
+==8404== 
+==8404== Conditional jump or move depends on uninitialised value(s)
+==8404==    at 0x49C0D85: __printf_buffer (vfprintf-process-arg.c:186)
+==8404==    by 0x49C273A: __vfprintf_internal (vfprintf-internal.c:1544)
+==8404==    by 0x49B65FB: fprintf (fprintf.c:32)
+==8404==    by 0x10E007: escreverArvoreRecursivo (Arvore.c:714)
+==8404==    by 0x10DFC4: escreverArvoreRecursivo (Arvore.c:709)
+==8404==    by 0x10DFC4: escreverArvoreRecursivo (Arvore.c:709)
+==8404==    by 0x10E0D9: escreverArvore (Arvore.c:730)
+==8404==    by 0x10A885: gerarArvore (mss.c:82)
+==8404==    by 0x10A69E: main (mss.c:32)
+==8404==  Uninitialised value was created by a heap allocation
+==8404==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==8404==    by 0x10A77C: gerarArvore (mss.c:63)
+==8404==    by 0x10A69E: main (mss.c:32)
+==8404== 
+==8404== Conditional jump or move depends on uninitialised value(s)
+==8404==    at 0x49C10CB: __printf_buffer (vfprintf-process-arg.c:58)
+==8404==    by 0x49C273A: __vfprintf_internal (vfprintf-internal.c:1544)
+==8404==    by 0x49B65FB: fprintf (fprintf.c:32)
+==8404==    by 0x10C973: escreverFolhas (Arvore.c:432)
+==8404==    by 0x10A8A0: gerarArvore (mss.c:83)
+==8404==    by 0x10A69E: main (mss.c:32)
+==8404==  Uninitialised value was created by a heap allocation
+==8404==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==8404==    by 0x10A77C: gerarArvore (mss.c:63)
+==8404==    by 0x10A69E: main (mss.c:32)
+==8404== 
+==8404== Conditional jump or move depends on uninitialised value(s)
+==8404==    at 0x49C0D85: __printf_buffer (vfprintf-process-arg.c:186)
+==8404==    by 0x49C273A: __vfprintf_internal (vfprintf-internal.c:1544)
+==8404==    by 0x49B65FB: fprintf (fprintf.c:32)
+==8404==    by 0x10C973: escreverFolhas (Arvore.c:432)
+==8404==    by 0x10A8A0: gerarArvore (mss.c:83)
+==8404==    by 0x10A69E: main (mss.c:32)
+==8404==  Uninitialised value was created by a heap allocation
+==8404==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==8404==    by 0x10A77C: gerarArvore (mss.c:63)
+==8404==    by 0x10A69E: main (mss.c:32)
+==8404== 
+==8404== Conditional jump or move depends on uninitialised value(s)
+==8404==    at 0x49C10CB: __printf_buffer (vfprintf-process-arg.c:58)
+==8404==    by 0x49C273A: __vfprintf_internal (vfprintf-internal.c:1544)
+==8404==    by 0x49B71B2: printf (printf.c:33)
+==8404==    by 0x10C607: imprimirArvoreRecursiva (Arvore.c:373)
+==8404==    by 0x10C5BC: imprimirArvoreRecursiva (Arvore.c:370)
+==8404==    by 0x10C5BC: imprimirArvoreRecursiva (Arvore.c:370)
+==8404==    by 0x10C71F: imprimirArvore (Arvore.c:397)
+==8404==    by 0x10A8C2: gerarArvore (mss.c:88)
+==8404==    by 0x10A69E: main (mss.c:32)
+==8404==  Uninitialised value was created by a heap allocation
+==8404==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==8404==    by 0x10A77C: gerarArvore (mss.c:63)
+==8404==    by 0x10A69E: main (mss.c:32)
+==8404== 
+==8404== Use of uninitialised value of size 8
+==8404==    at 0x49B60BB: _itoa_word (_itoa.c:183)
+==8404==    by 0x49C0C9B: __printf_buffer (vfprintf-process-arg.c:155)
+==8404==    by 0x49C273A: __vfprintf_internal (vfprintf-internal.c:1544)
+==8404==    by 0x49B71B2: printf (printf.c:33)
+==8404==    by 0x10C607: imprimirArvoreRecursiva (Arvore.c:373)
+==8404==    by 0x10C5BC: imprimirArvoreRecursiva (Arvore.c:370)
+==8404==    by 0x10C5BC: imprimirArvoreRecursiva (Arvore.c:370)
+==8404==    by 0x10C71F: imprimirArvore (Arvore.c:397)
+==8404==    by 0x10A8C2: gerarArvore (mss.c:88)
+==8404==    by 0x10A69E: main (mss.c:32)
+==8404==  Uninitialised value was created by a heap allocation
+==8404==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==8404==    by 0x10A77C: gerarArvore (mss.c:63)
+==8404==    by 0x10A69E: main (mss.c:32)
+==8404== 
+==8404== Conditional jump or move depends on uninitialised value(s)
+==8404==    at 0x49B60CC: _itoa_word (_itoa.c:183)
+==8404==    by 0x49C0C9B: __printf_buffer (vfprintf-process-arg.c:155)
+==8404==    by 0x49C273A: __vfprintf_internal (vfprintf-internal.c:1544)
+==8404==    by 0x49B71B2: printf (printf.c:33)
+==8404==    by 0x10C607: imprimirArvoreRecursiva (Arvore.c:373)
+==8404==    by 0x10C5BC: imprimirArvoreRecursiva (Arvore.c:370)
+==8404==    by 0x10C5BC: imprimirArvoreRecursiva (Arvore.c:370)
+==8404==    by 0x10C71F: imprimirArvore (Arvore.c:397)
+==8404==    by 0x10A8C2: gerarArvore (mss.c:88)
+==8404==    by 0x10A69E: main (mss.c:32)
+==8404==  Uninitialised value was created by a heap allocation
+==8404==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==8404==    by 0x10A77C: gerarArvore (mss.c:63)
+==8404==    by 0x10A69E: main (mss.c:32)
+==8404== 
+==8404== Conditional jump or move depends on uninitialised value(s)
+==8404==    at 0x49C0D85: __printf_buffer (vfprintf-process-arg.c:186)
+==8404==    by 0x49C273A: __vfprintf_internal (vfprintf-internal.c:1544)
+==8404==    by 0x49B71B2: printf (printf.c:33)
+==8404==    by 0x10C607: imprimirArvoreRecursiva (Arvore.c:373)
+==8404==    by 0x10C5BC: imprimirArvoreRecursiva (Arvore.c:370)
+==8404==    by 0x10C5BC: imprimirArvoreRecursiva (Arvore.c:370)
+==8404==    by 0x10C71F: imprimirArvore (Arvore.c:397)
+==8404==    by 0x10A8C2: gerarArvore (mss.c:88)
+==8404==    by 0x10A69E: main (mss.c:32)
+==8404==  Uninitialised value was created by a heap allocation
+==8404==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==8404==    by 0x10A77C: gerarArvore (mss.c:63)
+==8404==    by 0x10A69E: main (mss.c:32)
+==8404== 
+==8404== Conditional jump or move depends on uninitialised value(s)
+==8404==    at 0x49C10CB: __printf_buffer (vfprintf-process-arg.c:58)
+==8404==    by 0x49C273A: __vfprintf_internal (vfprintf-internal.c:1544)
+==8404==    by 0x49B71B2: printf (printf.c:33)
+==8404==    by 0x10C6B7: imprimirArvoreRecursiva (Arvore.c:385)
+==8404==    by 0x10C5BC: imprimirArvoreRecursiva (Arvore.c:370)
+==8404==    by 0x10C5BC: imprimirArvoreRecursiva (Arvore.c:370)
+==8404==    by 0x10C71F: imprimirArvore (Arvore.c:397)
+==8404==    by 0x10A8C2: gerarArvore (mss.c:88)
+==8404==    by 0x10A69E: main (mss.c:32)
+==8404==  Uninitialised value was created by a heap allocation
+==8404==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==8404==    by 0x10A77C: gerarArvore (mss.c:63)
+==8404==    by 0x10A69E: main (mss.c:32)
+==8404== 
+==8404== Conditional jump or move depends on uninitialised value(s)
+==8404==    at 0x49C0D85: __printf_buffer (vfprintf-process-arg.c:186)
+==8404==    by 0x49C273A: __vfprintf_internal (vfprintf-internal.c:1544)
+==8404==    by 0x49B71B2: printf (printf.c:33)
+==8404==    by 0x10C6B7: imprimirArvoreRecursiva (Arvore.c:385)
+==8404==    by 0x10C5BC: imprimirArvoreRecursiva (Arvore.c:370)
+==8404==    by 0x10C5BC: imprimirArvoreRecursiva (Arvore.c:370)
+==8404==    by 0x10C71F: imprimirArvore (Arvore.c:397)
+==8404==    by 0x10A8C2: gerarArvore (mss.c:88)
+==8404==    by 0x10A69E: main (mss.c:32)
+==8404==  Uninitialised value was created by a heap allocation
+==8404==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==8404==    by 0x10A77C: gerarArvore (mss.c:63)
+==8404==    by 0x10A69E: main (mss.c:32)
+==8404== 
+==8404== 
+==8404== HEAP SUMMARY:
+==8404==     in use at exit: 36,312 bytes in 24 blocks
+==8404==   total heap usage: 35 allocs, 11 frees, 58,264 bytes allocated
+==8404== 
+==8404== 208 bytes in 2 blocks are indirectly lost in loss record 1 of 6
+==8404==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==8404==    by 0x10B2F5: alocarNo (Arvore.c:11)
+==8404==    by 0x10B170: mssTree (mss.c:245)
+==8404==    by 0x10A841: gerarArvore (mss.c:76)
+==8404==    by 0x10A69E: main (mss.c:32)
+==8404== 
+==8404== 416 bytes in 4 blocks are indirectly lost in loss record 2 of 6
+==8404==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==8404==    by 0x10B2F5: alocarNo (Arvore.c:11)
+==8404==    by 0x10B08C: mssTree (mss.c:227)
+==8404==    by 0x10A841: gerarArvore (mss.c:76)
+==8404==    by 0x10A69E: main (mss.c:32)
+==8404== 
+==8404== 1,280 bytes in 1 blocks are indirectly lost in loss record 3 of 6
+==8404==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==8404==    by 0x10A77C: gerarArvore (mss.c:63)
+==8404==    by 0x10A69E: main (mss.c:32)
+==8404== 
+==8404== 17,152 bytes in 8 blocks are indirectly lost in loss record 4 of 6
+==8404==    at 0x484D953: calloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==8404==    by 0x10E686: mallocSkeys (in /home/gabriel/Documentos/Hash_based_signatures/MSS/mss)
+==8404==    by 0x10A7E1: gerarArvore (mss.c:71)
+==8404==    by 0x10A69E: main (mss.c:32)
+==8404== 
+==8404== 17,152 bytes in 8 blocks are indirectly lost in loss record 5 of 6
+==8404==    at 0x484D953: calloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==8404==    by 0x10E6D6: mallocPkeys (in /home/gabriel/Documentos/Hash_based_signatures/MSS/mss)
+==8404==    by 0x10A80E: gerarArvore (mss.c:72)
+==8404==    by 0x10A69E: main (mss.c:32)
+==8404== 
+==8404== 36,312 (104 direct, 36,208 indirect) bytes in 1 blocks are definitely lost in loss record 6 of 6
+==8404==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==8404==    by 0x10B2F5: alocarNo (Arvore.c:11)
+==8404==    by 0x10B170: mssTree (mss.c:245)
+==8404==    by 0x10A841: gerarArvore (mss.c:76)
+==8404==    by 0x10A69E: main (mss.c:32)
+==8404== 
+==8404== LEAK SUMMARY:
+==8404==    definitely lost: 104 bytes in 1 blocks
+==8404==    indirectly lost: 36,208 bytes in 23 blocks
+==8404==      possibly lost: 0 bytes in 0 blocks
+==8404==    still reachable: 0 bytes in 0 blocks
+==8404==         suppressed: 0 bytes in 0 blocks
+==8404== 
+==8404== For lists of detected and suppressed errors, rerun with: -s
+==8404== ERROR SUMMARY: 97 errors from 15 contexts (suppressed: 0 from 0)

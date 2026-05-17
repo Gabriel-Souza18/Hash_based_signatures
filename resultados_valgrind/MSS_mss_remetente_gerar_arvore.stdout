@@ -1,0 +1,42 @@
+
+1- Criar arvore
+2 - Criar Assinatura
+3 - Verificar Assinatura 
+0 - Sair
+Escolha uma opção: 
+=== GERANDO NOVA ÁRVORE ===
+Gerando árvore com 8 folhas...
+
+Terminou de gerar Arvore
+ultimo no: 37abc30645ca8364cea411b10cd46be066d17d72593f53b13d35d85035843a1b
+
+Árvore gerada com sucesso!
+Hash da Raiz: 37abc30645ca8364cea411b10cd46be066d17d72593f53b13d35d85035843a1b
+Árvore salva em: arvore.txt
+Folhas salvas em: folhas.txt
+Chave pública salva em: public_key.txt
+
+========== ÁRVORE MERKLE ==========
+[Nó nivel 0] Hash: 37abc30645ca8364...
+  ├─ Esquerda:
+  [Nó nivel 1] Hash: 366bfde991ca99af...
+    ├─ Esquerda:
+    [Nó nivel 2] Hash: 19d5532c40470d9e...
+      ├─ [Folha ESQ] Hash: 105dd76689913373... Usada: 0
+      └─ [Folha DIR] Hash: c17f86492b467487... Usada: 0
+    └─ Direita:
+    [Nó nivel 2] Hash: 32a2ab2537afc831...
+      ├─ [Folha ESQ] Hash: 54ddbdc022afc588... Usada: 0
+      └─ [Folha DIR] Hash: b27f4aaf51d71f77... Usada: 0
+  └─ Direita:
+  [Nó nivel 1] Hash: 24ee92e6181887d1...
+    ├─ Esquerda:
+    [Nó nivel 2] Hash: 69c93c82c3f3e9e0...
+      ├─ [Folha ESQ] Hash: ceea71907565f611... Usada: 0
+      └─ [Folha DIR] Hash: bf28f9be9cde43a6... Usada: 0
+    └─ Direita:
+    [Nó nivel 2] Hash: 067dbd471b6cd778...
+      ├─ [Folha ESQ] Hash: 685fbe73c2655103... Usada: 0
+      └─ [Folha DIR] Hash: 3ec287203e0d83ac... Usada: 0
+===================================
+

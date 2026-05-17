@@ -1,0 +1,49 @@
+==8470== Memcheck, a memory error detector
+==8470== Copyright (C) 2002-2022, and GNU GPL'd, by Julian Seward et al.
+==8470== Using Valgrind-3.22.0 and LibVEX; rerun with -h for copyright info
+==8470== Command: ./mss
+==8470== 
+==8470== 
+==8470== HEAP SUMMARY:
+==8470==     in use at exit: 41,008 bytes in 19 blocks
+==8470==   total heap usage: 27 allocs, 8 frees, 62,904 bytes allocated
+==8470== 
+==8470== 2,144 bytes in 1 blocks are indirectly lost in loss record 1 of 5
+==8470==    at 0x484D953: calloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==8470==    by 0x10E723: mallocAssinatura (in /home/gabriel/Documentos/Hash_based_signatures/MSS/mss)
+==8470==    by 0x10DA39: lerAssinaturaMSS (Arvore.c:630)
+==8470==    by 0x10AD53: verificarAssinaturaMenu (mss.c:174)
+==8470==    by 0x10A6B6: main (mss.c:38)
+==8470== 
+==8470== 5,424 (3,280 direct, 2,144 indirect) bytes in 1 blocks are definitely lost in loss record 2 of 5
+==8470==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==8470==    by 0x10B434: alocarAssinatura (Arvore.c:41)
+==8470==    by 0x10AD39: verificarAssinaturaMenu (mss.c:173)
+==8470==    by 0x10A6B6: main (mss.c:38)
+==8470== 
+==8470== 17,152 bytes in 8 blocks are indirectly lost in loss record 3 of 5
+==8470==    at 0x484D953: calloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==8470==    by 0x10E686: mallocSkeys (in /home/gabriel/Documentos/Hash_based_signatures/MSS/mss)
+==8470==    by 0x10AE6F: verificarAssinaturaMenu (mss.c:195)
+==8470==    by 0x10A6B6: main (mss.c:38)
+==8470== 
+==8470== 17,152 bytes in 8 blocks are indirectly lost in loss record 4 of 5
+==8470==    at 0x484D953: calloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==8470==    by 0x10E6D6: mallocPkeys (in /home/gabriel/Documentos/Hash_based_signatures/MSS/mss)
+==8470==    by 0x10AE9C: verificarAssinaturaMenu (mss.c:196)
+==8470==    by 0x10A6B6: main (mss.c:38)
+==8470== 
+==8470== 35,584 (1,280 direct, 34,304 indirect) bytes in 1 blocks are definitely lost in loss record 5 of 5
+==8470==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==8470==    by 0x10ADFE: verificarAssinaturaMenu (mss.c:187)
+==8470==    by 0x10A6B6: main (mss.c:38)
+==8470== 
+==8470== LEAK SUMMARY:
+==8470==    definitely lost: 4,560 bytes in 2 blocks
+==8470==    indirectly lost: 36,448 bytes in 17 blocks
+==8470==      possibly lost: 0 bytes in 0 blocks
+==8470==    still reachable: 0 bytes in 0 blocks
+==8470==         suppressed: 0 bytes in 0 blocks
+==8470== 
+==8470== For lists of detected and suppressed errors, rerun with: -s
+==8470== ERROR SUMMARY: 2 errors from 2 contexts (suppressed: 0 from 0)

@@ -1,0 +1,9 @@
+1-Gerar mensagem
+2-Verificar Mensagem
+Mensagem carregada: mensagem_teste_valgrind_20260516_202918_lots
+Memoria Alocada com sucesso (Public Keys)
+Chaves públicas carregadas: 256 pares
+Assinatura carregada: 256 elementos de 32 bytes cada
+✓ Todos os 256 bits verificados com sucesso!
+Verificação: VÁLIDA
+Total de hashes SHA256: 257

@@ -1,0 +1,18 @@
+1-Gerar mensagem
+2-Verificar Mensagem
+Memoria Alocada com sucesso (Public Keys)
+Memoria Alocada com sucesso (Secret Keys)
+Chaves Secretas Geradas com sucesso (256 pares de 32 bytes)
+Chaves publicas geradas com sucesso (256 pares de hashes)
+Digite a mensagem ate 1000 caracteres:
+Chaves geradas no tempo: 
+SecretsKeys: 0.015667s
+PublicKeys: 0.065240s
+Mensagem Assinada em: 0.002114 s
+Total de hashes SHA256: 513
+Tamanho Assinatura: 8192 bytes
+Tamanho Secretkeys: 16384 bytes (otimizado com máscaras de bits)
+Tamanho Publickeys: 16384 bytes
+Assinatura salva em: assinatura.txt (formato binário, 256 x 32 bytes)
+Chaves públicas salvas em: publicKeys.txt
+Mensagem salva em: mensagem.txt
