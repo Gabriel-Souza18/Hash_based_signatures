@@ -114,12 +114,26 @@ valgrind --track-origins=yes --leak-check=full ./WOTS/wots
 - [x] Testar algoritmos implementados 
 - 
 
-# Fase 8
+# Fase 8 - shortpaper SBSEG
 - [x] Refazer testes com valgrind
 - [] Focar no artigo
+- [] Trocar lib de hash para openssl
 
-## Próximos Passos
-Implementar arquivo que salvaria componentes ja ultilizados da Skey no HORST, e verificar segurança.
+## Falar na proxima reunião 
+- tested  valgrind 
+- introdução do tcc
+- shortpaper
+- perguntar sobre lib  de hash 
+
+
+## Corrigir Artigo
+Exemplo de aplicação 2.1 do artigo: armazenamento de senha
+Mostrar exemplos da sha2 e sha3 e nao focar tanto nas diferenças
+Falar que a padronização ja esta concluida com a FIPS 205 WOTS+, etc
+Deixar claro a diferença entre stateful e stateless
+Deixar claro que os 26mil qubits é um preprint
+
+Na metodologia descrever as metricas que vao ser avaliadas
 ---
 ## Strings de busca usadas
 - hash AND signature AND digital AND (ESP32 OR arduino OR iot)
