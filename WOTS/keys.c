@@ -1,21 +1,22 @@
+#include <sodium.h>
 #include "keys.h"
 #include "prf.h"
 #include "../SHA256/sha256.h"
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include <time.h>
 
 unsigned char PK_seed[N] = {0};
 unsigned char SK_seed[N] = {0};
 
 void initializeSeeds() {
-    // Gera seeds aleatórios mudar a funcçao rand
-    srand(clock());
-    for(int i = 0; i < N; i++) {
-        PK_seed[i] = rand() % 256;
-        SK_seed[i] = rand() % 256;
+    if (sodium_init() < 0) {
+        fprintf(stderr, "Erro ao inicializar libsodium\n");
+        exit(EXIT_FAILURE);
     }
+
+    randombytes_buf(PK_seed, N);
+    randombytes_buf(SK_seed, N);
 }
 
 
@@ -83,7 +84,15 @@ void generatePKeys(PublicKeys* pKeys, SecretKeys* sKeys) {
         setADRS_WOTS_HASH(ADRS, i, 0, 0); // chain_index e hash_index serão atualizados na chain function
         
         // Aplicar chain function com W-1 passos (começando do índice 0)
-        chainFunction((unsigned char*)sKeys->Sk[i], W-1, (unsigned char*)pKeys->PK[i], ADRS, 0);
+        chainFunctionWOTSplus((unsigned char*)sKeys->Sk[i], W-1, (unsigned char*)pKeys->PK[i], ADRS, 0, i);
+    }
+}
+
+static void deriveMasksForKey(int key_index, unsigned char masks[W - 1][N]) {
+    unsigned char ADRS[32];
+    for (int step = 0; step < W - 1; step++) {
+        setADRS_WOTS_MASK(ADRS, key_index, step);
+        PRF_SHA2(masks[step], PK_seed, SK_seed, ADRS, N);
     }
 }
 
@@ -109,12 +118,43 @@ void chainFunction(unsigned char* src, int steps, unsigned char* output, unsigne
         memcpy(output, temp, N);
     }
 }
-void mensageForBlocks(char* msgHash, int* output) {
+
+void chainFunctionWOTSplus(unsigned char* src, int steps, unsigned char* output, unsigned char* ADRS_base, int start_index, int key_index) {
+    unsigned char ADRS[32];
+    memcpy(ADRS, ADRS_base, 32);
+
+    unsigned char masks[W - 1][N];
+    deriveMasksForKey(key_index, masks);
+
+    // Copiar src para output
+    memcpy(output, src, N);
+
+    for (int i = 0; i < steps; i++) {
+        int hash_idx = start_index + i;
+
+        // Atualizar hash do ADRS (hash_idx)
+        ADRS[28] = (hash_idx >> 24) & 0xFF;
+        ADRS[29] = (hash_idx >> 16) & 0xFF;
+        ADRS[30] = (hash_idx >> 8) & 0xFF;
+        ADRS[31] = hash_idx & 0xFF;
+
+        unsigned char masked[N];
+        for (int j = 0; j < N; j++) {
+            masked[j] = output[j] ^ masks[hash_idx][j];
+        }
+
+        unsigned char temp[N];
+        F_function(temp, PK_seed, ADRS, masked);
+        memcpy(output, temp, N);
+    }
+}
+
+void mensageForBlocks(const unsigned char msgHash[N], int* output) {
     for (int i = 0; i < L1; i++) {
         int byte_index = i / 2;
         int nibble_index = i % 2;
-        unsigned char byte = (unsigned char)msgHash[byte_index];
-        
+        unsigned char byte = msgHash[byte_index];
+
         if (nibble_index == 0) {
             output[i] = (byte >> 4) & 0x0F; // Nibble superior
         } else {
@@ -141,14 +181,14 @@ void calcularChecksum(const int* message_blocks, int* checksum_blocks){
     }
 }
 
-void assinarMensagem(char*msg,  Assinatura* assinatura,
+void assinarMensagem(const unsigned char msgHash[N],  Assinatura* assinatura,
                                 SecretKeys* sKeys){    
     int message_blocks[L1];
     int checksum_blocks[L2];
     int b[L];  // mensagem + checksum concatenados
     
     // Converter mensagem para base W
-    mensageForBlocks(msg, message_blocks);
+    mensageForBlocks(msgHash, message_blocks);
     
     //  Calcular checksum
     calcularChecksum(message_blocks, checksum_blocks);
@@ -164,18 +204,18 @@ void assinarMensagem(char*msg,  Assinatura* assinatura,
     for (int i = 0; i < L; i++) {
         unsigned char ADRS[32];
         setADRS_WOTS_HASH(ADRS, i, 0, 0);
-        chainFunction((unsigned char*)sKeys->Sk[i], b[i], (unsigned char*)assinatura->assinatura[i], ADRS, 0);
+        chainFunctionWOTSplus((unsigned char*)sKeys->Sk[i], b[i], (unsigned char*)assinatura->assinatura[i], ADRS, 0, i);
     }
 
 }
 
-int verificarMensagem(char* msg, Assinatura* assinatura, PublicKeys* pKeys) {
+int verificarMensagem(const unsigned char msgHash[N], Assinatura* assinatura, PublicKeys* pKeys) {
     
     int message_blocks[L1];
     int checksum_blocks[L2];
     int b[L];
     
-    mensageForBlocks(msg, message_blocks);
+    mensageForBlocks(msgHash, message_blocks);
     calcularChecksum(message_blocks, checksum_blocks);
     
     for (int i = 0; i < L1; i++) {
@@ -192,7 +232,7 @@ int verificarMensagem(char* msg, Assinatura* assinatura, PublicKeys* pKeys) {
         if (remaining_steps > 0) {
             unsigned char ADRS[32];
             setADRS_WOTS_HASH(ADRS, i, 0, 0);
-            chainFunction(assinatura->assinatura[i], remaining_steps, computed_pk, ADRS, b[i]);
+            chainFunctionWOTSplus(assinatura->assinatura[i], remaining_steps, computed_pk, ADRS, b[i], i);
         } else {
             memcpy(computed_pk, assinatura->assinatura[i], N);
         }

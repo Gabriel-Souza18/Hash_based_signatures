@@ -16,6 +16,7 @@ void PRF_SHA2(unsigned char* output, const unsigned char* PK_seed,
 // Configuração de ADRS para diferentes tipos
 void setADRS_WOTS_PRF(unsigned char* ADRS, int key_index);
 void setADRS_WOTS_HASH(unsigned char* ADRS, int key_index, int chain_index, int hash_index);
+void setADRS_WOTS_MASK(unsigned char* ADRS, int key_index, int step_index);
 
 // Função F para chain function
 void F_function(unsigned char* output, const unsigned char* PK_seed, 

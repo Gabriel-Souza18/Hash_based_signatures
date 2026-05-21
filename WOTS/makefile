@@ -2,7 +2,7 @@
 
 CC = gcc
 CFLAGS = -Wall -O2 -I../SHA256
-LDFLAGS = -L../SHA256 -lsha256 
+LDFLAGS = -L../SHA256 -lsha256 -lsodium -Wl,-rpath,/usr/local/lib
 
 # Arquivos fonte
 SRC = wots.c keys.c utils.c prf.c

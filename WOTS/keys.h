@@ -36,11 +36,12 @@ Assinatura* mallocAssinatura();
 void generateSKeys(SecretKeys*);
 void generatePKeys(PublicKeys*, SecretKeys*);
 
-void mensageForBlocks(char* msgHash, int* output);
+void mensageForBlocks(const unsigned char msgHash[N], int* output);
 void chainFunction(unsigned char* src, int steps, unsigned char* output, unsigned char* ADRS_base, int start_index);
+void chainFunctionWOTSplus(unsigned char* src, int steps, unsigned char* output, unsigned char* ADRS_base, int start_index, int key_index);
 void calcularChecksum(const int* message_blocks, int* checksum_blocks);
 
-void assinarMensagem(char* msg, Assinatura*, SecretKeys*);
-int verificarMensagem(char* msg, Assinatura*, PublicKeys*);
+void assinarMensagem(const unsigned char msgHash[N], Assinatura*, SecretKeys*);
+int verificarMensagem(const unsigned char msgHash[N], Assinatura*, PublicKeys*);
 
 #endif

@@ -21,7 +21,6 @@ int main(){
     // Reseta contador global
     sha256_reset_counter();
     
-    srand(clock());
     while(getchar() != '\n');
    
     if (opcao == 1){
@@ -49,8 +48,8 @@ int main(){
         
         mensagem[strcspn(mensagem, "\n")] = 0;
 
-        char msgHash[SHA256_HEX_SIZE];
-        sha256_hex(mensagem, strlen(mensagem), msgHash); 
+        unsigned char msgHash[N];
+        sha256_bytes(mensagem, strlen(mensagem), msgHash);
 
         clock_t inicioAssinatura = clock();
         assinarMensagem(msgHash,assinatura, sKeys);
@@ -92,8 +91,8 @@ int main(){
         lerPkeys("PublicKeys.txt", pKeys, PK_seed, SK_seed);
 
         
-        char msgHash[SHA256_HEX_SIZE];
-        sha256_hex(mensagem, strlen(mensagem), msgHash);  
+        unsigned char msgHash[N];
+        sha256_bytes(mensagem, strlen(mensagem), msgHash);
         int resultado = verificarMensagem(msgHash, assinatura, pKeys);
         
         printf("Verificação: %s\n", resultado ? "VÁLIDA" : "INVÁLIDA");
@@ -123,8 +122,8 @@ int main(){
             return 1;
         }
 
-        char msgHash[SHA256_HEX_SIZE];
-        sha256_hex(mensagem, SHA256_HEX_SIZE, msgHash);
+        unsigned char msgHash[N];
+        sha256_bytes(mensagem, strlen(mensagem), msgHash);
 
         assinarMensagem(msgHash,assinatura, sKeys);
         

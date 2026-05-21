@@ -119,6 +119,37 @@ void setADRS_WOTS_HASH(unsigned char* ADRS, int key_index, int chain_index, int 
     ADRS[30] = (hash_index >> 8) & 0xFF;
     ADRS[31] = hash_index & 0xFF;
 }
+
+void setADRS_WOTS_MASK(unsigned char* ADRS, int key_index, int step_index) {
+    /*
+     * Configura ADRS para WOTS_MASK (type = 6)
+     * Usado para derivar máscaras determinísticas via PRF.
+     *
+     * Diferencia por (key_index, step_index).
+     */
+    memset(ADRS, 0, 32);
+
+    // Layer address (4 bytes) - assumindo 0
+    ADRS[3] = 0;
+
+    // Type (4 bytes) = 6 (WOTS_MASK)
+    ADRS[19] = 6;
+
+    // Key pair address (4 bytes)
+    ADRS[20] = (key_index >> 24) & 0xFF;
+    ADRS[21] = (key_index >> 16) & 0xFF;
+    ADRS[22] = (key_index >> 8) & 0xFF;
+    ADRS[23] = key_index & 0xFF;
+
+    // Chain address (4 bytes) - step index
+    ADRS[24] = (step_index >> 24) & 0xFF;
+    ADRS[25] = (step_index >> 16) & 0xFF;
+    ADRS[26] = (step_index >> 8) & 0xFF;
+    ADRS[27] = step_index & 0xFF;
+
+    // Hash address (4 bytes) = 0
+}
+
 void F_function(unsigned char* output, const unsigned char* PK_seed, 
                 const unsigned char* ADRS_32bytes, const unsigned char* input) {
     /*
