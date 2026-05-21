@@ -2,7 +2,7 @@
 
 CC = gcc
 CFLAGS = -Wall -g -O0 -I../SHA256 -I../WOTS
-LDFLAGS = -L../SHA256 -lsha256 -lm
+LDFLAGS = -L../SHA256 -lsha256 -lm -lsodium -Wl,-rpath,/usr/local/lib
 
 # Arquivos fonte
 SRC = mss.c Arvore.c
