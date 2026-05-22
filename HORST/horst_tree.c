@@ -56,7 +56,7 @@ void obterCaminhoAutenticacaoHorst(const ArvoreHorst* arvore, int leaf_index, Au
     if (leaf_index < 0 || leaf_index >= HORST_T) return;
 
     int node = arvore->leaf_offset + leaf_index;
-    for (int nivel = 0; nivel < HORST_TAU; nivel++) {
+    for (int nivel = 0; nivel < HORST_H; nivel++) {
         int irmao;
         if (node % 2 == 0) irmao = node - 1; else irmao = node + 1;
         if (irmao < 0 || irmao >= arvore->num_nodes) {

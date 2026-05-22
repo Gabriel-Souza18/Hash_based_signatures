@@ -18,7 +18,7 @@ void obterRaizArvore(const struct ArvoreHorst* raiz, unsigned char *root) {
 
 void obterCaminhoAutenticacao(const struct ArvoreHorst* raiz, int indice, AuthPath* path) {
     if (!raiz || !path) return;
-    for (int i = 0; i < HORST_TAU; i++) memset(path->path[i], 0, HORST_N);
+    for (int i = 0; i < HORST_H; i++) memset(path->path[i], 0, HORST_N);
     obterCaminhoAutenticacaoHorst(raiz, indice, path);
 }
 
@@ -56,7 +56,7 @@ void gerarKeys(Keys* keys) {
         randombytes_buf(keys->SKeys[i], KEY_SIZE);
     }
     
-    printf("Construindo árvore de Merkle com altura %d...\n", HORST_TAU);
+    printf("Construindo árvore de Merkle com altura %d...\n", HORST_H);
     
     // Construir árvore
     struct ArvoreHorst* raiz = construirArvore(keys->SKeys);
@@ -103,7 +103,7 @@ void reconstruirRaiz(unsigned char folha_hash[HORST_N],
     int idx = indice_folha;
     
     // Percorrer o caminho de baixo para cima
-    for (int i = 0; i < HORST_TAU; i++) {
+    for (int i = 0; i < HORST_H; i++) {
         unsigned char concatenado[HORST_N * 2];
         
         // Se idx é par, este nó está à esquerda
@@ -173,7 +173,7 @@ void imprimirAssinatura(const Assinatura* assinatura) {
             printf("%02x", assinatura->components[i].sk[j]);
         }
         printf("...\n");
-        printf("  Caminho: %d nós\n", HORST_TAU);
+        printf("  Caminho: %d nós\n", HORST_H);
     }
     printf("=======================\n");
 }

@@ -16,15 +16,15 @@
 #if HORST_T == 256
     #define HORST_BITS_PER_INDEX 8
     #define HORST_K 32
-    #define HORST_TAU 8      // altura da árvore: log2(256) = 8
+    #define HORST_H 8      // altura da árvore: log2(256) = 8
 #elif HORST_T == 512
     #define HORST_BITS_PER_INDEX 9
     #define HORST_K 29
-    #define HORST_TAU 9      // altura da árvore: log2(512) = 9
+    #define HORST_H 9      // altura da árvore: log2(512) = 9
 #elif HORST_T == 1024
     #define HORST_BITS_PER_INDEX 10
     #define HORST_K 26
-    #define HORST_TAU 10     // altura da árvore: log2(1024) = 10
+    #define HORST_H 10     // altura da árvore: log2(1024) = 10
 #else
     #error "HORST_T deve ser 256, 512, ou 1024"
 #endif
@@ -35,7 +35,7 @@ typedef struct {
 
 // caminho de autenticação
 typedef struct {
-    unsigned char path[HORST_TAU][HORST_N];  // Nós irmãos até a raiz
+    unsigned char path[HORST_H][HORST_N];  // Nós irmãos até a raiz
 } AuthPath;
 
 //componente da assinatura (secreto + caminho)
