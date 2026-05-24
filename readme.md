@@ -120,10 +120,7 @@ valgrind --track-origins=yes --leak-check=full ./WOTS/wots
 - [] Trocar lib de hash para openssl
 
 ## Falar na proxima reunião 
-- tested  valgrind 
-- introdução do tcc
-- shortpaper
-- perguntar sobre lib  de hash 
+
 
 
 ## Corrigir Artigo
