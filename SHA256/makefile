@@ -1,7 +1,8 @@
-# Makefile para biblioteca SHA256
+# Makefile para biblioteca SHA256 com OpenSSL
 
 CC = gcc
-CFLAGS = -Wall -O2 -fPIC
+CFLAGS = -Wall -O2 -fPIC -Wno-deprecated-declarations
+LIBS = -lssl -lcrypto
 AR = ar
 ARFLAGS = rcs
 
@@ -18,7 +19,7 @@ $(LIB): $(OBJ)
 	$(AR) $(ARFLAGS) $@ $^
 	@echo "Biblioteca SHA256 criada: $(LIB)"
 
-# Compilar arquivo objeto
+# Compilar arquivo objeto (com flags OpenSSL)
 $(OBJ): $(SRC) sha256.h
 	$(CC) $(CFLAGS) -c $(SRC) -o $(OBJ)
 

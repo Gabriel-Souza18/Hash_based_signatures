@@ -2,7 +2,7 @@
 
 CC = gcc
 CFLAGS = -Wall -O2 -I../SHA256 -DHORS_T=1024
-LDFLAGS = -lm -L../SHA256 -lsha256 -lsodium -Wl,-rpath,/usr/local/lib
+LDFLAGS = -lm -L../SHA256 -lsha256 -lsodium -lcrypto -Wl,-rpath,/usr/local/lib
 
 # Arquivos fonte
 SRC = keys.c hors.c utils.c
