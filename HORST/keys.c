@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <sodium.h>
 #include <string.h>
+#include <time.h>
 
 
 struct ArvoreHorst* construirArvore(const unsigned char SKeys[HORST_T][HORST_N]) {
@@ -48,6 +49,7 @@ int selecionarIndices(unsigned char *hash, int *indices) {
 }
 
 void gerarKeys(Keys* keys) {
+    clock_t inicioSK = clock();
     if(sodium_init() < 0) {
         fprintf(stderr, "Erro: falha ao inicializar libsodium.\n");
         exit(EXIT_FAILURE);
@@ -55,22 +57,25 @@ void gerarKeys(Keys* keys) {
     for (int i = 0; i < HORST_T; i++) {
         randombytes_buf(keys->SKeys[i], KEY_SIZE);
     }
+    clock_t fimSK  = clock();
     
-    printf("Construindo árvore de Merkle com altura %d...\n", HORST_H);
-    
+    clock_t inicioPk = clock();
     // Construir árvore
     struct ArvoreHorst* raiz = construirArvore(keys->SKeys);
     
     // Extrair raiz como chave pública
     obterRaizArvore(raiz, keys->PKey.root);
-    
-    printf("Chaves HORST Geradas\n");
-    printf("Raiz: ");
-    for (int i = 0; i < 16; i++) printf("%02x", keys->PKey.root[i]);
-    printf("...\n");
-    
+    clock_t fimPK = clock();
+ 
     // Liberar árvore
     liberarArvore(raiz);
+    
+    // Imprimir tempos
+    double tempoSK = (double)(fimSK - inicioSK) / CLOCKS_PER_SEC;
+    double tempoPK = (double)(fimPK - inicioPk) / CLOCKS_PER_SEC;
+    
+    printf("Tempo para gerar Chaves Secretas: %.6f segundos\n", tempoSK);
+    printf("Tempo para gerar Chave Publica: %.6f segundos\n", tempoPK);
 }
 
 
@@ -78,6 +83,8 @@ void assinarMensagem(const char* msg, int msg_len,
                      Assinatura* assinatura,
                      const unsigned char SKeys[HORST_T][HORST_N],
                      const struct ArvoreHorst* raiz) {
+    clock_t inicioAssinatura = clock();
+    
     unsigned char hash_msg[32];
     sha256_bytes((unsigned char*)msg, msg_len, hash_msg);
     
@@ -91,6 +98,11 @@ void assinarMensagem(const char* msg, int msg_len,
         memcpy(assinatura->components[i].sk, SKeys[idx], HORST_N);
         obterCaminhoAutenticacao(raiz, idx, &assinatura->components[i].auth_path);
     }
+    
+    clock_t fimAssinatura = clock();
+    double tempoAssinatura = (double)(fimAssinatura - inicioAssinatura) / CLOCKS_PER_SEC;
+    
+    printf("Tempo para Assinar: %.6f segundos\n", tempoAssinatura);
 }
 
 void reconstruirRaiz(unsigned char folha_hash[HORST_N], 

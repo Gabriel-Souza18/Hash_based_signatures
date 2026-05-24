@@ -2,6 +2,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sodium.h>
+#include <time.h>
+
 #include "keys.h"
 #include "utils.h"
 #include "../SHA256/sha256.h"
@@ -62,10 +64,11 @@ int menu() {
 
 int gerarChaves() {
     printf("\n____ Gerando Novas Chaves ____\n");
-    
+ 
     Keys keys;
     gerarKeys(&keys);
-    
+ 
+
     // Salvar chaves secretas
     if (salvarSKeys(CAMINHO_SKEYS, &keys)) {
         printf("Chaves secretas salvas em '%s'\n", CAMINHO_SKEYS);
@@ -81,7 +84,6 @@ int gerarChaves() {
         printf("Erro ao salvar chave pública\n");
         return 0;
     }
-    
     printf("Chaves geradas com sucesso!\n");
     return 1;
 }
@@ -110,7 +112,7 @@ int assinarMsg() {
         mensagem[len-1] = '\0';
         len--;
     }
-    
+
     // Reconstruir árvore a partir das chaves secretas
     printf("Reconstruindo árvore de Merkle...\n");
     struct ArvoreHorst* raiz = construirArvore(keys.SKeys);
@@ -118,7 +120,7 @@ int assinarMsg() {
     // Assinar mensagem
     Assinatura assinatura;
     assinarMensagem(mensagem, len, &assinatura, keys.SKeys, raiz);
-    
+
     // Salvar assinatura
     if (salvarAssinatura(CAMINHO_ASSINATURA, &assinatura)) {
         printf("Assinatura salva em '%s'\n", CAMINHO_ASSINATURA);
