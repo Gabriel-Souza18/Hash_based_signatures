@@ -6573,3 +6573,4 @@ MSS/mss
 Hash_based_signatures.code-workspace
 TestesGerais/Resultados_Valgrind/HORS_hors_destinatario.stdout
 TestesGerais/Resultados_Valgrind/HORST_testeHORST_destinatario.valgrind
+HORST/testeHORST
