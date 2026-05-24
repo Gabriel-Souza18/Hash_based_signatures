@@ -157,7 +157,7 @@ testar_wots() {
     echo -e "${BLUE}Testando WOTS - Teste $teste_num${NC}"
     
     # Limpar arquivos anteriores do WOTS
-    (cd ../WOTS && rm -f Assinatura.txt Mensagem.txt PublicKeys.txt Masks.txt 2>/dev/null || true)
+    (cd ../WOTS && rm -f Assinatura.txt Assinatura.bin Mensagem.txt PublicKeys.txt PublicKeys.bin Masks.txt 2>/dev/null || true)
     
     # Teste de assinatura (opção 1)
     local output_assinatura=$(cd ../WOTS && echo -e "1\n$MENSAGEM_TESTE" | timeout 30 ./wots 2>&1)
@@ -190,9 +190,9 @@ testar_wots() {
     tamanho_assinatura=${tamanho_assinatura:-"2144"}
 
     # Tamanho real dos arquivos (se existirem)
-    tamanho_assinatura=$(file_size_or_default "../WOTS/Assinatura.txt" "$tamanho_assinatura")
-    tamanho_public=$(file_size_or_default "../WOTS/PublicKeys.txt" "$tamanho_public")
-    tamanho_secret=$(file_size_or_default "../WOTS/SecretKeys.txt" "$tamanho_secret")
+    tamanho_assinatura=$(file_size_or_default "../WOTS/Assinatura.bin" "$tamanho_assinatura")
+    tamanho_public=$(file_size_or_default "../WOTS/PublicKeys.bin" "$tamanho_public")
+    tamanho_secret=$(file_size_or_default "../WOTS/SecretKeys.bin" "$tamanho_secret")
     
     # Coleta valgrind (só na 1ª execução)
     local vg_metrics="0,0"

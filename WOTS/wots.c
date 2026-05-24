@@ -61,9 +61,9 @@ int main(){
         clock_t fimAssinatura = clock();
         unsigned long long hashes_sign = sha256_get_counter();
 
-        escreverAssinatura("Assinatura.txt",assinatura);
+        escreverAssinatura("Assinatura.bin",assinatura);
         escreverMensagem("Mensagem.txt", mensagem);
-        escreverPkeys("PublicKeys.txt", pKeys, PK_seed, SK_seed);
+        escreverPkeys("PublicKeys.bin", pKeys, PK_seed, SK_seed);
 
         printf("Tempo para gerar Chaves Secretas: %lfs\n", 
             (double)(fimSk-inicioSk)/CLOCKS_PER_SEC);
@@ -95,9 +95,9 @@ int main(){
 
         char mensagem[1001];
 
-        lerAssinatura("Assinatura.txt",assinatura);
+        lerAssinatura("Assinatura.bin",assinatura);
         lerMensagem("Mensagem.txt", mensagem);
-        lerPkeys("PublicKeys.txt", pKeys, PK_seed, SK_seed);
+        lerPkeys("PublicKeys.bin", pKeys, PK_seed, SK_seed);
 
         
         unsigned char msgHash[N];

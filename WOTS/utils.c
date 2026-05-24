@@ -18,50 +18,32 @@ void escreverMensagem(char* caminho, char*mensagem){
     printf("Mensagem salva em: %s\n", caminho);
 }
 void escreverAssinatura(char* caminho, Assinatura* assinatura){
-    FILE *arquivo = fopen(caminho, "w");
+    FILE *arquivo = fopen(caminho, "wb");
     if (!arquivo) {
         printf("Erro: não foi possível criar o arquivo %s\n", caminho);
         return;
     }
     
-    // Escreve cada bloco da assinatura em formato hexadecimal
-    for (int i = 0; i < L; i++) {
-        for(int j = 0; j < N; j++){
-            fprintf(arquivo, "%02x", (unsigned char)assinatura->assinatura[i][j]);
-        }
-        fprintf(arquivo, "\n");
-    }
+    // Escreve toda a estrutura da assinatura em formato binário
+    fwrite(assinatura, sizeof(Assinatura), 1, arquivo);
     
     fclose(arquivo);
     printf("Assinatura salva em: %s\n", caminho);
 }
+
 void escreverPkeys(char* caminho, PublicKeys* pKeys, unsigned char* pk_seed, unsigned char* sk_seed){
-    FILE *arquivo = fopen(caminho, "w");
+    FILE *arquivo = fopen(caminho, "wb");
     if (!arquivo) {
         printf("Erro: não foi possível criar o arquivo %s\n", caminho);
         return;
     }
 
-    // Escreve os seeds primeiro (linhas 1 e 2)
-    fprintf(arquivo, "PK_SEED:");
-    for (int i = 0; i < N; i++) {
-        fprintf(arquivo, "%02x", pk_seed[i]);
-    }
-    fprintf(arquivo, "\n");
+    // Escreve os seeds (32 bytes cada)
+    fwrite(pk_seed, 1, N, arquivo);
+    fwrite(sk_seed, 1, N, arquivo);
     
-    fprintf(arquivo, "SK_SEED:");
-    for (int i = 0; i < N; i++) {
-        fprintf(arquivo, "%02x", sk_seed[i]);
-    }
-    fprintf(arquivo, "\n");
-
-    // Escreve cada chave pública em formato hexadecimal
-    for (int i = 0; i < L; i++) {
-        for(int j = 0; j < N; j++){
-            fprintf(arquivo, "%02x", (unsigned char)pKeys->PK[i][j]);
-        }
-        fprintf(arquivo, "\n");
-    }
+    // Escreve cada chave pública
+    fwrite(pKeys, sizeof(PublicKeys), 1, arquivo);
     
     fclose(arquivo);
     printf("Chaves públicas salvas em: %s\n", caminho);
@@ -103,79 +85,37 @@ void lerMensagem(char* caminho,char *mensagem ){
     printf("Mensagem carregada: %s\n", mensagem);
 }
 void lerAssinatura(char* caminho, Assinatura *assinatura){
-    FILE *arquivo = fopen(caminho, "r");
+    FILE *arquivo = fopen(caminho, "rb");
     if (!arquivo) {
         printf("Erro: não foi possível abrir o arquivo %s\n", caminho);
         return;
     }
     
-    char linha[N * 2 + 10]; // Buffer para linha hexadecimal (N bytes = N*2 chars hex + extras)
-    int i = 0;
-    
-    while (fgets(linha, sizeof(linha), arquivo) && i < L) {
-        // Remove quebra de linha
-        linha[strcspn(linha, "\n")] = 0;
-        
-        // Converte string hexadecimal para bytes
-        for (int j = 0; j < N; j++) {
-            if (j * 2 + 1 < strlen(linha)) {
-                char hex_byte[3] = {linha[j*2], linha[j*2+1], '\0'};
-                assinatura->assinatura[i][j] = (char)strtol(hex_byte, NULL, 16);
-            } else {
-                assinatura->assinatura[i][j] = 0;
-            }
-        }
-        i++;
+    size_t lidos = fread(assinatura, sizeof(Assinatura), 1, arquivo);
+    if (lidos != 1) {
+        printf("Erro ao ler assinatura\n");
     }
     
     fclose(arquivo);
-    printf("Assinatura carregada: %d blocos de %d bytes cada\n", i, N);
+    printf("Assinatura carregada: %zu bytes\n", sizeof(Assinatura));
 }
 void lerPkeys(char* caminho, PublicKeys *pKeys, unsigned char* pk_seed, unsigned char* sk_seed){
-    FILE *arquivo = fopen(caminho, "r");
+    FILE *arquivo = fopen(caminho, "rb");
     if (!arquivo) {
         printf("Erro: não foi possível abrir o arquivo %s\n", caminho);
         return;
     }
     
-    char linha[N * 2 + 20]; // Buffer para linha hexadecimal + prefixo
-    
-    // Lê PK_SEED (linha 1)
-    if (fgets(linha, sizeof(linha), arquivo)) {
-        char* hex_start = linha + 8; // Pula "PK_SEED:"
-        for (int j = 0; j < N; j++) {
-            char hex_byte[3] = {hex_start[j*2], hex_start[j*2+1], '\0'};
-            pk_seed[j] = (unsigned char)strtol(hex_byte, NULL, 16);
-        }
-    }
-    
-    // Lê SK_SEED (linha 2)
-    if (fgets(linha, sizeof(linha), arquivo)) {
-        char* hex_start = linha + 8; // Pula "SK_SEED:"
-        for (int j = 0; j < N; j++) {
-            char hex_byte[3] = {hex_start[j*2], hex_start[j*2+1], '\0'};
-            sk_seed[j] = (unsigned char)strtol(hex_byte, NULL, 16);
-        }
-    }
+    // Lê PK_SEED e SK_SEED
+    fread(pk_seed, 1, N, arquivo);
+    fread(sk_seed, 1, N, arquivo);
     
     // Lê as chaves públicas
-    int i = 0;
-    while (fgets(linha, sizeof(linha), arquivo) && i < L) {
-        // Remove quebra de linha
-        linha[strcspn(linha, "\n")] = 0;
-        
-        // Converte string hexadecimal para bytes
-        for (int j = 0; j < N; j++) {
-            if (j * 2 + 1 < strlen(linha)) {
-                char hex_byte[3] = {linha[j*2], linha[j*2+1], '\0'};
-                pKeys->PK[i][j] = (char)strtol(hex_byte, NULL, 16);
-            } else {
-                pKeys->PK[i][j] = 0;
-            }
-        }
-        i++;
+    size_t lidos = fread(pKeys, sizeof(PublicKeys), 1, arquivo);
+    if (lidos != 1) {
+        printf("Erro ao ler chaves públicas\n");
     }
     
     fclose(arquivo);
-    printf("Chaves públicas carregadas: %d chaves de %d bytes cada\n", i, N);
+    printf("Chaves públicas carregadas: %zu bytes\n", sizeof(PublicKeys));
 }
