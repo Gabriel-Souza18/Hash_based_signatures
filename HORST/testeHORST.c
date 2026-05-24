@@ -110,6 +110,7 @@ int assinarMsg() {
         printf("Erro ao ler mensagem.\n");
         return 0;
     }
+    printf("\n");
     
     // Remover newline se existir
     size_t len = strlen(mensagem);
@@ -118,20 +119,15 @@ int assinarMsg() {
         len--;
     }
 
-    // Reconstruir árvore a partir das chaves secretas
-    printf("Reconstruindo árvore de Merkle...\n");
-    struct ArvoreHorst* raiz = construirArvore(keys.SKeys);
-    
     // Assinar mensagem
     Assinatura assinatura;
-    assinarMensagem(mensagem, len, &assinatura, keys.SKeys, raiz);
+    assinarMensagem(mensagem, len, &assinatura, keys.SKeys);
 
     // Salvar assinatura
     if (salvarAssinatura(CAMINHO_ASSINATURA, &assinatura)) {
         printf("Assinatura salva em '%s'\n", CAMINHO_ASSINATURA);
     } else {
         printf("Erro ao salvar assinatura\n");
-        liberarArvore(raiz);
         return 0;
     }
     
@@ -143,7 +139,6 @@ int assinarMsg() {
         printf("Mensagem salva em '%s'\n", CAMINHO_MENSAGEM);
     }
     
-    liberarArvore(raiz);
     printf("Mensagem assinada com sucesso!\n");
     printf("Total de hashes SHA256 (assinatura): %llu\n", sha256_get_counter());
     sha256_reset_counter();

@@ -81,9 +81,11 @@ void gerarKeys(Keys* keys) {
 
 void assinarMensagem(const char* msg, int msg_len,
                      Assinatura* assinatura,
-                     const unsigned char SKeys[HORST_T][HORST_N],
-                     const struct ArvoreHorst* raiz) {
+                     const unsigned char SKeys[HORST_T][HORST_N]) {
     clock_t inicioAssinatura = clock();
+    
+    // Reconstruir árvore a partir das chaves secretas na RAM
+    struct ArvoreHorst* raiz = construirArvore(SKeys);
     
     unsigned char hash_msg[32];
     sha256_bytes((unsigned char*)msg, msg_len, hash_msg);
@@ -98,6 +100,8 @@ void assinarMensagem(const char* msg, int msg_len,
         memcpy(assinatura->components[i].sk, SKeys[idx], HORST_N);
         obterCaminhoAutenticacao(raiz, idx, &assinatura->components[i].auth_path);
     }
+    
+    liberarArvore(raiz);
     
     clock_t fimAssinatura = clock();
     double tempoAssinatura = (double)(fimAssinatura - inicioAssinatura) / CLOCKS_PER_SEC;

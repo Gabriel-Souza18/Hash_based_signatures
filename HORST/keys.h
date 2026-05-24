@@ -67,8 +67,7 @@ int selecionarIndices(unsigned char *hash, int *indices);
 
 void assinarMensagem(const char* msg, int msg_len,
                      Assinatura* assinatura,
-                     const unsigned char SKeys[HORST_T][HORST_N],
-                     const struct ArvoreHorst* raiz);
+                     const unsigned char SKeys[HORST_T][HORST_N]);
 
 int verificarAssinatura(const char* msg, int msg_len,
                         const Assinatura* assinatura,
