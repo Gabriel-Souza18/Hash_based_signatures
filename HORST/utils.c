@@ -126,7 +126,7 @@ int salvarAssinatura(const char* arquivo, const Assinatura* assinatura) {
             return 0;
         }
         
-        if (fwrite(assinatura->components[i].auth_path.path, HORST_TAU * HORST_N, 1, f) != 1) {
+        if (fwrite(assinatura->components[i].auth_path.path, HORST_H * HORST_N, 1, f) != 1) {
             fprintf(stderr, "Erro ao escrever caminho do componente %d\n", i);
             fclose(f);
             return 0;
@@ -151,7 +151,7 @@ int carregarAssinatura(const char* arquivo, Assinatura* assinatura) {
             return 0;
         }
         
-        if (fread(assinatura->components[i].auth_path.path, HORST_TAU * HORST_N, 1, f) != 1) {
+        if (fread(assinatura->components[i].auth_path.path, HORST_H * HORST_N, 1, f) != 1) {
             fprintf(stderr, "Erro ao ler caminho do componente %d\n", i);
             fclose(f);
             return 0;
