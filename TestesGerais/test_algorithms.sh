@@ -218,16 +218,26 @@ testar_horst() {
         return 1
     fi
     
-    # HORST não imprime tempos/hashes, use valores padrão
+    # Extrair tempos do output
+    local tempo_secret_keys=$(echo "$output" | grep "Tempo para gerar Chaves Secretas:" | awk -F': ' '{print $2}' | awk '{print $1}')
+    local tempo_public_keys=$(echo "$output" | grep "Tempo para gerar Chave Publica:" | awk -F': ' '{print $2}' | awk '{print $1}')
+    local tempo_assinatura=$(echo "$output" | grep "Tempo para Assinar:" | awk -F': ' '{print $2}' | awk '{print $1}')
+    
+    # Valores padrão se não encontrados
+    tempo_secret_keys=${tempo_secret_keys:-"0"}
+    tempo_public_keys=${tempo_public_keys:-"0"}
+    tempo_assinatura=${tempo_assinatura:-"0"}
+    
     # Tamanho fixo baseado em HORST_T=1024 e HORST_N=32
     local tamanho_secret=32768   # HORST_T * HORST_N (1024 * 32)
     local tamanho_public=32      # HORST_N
     local tamanho_assinatura=832 # HORST_K * HORST_N (26 * 32 aproximadamente)
     
-    # Salva no CSV com valores padrão (0s para tempos, não medidos)
-    echo "HORST,$teste_num,0,0,0,0,0,$tamanho_secret,$tamanho_public,$tamanho_assinatura" >> "$RESULTADO_FILE"
+    # Salva no CSV
+    echo "HORST,$teste_num,$tempo_secret_keys,$tempo_public_keys,0,$tempo_assinatura,0,$tamanho_secret,$tamanho_public,$tamanho_assinatura" >> "$RESULTADO_FILE"
     
-    echo -e "${GREEN}HORST Teste $teste_num: OK (métricas padrão)${NC}"
+    echo -e "${GREEN}HORST Teste $teste_num: OK${NC}"
+    echo "  SK: ${tempo_secret_keys}s | PK: ${tempo_public_keys}s | Assinatura: ${tempo_assinatura}s"
 }
 
 # Função para testar MSS
@@ -248,16 +258,27 @@ testar_mss() {
         return 1
     fi
     
-    # MSS não imprime tempos/hashes detalhados, use valores padrão
+    # Extrair tempos do MSS
+    local tempo_folhas=$(echo "$output" | grep "Tempo para gerar Folhas:" | awk -F': ' '{print $2}' | awk '{print $1}')
+    local tempo_arvore=$(echo "$output" | grep "Tempo para gerar Árvore:" | awk -F': ' '{print $2}' | awk '{print $1}')
+    local tempo_assinatura=$(echo "$output" | grep "Tempo para Assinar:" | awk -F': ' '{print $2}' | awk '{print $1}')
+    
+    # Valores padrão se não encontrados
+    tempo_folhas=${tempo_folhas:-"0"}
+    tempo_arvore=${tempo_arvore:-"0"}
+    tempo_assinatura=${tempo_assinatura:-"0"}
+    
     # Tamanho fixo baseado em WOTS N=32, W=16 (MSS usa WOTS)
     local tamanho_secret=2144   # Chave secreta WOTS
     local tamanho_public=2144   # Chave pública WOTS
     local tamanho_assinatura=2144  # Assinatura WOTS
     
-    # Salva no CSV com valores padrão
-    echo "MSS,$teste_num,0,0,0,0,0,$tamanho_secret,$tamanho_public,$tamanho_assinatura" >> "$RESULTADO_FILE"
+    # Salva no CSV (tempo_folhas, tempo_arvore, 0, tempo_assinatura)
+    # Usando colunas: Tempo_SecretKeys=folhas, Tempo_PublicKeys=arvore, Tempo_Masks=0, Tempo_Assinatura
+    echo "MSS,$teste_num,$tempo_folhas,$tempo_arvore,0,$tempo_assinatura,0,$tamanho_secret,$tamanho_public,$tamanho_assinatura" >> "$RESULTADO_FILE"
     
-    echo -e "${GREEN}MSS Teste $teste_num: OK (métricas padrão)${NC}"
+    echo -e "${GREEN}MSS Teste $teste_num: OK${NC}"
+    echo "  Folhas: ${tempo_folhas}s | Árvore: ${tempo_arvore}s | Assinatura: ${tempo_assinatura}s"
 }
 
 echo -e "${YELLOW}Iniciando testes ($TESTES execuções para cada algoritmo)...${NC}"
