@@ -23,11 +23,9 @@ int main(int argc, char *argv[]) {
 
     // Gera as chaves
     Keys keys;
-    clock_t inicio_keygen = clock();
     gerarKeys(&keys);
-    clock_t fim_keygen = clock();
-    double tempo_keygen = (double)(fim_keygen - inicio_keygen) / CLOCKS_PER_SEC;
-    printf("Tempo para gerar Chaves Secretas: %lf s\n", tempo_keygen);
+    printf("Tempo para gerar Chaves Secretas: %lf s\n", hors_tempo_sk);
+    printf("Tempo para gerar Chaves Publicas: %lf s\n", hors_tempo_pk);
 
     // Assina a mensagem
     Assinatura assinatura;

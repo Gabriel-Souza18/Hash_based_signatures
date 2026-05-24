@@ -37,7 +37,7 @@ echo -e "${GREEN}Compilação concluída!${NC}"
 echo
 
 # Cria cabeçalho do CSV DEPOIS da compilação (para não ser apagado pelo make clean)
-HEADER="Algoritmo,Teste,Tempo_SecretKeys,Tempo_PublicKeys,Tempo_Masks,Tempo_Assinatura,Hashes_Assinatura,Tamanho_SecretKeys,Tamanho_PublicKeys,Tamanho_Assinatura"
+HEADER="Algoritmo,Teste,Tempo_SecretKeys,Tempo_PublicKeys,Tempo_Masks,Tempo_Assinatura,Hashes_Assinatura,Tamanho_SecretKeys,Tamanho_PublicKeys,Tamanho_Assinatura,Valgrind_Bytes,Valgrind_Erros"
 printf "%s\n" "$HEADER" > "$RESULTADO_FILE"
 
 # Compilar HORS especificamente
@@ -62,6 +62,42 @@ extrair_valor() {
     echo "$texto" | grep "$padrao" | sed 's/.*: *\([0-9.]*\).*/\1/' | head -1
 }
 
+file_size_or_default() {
+    local caminho="$1"
+    local padrao="$2"
+    if [ -f "$caminho" ]; then
+        stat -c%s "$caminho"
+    else
+        echo "$padrao"
+    fi
+}
+
+# Função para coletar métricas de memória com valgrind
+# Retorna "bytes_em_uso,erros_totais"
+coletar_valgrind() {
+    local executavel="$1"
+    local dir="$2"
+    local input="$3"
+
+    # Executa com valgrind --tool=memcheck
+    local vg_output
+    vg_output=$(cd "$dir" && echo -e "$input" | timeout 60 \
+        valgrind --tool=memcheck --leak-check=full --error-exitcode=0 \
+        $executavel 2>&1 | tail -20)
+
+    # Extrai bytes em uso no exit
+    local bytes_uso
+    bytes_uso=$(echo "$vg_output" | grep -i "in use at exit" | grep -oP '[0-9,]+(?= bytes)' | tr -d ',' | head -1)
+    bytes_uso=${bytes_uso:-"0"}
+
+    # Extrai erros totais
+    local erros
+    erros=$(echo "$vg_output" | grep -i "ERROR SUMMARY" | grep -oP '[0-9]+(?= errors)' | head -1)
+    erros=${erros:-"0"}
+
+    echo "${bytes_uso},${erros}"
+}
+
 # Função para testar Lamport
 testar_lamport() {
     local teste_num=$1
@@ -71,7 +107,7 @@ testar_lamport() {
     (cd ../LOTS && rm -f assinatura.txt mensagem.txt publicKeys.txt 2>/dev/null || true)
     
     # Teste de assinatura (opção 1)
-    local output_assinatura=$(echo -e "1\n$MENSAGEM_TESTE" | timeout 30 ../LOTS/lots 2>&1)
+    local output_assinatura=$(cd ../LOTS && echo -e "1\n$MENSAGEM_TESTE" | timeout 30 ./lots 2>&1)
     
     if [ $? -ne 0 ]; then
         echo -e "${RED}Erro no teste Lamport $teste_num (assinatura)${NC}"
@@ -79,7 +115,7 @@ testar_lamport() {
     fi
     
     # Teste de verificação (opção 2)
-    local output_verificacao=$(echo "2" | timeout 30 ../LOTS/lots 2>&1)
+    local output_verificacao=$(cd ../LOTS && echo "2" | timeout 30 ./lots 2>&1)
     
     if [ $? -ne 0 ]; then
         echo -e "${RED}Erro no teste Lamport $teste_num (verificação)${NC}"
@@ -105,9 +141,20 @@ testar_lamport() {
     tamanho_secret=${tamanho_secret:-"131072"}
     tamanho_public=${tamanho_public:-"33280"}
     tamanho_assinatura=${tamanho_assinatura:-"16640"}
+
+    # Tamanho real dos arquivos (se existirem)
+    tamanho_assinatura=$(file_size_or_default "../LOTS/assinatura.txt" "$tamanho_assinatura")
+    tamanho_public=$(file_size_or_default "../LOTS/publicKeys.txt" "$tamanho_public")
+    tamanho_secret=$(file_size_or_default "../LOTS/secretKeys.txt" "$tamanho_secret")
+    
+    # Coleta valgrind (só na 1ª execução para economizar tempo)
+    local vg_metrics="0,0"
+    if [ "$teste_num" -eq 1 ]; then
+        vg_metrics=$(coletar_valgrind "./lots" "../LOTS" "1\n$MENSAGEM_TESTE")
+    fi
     
     # Salva no CSV (Lamport não tem masks, então usa 0)
-    echo "LOTS,$teste_num,$tempo_secret_keys,$tempo_public_keys,0,$tempo_assinatura,$hashes_assinatura,$tamanho_secret,$tamanho_public,$tamanho_assinatura" >> "$RESULTADO_FILE"
+    echo "LOTS,$teste_num,$tempo_secret_keys,$tempo_public_keys,0,$tempo_assinatura,$hashes_assinatura,$tamanho_secret,$tamanho_public,$tamanho_assinatura,$vg_metrics" >> "$RESULTADO_FILE"
     
     echo -e "${GREEN}Lamport Teste $teste_num: OK${NC}"
     echo "  SK: ${tempo_secret_keys}s | PK: ${tempo_public_keys}s | Assinatura: ${tempo_assinatura}s | Hashes: $hashes_assinatura"
@@ -122,7 +169,7 @@ testar_wots() {
     (cd ../WOTS && rm -f Assinatura.txt Mensagem.txt PublicKeys.txt Masks.txt 2>/dev/null || true)
     
     # Teste de assinatura (opção 1)
-    local output_assinatura=$(echo -e "1\n$MENSAGEM_TESTE" | timeout 30 ../WOTS/wots 2>&1)
+    local output_assinatura=$(cd ../WOTS && echo -e "1\n$MENSAGEM_TESTE" | timeout 30 ./wots 2>&1)
     
     if [ $? -ne 0 ]; then
         echo -e "${RED}Erro no teste WOTS $teste_num (assinatura)${NC}"
@@ -150,9 +197,20 @@ testar_wots() {
     tamanho_secret=${tamanho_secret:-"2144"}
     tamanho_public=${tamanho_public:-"2144"}
     tamanho_assinatura=${tamanho_assinatura:-"2144"}
+
+    # Tamanho real dos arquivos (se existirem)
+    tamanho_assinatura=$(file_size_or_default "../WOTS/Assinatura.txt" "$tamanho_assinatura")
+    tamanho_public=$(file_size_or_default "../WOTS/PublicKeys.txt" "$tamanho_public")
+    tamanho_secret=$(file_size_or_default "../WOTS/SecretKeys.txt" "$tamanho_secret")
+    
+    # Coleta valgrind (só na 1ª execução)
+    local vg_metrics="0,0"
+    if [ "$teste_num" -eq 1 ]; then
+        vg_metrics=$(coletar_valgrind "./wots" "../WOTS" "1\n$MENSAGEM_TESTE")
+    fi
     
     # Salva no CSV com tempos separados
-    echo "WOTS,$teste_num,$tempo_secret_keys,$tempo_public_keys,$tempo_masks,$tempo_assinatura,$hashes_assinatura,$tamanho_secret,$tamanho_public,$tamanho_assinatura" >> "$RESULTADO_FILE"
+    echo "WOTS,$teste_num,$tempo_secret_keys,$tempo_public_keys,$tempo_masks,$tempo_assinatura,$hashes_assinatura,$tamanho_secret,$tamanho_public,$tamanho_assinatura,$vg_metrics" >> "$RESULTADO_FILE"
     
     echo -e "${GREEN}WOTS Teste $teste_num: OK${NC}"
     echo "  SK: ${tempo_secret_keys}s | PK: ${tempo_public_keys}s | Masks: ${tempo_masks}s | Assinatura: ${tempo_assinatura}s"
@@ -167,7 +225,7 @@ testar_hors() {
     (cd ../HORS && rm -f assinatura.txt mensagem.txt publicKeys.txt secretKeys.txt assinatura.bin publicKeys.bin 2>/dev/null || true)
     
     # Teste com hors_test (sem menu)
-    local output_assinatura=$(../HORS/hors_test "$MENSAGEM_TESTE" 2>&1)
+    local output_assinatura=$(cd ../HORS && ./hors_test "$MENSAGEM_TESTE" 2>&1)
     
     if [ $? -ne 0 ]; then
         echo -e "${RED}Erro no teste HORS $teste_num${NC}"
@@ -176,6 +234,7 @@ testar_hors() {
     
     # Extrai valores do HORS usando awk mais cuidadoso
     local tempo_secret_keys=$(echo "$output_assinatura" | grep "Tempo para gerar Chaves Secretas:" | awk -F': ' '{print $2}' | awk '{print $1}')
+    local tempo_public_keys=$(echo "$output_assinatura" | grep "Tempo para gerar Chaves Publicas:" | awk -F': ' '{print $2}' | awk '{print $1}')
     local tempo_assinatura=$(echo "$output_assinatura" | grep "Tempo para Assinar:" | awk -F': ' '{print $2}' | awk '{print $1}')
     
     local hashes_assinatura=$(echo "$output_assinatura" | grep "Total de hashes SHA256:" | awk -F': ' '{print $2}')
@@ -186,17 +245,30 @@ testar_hors() {
     
     # Valores padrão se não encontrados
     tempo_secret_keys=${tempo_secret_keys:-"0"}
+    tempo_public_keys=${tempo_public_keys:-"0"}
     tempo_assinatura=${tempo_assinatura:-"0"}
     hashes_assinatura=${hashes_assinatura:-"0"}
     tamanho_secret=${tamanho_secret:-"32768"}
     tamanho_public=${tamanho_public:-"32768"}
     tamanho_assinatura=${tamanho_assinatura:-"832"}
+
+    # Tamanho real dos arquivos (se existirem)
+    (cd ../HORS && echo -e "1\n$MENSAGEM_TESTE\n0" | timeout 30 ./hors > /dev/null 2>&1)
+    tamanho_assinatura=$(file_size_or_default "../HORS/assinatura.txt" "$tamanho_assinatura")
+    tamanho_public=$(file_size_or_default "../HORS/publicKeys.txt" "$tamanho_public")
+    tamanho_secret=$(file_size_or_default "../HORS/secretKeys.txt" "$tamanho_secret")
+    
+    # Coleta valgrind (só na 1ª execução)
+    local vg_metrics="0,0"
+    if [ "$teste_num" -eq 1 ]; then
+        vg_metrics=$(coletar_valgrind "./hors_test" "../HORS" "$MENSAGEM_TESTE")
+    fi
     
     # Salva no CSV (HORS não tem masks, então usa 0)
-    echo "HORS,$teste_num,$tempo_secret_keys,0,0,$tempo_assinatura,$hashes_assinatura,$tamanho_secret,$tamanho_public,$tamanho_assinatura" >> "$RESULTADO_FILE"
+    echo "HORS,$teste_num,$tempo_secret_keys,$tempo_public_keys,0,$tempo_assinatura,$hashes_assinatura,$tamanho_secret,$tamanho_public,$tamanho_assinatura,$vg_metrics" >> "$RESULTADO_FILE"
     
     echo -e "${GREEN}HORS Teste $teste_num: OK${NC}"
-    echo "  SK: ${tempo_secret_keys}s | Assinatura: ${tempo_assinatura}s | Hashes: $hashes_assinatura"
+    echo "  SK: ${tempo_secret_keys}s | PK: ${tempo_public_keys}s | Assinatura: ${tempo_assinatura}s | Hashes: $hashes_assinatura"
 }
 
 # Função para testar HORST
@@ -209,7 +281,7 @@ testar_horst() {
     
     # HORST é interativo, gera métricas durante execução
     # Gerar chaves (opção 1), Assinar (opção 2), Verificar (opção 3)
-    local output=$(echo -e "1\n2\nmensagem_teste_horst_${teste_num}\n3\n0" | timeout 30 ../HORST/testeHORST 2>&1)
+    local output=$(cd ../HORST && echo -e "1\n2\nmensagem_teste_horst_${teste_num}\n3\n0" | timeout 30 ./testeHORST 2>&1)
     
     if [ $? -ne 0 ]; then
         echo -e "${RED}Erro no teste HORST $teste_num${NC}"
@@ -228,13 +300,25 @@ testar_horst() {
     tempo_public_keys=${tempo_public_keys:-"0"}
     tempo_assinatura=${tempo_assinatura:-"0"}
     
-    # Tamanho fixo baseado em HORST_T=1024 e HORST_N=32
-    local tamanho_secret=32768   # HORST_T * HORST_N (1024 * 32)
-    local tamanho_public=32      # HORST_N
-    local tamanho_assinatura=832 # HORST_K * HORST_N (26 * 32 aproximadamente)
+    # Tamanho real dos arquivos (se existirem)
+    local tamanho_secret=$(file_size_or_default "../HORST/seckeys.bin" "32768")
+    local tamanho_public=$(file_size_or_default "../HORST/pubkey.bin" "32")
+    local tamanho_assinatura=$(file_size_or_default "../HORST/assinatura.bin" "832")
     
-    # Salva no CSV
-    echo "HORST,$teste_num,$tempo_secret_keys,$tempo_public_keys,0,$tempo_assinatura,0,$tamanho_secret,$tamanho_public,$tamanho_assinatura" >> "$RESULTADO_FILE"
+    # Extrair hashes do output
+    local hashes_keygen=$(echo "$output" | grep "Total de hashes SHA256 (keygen)" | awk -F': ' '{print $2}')
+    local hashes_assinatura=$(echo "$output" | grep "Total de hashes SHA256 (assinatura)" | awk -F': ' '{print $2}')
+    hashes_keygen=${hashes_keygen:-"0"}
+    hashes_assinatura=${hashes_assinatura:-"0"}
+    
+    # Coleta valgrind (só na 1ª execução)
+    local vg_metrics="0,0"
+    if [ "$teste_num" -eq 1 ]; then
+        vg_metrics=$(coletar_valgrind "./testeHORST" "../HORST" "1\n2\nmensagem_valgrind\n3\n0")
+    fi
+    
+    # Salva no CSV (hashes_assinatura = soma keygen + assinatura para linha única)
+    echo "HORST,$teste_num,$tempo_secret_keys,$tempo_public_keys,0,$tempo_assinatura,$hashes_assinatura,$tamanho_secret,$tamanho_public,$tamanho_assinatura,$vg_metrics" >> "$RESULTADO_FILE"
     
     echo -e "${GREEN}HORST Teste $teste_num: OK${NC}"
     echo "  SK: ${tempo_secret_keys}s | PK: ${tempo_public_keys}s | Assinatura: ${tempo_assinatura}s"
@@ -249,7 +333,7 @@ testar_mss() {
     (cd ../MSS && rm -f *.txt *.bin 2>/dev/null || true)
     
     # MSS é interativo: Gerar árvore (1), Assinar (2), Verificar (3)
-    local output=$(echo -e "1\n2\nmensagem_teste_mss_${teste_num}\n3\n0" | timeout 30 ../MSS/mss 2>&1)
+    local output=$(cd ../MSS && echo -e "1\n2\nmensagem_teste_mss_${teste_num}\n3\n0" | timeout 120 ./mss 2>&1)
     
     if [ $? -ne 0 ]; then
         echo -e "${RED}Erro no teste MSS $teste_num${NC}"
@@ -268,14 +352,20 @@ testar_mss() {
     tempo_arvore=${tempo_arvore:-"0"}
     tempo_assinatura=${tempo_assinatura:-"0"}
     
-    # Tamanho fixo baseado em WOTS N=32, W=16 (MSS usa WOTS)
-    local tamanho_secret=2144   # Chave secreta WOTS
-    local tamanho_public=2144   # Chave pública WOTS
-    local tamanho_assinatura=2144  # Assinatura WOTS
+    # Tamanho real dos arquivos (se existirem)
+    local tamanho_secret=$(file_size_or_default "../MSS/folhas.txt" "0")
+    local tamanho_public=$(file_size_or_default "../MSS/public_key.txt" "0")
+    local tamanho_assinatura=$(file_size_or_default "../MSS/assinatura.txt" "0")
+    
+    # Coleta valgrind (só na 1ª execução, e com timeout maior)
+    local vg_metrics="0,0"
+    if [ "$teste_num" -eq 1 ]; then
+        vg_metrics=$(coletar_valgrind "./mss" "../MSS" "1\n2\nmensagem_valgrind\n3\n0")
+    fi
     
     # Salva no CSV (tempo_folhas, tempo_arvore, 0, tempo_assinatura)
     # Usando colunas: Tempo_SecretKeys=folhas, Tempo_PublicKeys=arvore, Tempo_Masks=0, Tempo_Assinatura
-    echo "MSS,$teste_num,$tempo_folhas,$tempo_arvore,0,$tempo_assinatura,0,$tamanho_secret,$tamanho_public,$tamanho_assinatura" >> "$RESULTADO_FILE"
+    echo "MSS,$teste_num,$tempo_folhas,$tempo_arvore,0,$tempo_assinatura,0,$tamanho_secret,$tamanho_public,$tamanho_assinatura,$vg_metrics" >> "$RESULTADO_FILE"
     
     echo -e "${GREEN}MSS Teste $teste_num: OK${NC}"
     echo "  Folhas: ${tempo_folhas}s | Árvore: ${tempo_arvore}s | Assinatura: ${tempo_assinatura}s"

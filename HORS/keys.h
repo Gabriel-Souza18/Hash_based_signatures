@@ -36,6 +36,9 @@ typedef struct {
     unsigned char assinatura[HORS_K][HORS_N];
 } Assinatura;
 
+extern double hors_tempo_sk;
+extern double hors_tempo_pk;
+
 void gerarKeys(Keys* keys);
 int selecionarIndices(unsigned char *hash, int *indices);
 void assinarMensagem(const char* msg,int msg_len, 

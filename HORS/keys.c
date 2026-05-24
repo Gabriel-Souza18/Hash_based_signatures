@@ -5,16 +5,29 @@
 #include <sodium.h>
 #include <math.h>
 #include <string.h>
+#include <time.h>
+
+double hors_tempo_sk = 0.0;
+double hors_tempo_pk = 0.0;
 
 void gerarKeys(Keys* keys){
     if(sodium_init() < 0){
         fprintf(stderr, "Erro: falha ao inicializar libsodium.\n");
         exit(EXIT_FAILURE);
     }
+    clock_t inicio_sk = clock();
     for (int i = 0; i < HORS_T; i++) {
         randombytes_buf(keys->SKeys[i], KEY_SIZE);
+    }
+    clock_t fim_sk = clock();
+    hors_tempo_sk = (double)(fim_sk - inicio_sk) / CLOCKS_PER_SEC;
+
+    clock_t inicio_pk = clock();
+    for (int i = 0; i < HORS_T; i++) {
         sha256_bytes(keys->SKeys[i], KEY_SIZE, keys->PKeys[i]);
     }
+    clock_t fim_pk = clock();
+    hors_tempo_pk = (double)(fim_pk - inicio_pk) / CLOCKS_PER_SEC;
     printf("Chaves Geradas\n");
 }
 
