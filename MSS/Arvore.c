@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
+#include <time.h>
 
 No *alocarNo(){
     No *no = (No*)malloc(sizeof(No));
@@ -78,6 +79,8 @@ void criarPai(No* pai){
 }
 
 void criarFolhas(Folha *folhas, int quantFolhas){
+    clock_t inicio = clock();
+    
     // Gera seeds base
     unsigned char base_PK_seed[N];
     unsigned char base_SK_seed[N];
@@ -113,10 +116,17 @@ void criarFolhas(Folha *folhas, int quantFolhas){
         }
         sha256_hex(buffer, strlen(buffer), folhas[i].hash);
     }
+    
+    clock_t fim = clock();
+    double tempo = (double)(fim - inicio) / CLOCKS_PER_SEC;
+    printf("Tempo para gerar Folhas: %.6f segundos\n", tempo);
+    fflush(stdout);
 }
 
 void criarAssinatura(AssinaturaMSS* assinatura, No* raiz, 
                     Folha* folhaUsada,int indice, int numFolhas, char* mensagem){
+    clock_t inicio = clock();
+    
     if (folhaUsada->usada == 1) {
         printf("ERRO: FOLHA JA USADA");
         return;
@@ -146,6 +156,11 @@ void criarAssinatura(AssinaturaMSS* assinatura, No* raiz,
     assinarMensagem(msgHash, assinatura->wotsSignature, folhaUsada->Skeys);
 
     folhaUsada->usada = 1;
+    
+    clock_t fim = clock();
+    double tempo = (double)(fim - inicio) / CLOCKS_PER_SEC;
+    printf("Tempo para Assinar: %.6f segundos\n", tempo);
+    fflush(stdout);
 }
 
 int verificarAssinatura(AssinaturaMSS* assinatura, char* Pkey, PublicKeys* folhaPkeys){

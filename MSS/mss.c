@@ -19,9 +19,7 @@ void imprimirMenu();
 int main(){
     int opcao = 0;
 
-        
-
-               
+    while(1) {
         imprimirMenu();
         scanf("%d", &opcao);
         getchar(); // Limpa buffer
@@ -39,11 +37,12 @@ int main(){
                 break;
             case 0:
                 printf("Saindo...\n");
+                return 0;
     
             default:
                 printf("Opção inválida!\n");
         }
-        
+    }
     
     return 0;
 }
@@ -217,6 +216,8 @@ void verificarAssinaturaMenu() {
 }
 
 No* mssTree(Folha* folhas){
+    clock_t inicio_arvore = clock();
+    
     criarFolhas(folhas, NUM_FOLHAS);
     int andar = 1;
     int numNoAndar = NUM_FOLHAS/pow(2,andar);
@@ -261,6 +262,11 @@ No* mssTree(Folha* folhas){
         andar++;
 
     }
+
+    clock_t fim_arvore = clock();
+    double tempo_arvore = (double)(fim_arvore - inicio_arvore) / CLOCKS_PER_SEC;
+    printf("Tempo para gerar Árvore: %.6f segundos\n", tempo_arvore);
+    fflush(stdout);
 
     printf("\nTerminou de gerar Arvore\n");
     printf("ultimo no: %s\n", andarAtual[0]->hash);
