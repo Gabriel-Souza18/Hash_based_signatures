@@ -7,7 +7,7 @@
 #include <string.h>
 #include <math.h>
 
-#define NUM_FOLHAS 8 // sempre tem que ser 2^n
+#define NUM_FOLHAS 1024 // sempre tem que ser 2^n  (H = log2(1024) = 10)
 
 // Protótipos
 No* mssTree(Folha* folhas);

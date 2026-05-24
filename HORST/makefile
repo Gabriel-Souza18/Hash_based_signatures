@@ -9,11 +9,16 @@ TARGET = testeHORST
 
 all: $(TARGET)
 
-$(TARGET): $(OBJS)
+$(TARGET): $(OBJS) ../SHA256/libsha256.a
 	$(CC) $(OBJS) -o $(TARGET) $(LDFLAGS)
 
 %.o: %.c
 	$(CC) $(CFLAGS) -c $< -o $@
+
+# Garantir que a biblioteca SHA256 está compilada
+../SHA256/libsha256.a:
+	@echo "Compilando biblioteca SHA256..."
+	$(MAKE) -C ../SHA256
 
 test: all
 	./$(TARGET)

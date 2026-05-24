@@ -99,7 +99,7 @@ void escreverPkeys(char* caminho, PublicKeys *pKeys){
     printf("Chaves públicas salvas em: %s\n", caminho);
 }
 
-// Função para escrever assinatura em arquivo (formato binário otimizado)
+// Funcão para escrever assinatura em arquivo (formato binário)
 void escreverAssinatura(char* caminho, uint8_t assinatura[256][KEY_SIZE], int tamanho){
     FILE *arquivo = fopen(caminho, "wb");  // Modo binário
     if (!arquivo) {
@@ -107,17 +107,14 @@ void escreverAssinatura(char* caminho, uint8_t assinatura[256][KEY_SIZE], int ta
         return;
     }
     
-    // Escreve o número de assinaturas
-    fwrite(&tamanho, sizeof(int), 1, arquivo);
-    
-    // Escreve todas as 256 chaves de 32 bytes cada
+    // Escreve todas as 256 chaves de 32 bytes cada (sem cabeçalho)
     for (int i = 0; i < tamanho; i++) {
         fwrite(assinatura[i], sizeof(uint8_t), KEY_SIZE, arquivo);
     }
     
     fclose(arquivo);
-    printf("Assinatura salva em: %s (formato binário, %d x %d bytes)\n", 
-           caminho, tamanho, KEY_SIZE);
+    printf("Assinatura salva em: %s (formato binário, %d x %d bytes = %d bytes)\n", 
+           caminho, tamanho, KEY_SIZE, tamanho * KEY_SIZE);
 }
 
 // Função para ler assinatura de arquivo (formato binário)
@@ -128,13 +125,8 @@ uint8_t (*lerAssinatura(char* caminho, int *tamanho))[KEY_SIZE]{
         return NULL;
     }
 
-    // Lê o número de assinaturas
-    int count;
-    if (fread(&count, sizeof(int), 1, arquivo) != 1) {
-        printf("Erro: arquivo de assinatura inválido\n");
-        fclose(arquivo);
-        return NULL;
-    }
+    // Tamanho fixo: 256 elementos de KEY_SIZE bytes (sem cabeçalho)
+    int count = 256;
     
     // Aloca memória para as assinaturas
     uint8_t (*assinatura)[KEY_SIZE] = malloc(count * sizeof(uint8_t[KEY_SIZE]));

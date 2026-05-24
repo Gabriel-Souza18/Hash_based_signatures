@@ -62,6 +62,15 @@ Assinatura* mallocAssinatura() {
     return a;
 }
 
+// Deriva W-1 máscaras pseudo-aleatórias para a chave de índice key_index.
+// Deve ser chamada antes de chainFunctionWOTSplus para pré-computar as máscaras.
+static void deriveMasksForKey(int key_index, unsigned char masks[W - 1][N]) {
+    unsigned char ADRS[32];
+    for (int step = 0; step < W - 1; step++) {
+        setADRS_WOTS_MASK(ADRS, key_index, step);
+        PRF_SHA2(masks[step], PK_seed, SK_seed, ADRS, N);
+    }
+}
 
 void generateSKeys(SecretKeys* sKeys) {
     unsigned char ADRS[32];
@@ -81,18 +90,15 @@ void generatePKeys(PublicKeys* pKeys, SecretKeys* sKeys) {
     // Para cada uma das L chaves secretas
     for (int i = 0; i < L; i++) {
         // Configurar ADRS para WOTS_HASH
-        setADRS_WOTS_HASH(ADRS, i, 0, 0); // chain_index e hash_index serão atualizados na chain function
+        setADRS_WOTS_HASH(ADRS, i, 0, 0);
+        
+        // Pré-calcular máscaras para esta chave (W-1 hashes PRF)
+        unsigned char masks[W - 1][N];
+        deriveMasksForKey(i, masks);
         
         // Aplicar chain function com W-1 passos (começando do índice 0)
-        chainFunctionWOTSplus((unsigned char*)sKeys->Sk[i], W-1, (unsigned char*)pKeys->PK[i], ADRS, 0, i);
-    }
-}
-
-static void deriveMasksForKey(int key_index, unsigned char masks[W - 1][N]) {
-    unsigned char ADRS[32];
-    for (int step = 0; step < W - 1; step++) {
-        setADRS_WOTS_MASK(ADRS, key_index, step);
-        PRF_SHA2(masks[step], PK_seed, SK_seed, ADRS, N);
+        chainFunctionWOTSplus((unsigned char*)sKeys->Sk[i], W-1,
+                             (unsigned char*)pKeys->PK[i], ADRS, 0, masks);
     }
 }
 
@@ -119,12 +125,13 @@ void chainFunction(unsigned char* src, int steps, unsigned char* output, unsigne
     }
 }
 
-void chainFunctionWOTSplus(unsigned char* src, int steps, unsigned char* output, unsigned char* ADRS_base, int start_index, int key_index) {
+// Executa a função de cadeia WOTS+ usando máscaras pré-calculadas.
+// 'masks' deve ter W-1 entradas de N bytes (pré-derivadas via deriveMasksForKey).
+void chainFunctionWOTSplus(unsigned char* src, int steps, unsigned char* output,
+                           unsigned char* ADRS_base, int start_index,
+                           const unsigned char masks[W - 1][N]) {
     unsigned char ADRS[32];
     memcpy(ADRS, ADRS_base, 32);
-
-    unsigned char masks[W - 1][N];
-    deriveMasksForKey(key_index, masks);
 
     // Copiar src para output
     memcpy(output, src, N);
@@ -135,8 +142,8 @@ void chainFunctionWOTSplus(unsigned char* src, int steps, unsigned char* output,
         // Atualizar hash do ADRS (hash_idx)
         ADRS[28] = (hash_idx >> 24) & 0xFF;
         ADRS[29] = (hash_idx >> 16) & 0xFF;
-        ADRS[30] = (hash_idx >> 8) & 0xFF;
-        ADRS[31] = hash_idx & 0xFF;
+        ADRS[30] = (hash_idx >>  8) & 0xFF;
+        ADRS[31] =  hash_idx        & 0xFF;
 
         unsigned char masked[N];
         for (int j = 0; j < N; j++) {
@@ -204,9 +211,14 @@ void assinarMensagem(const unsigned char msgHash[N],  Assinatura* assinatura,
     for (int i = 0; i < L; i++) {
         unsigned char ADRS[32];
         setADRS_WOTS_HASH(ADRS, i, 0, 0);
-        chainFunctionWOTSplus((unsigned char*)sKeys->Sk[i], b[i], (unsigned char*)assinatura->assinatura[i], ADRS, 0, i);
+        
+        // Pré-calcular máscaras uma única vez para esta chave
+        unsigned char masks[W - 1][N];
+        deriveMasksForKey(i, masks);
+        
+        chainFunctionWOTSplus((unsigned char*)sKeys->Sk[i], b[i],
+                             (unsigned char*)assinatura->assinatura[i], ADRS, 0, masks);
     }
-
 }
 
 int verificarMensagem(const unsigned char msgHash[N], Assinatura* assinatura, PublicKeys* pKeys) {
@@ -229,10 +241,15 @@ int verificarMensagem(const unsigned char msgHash[N], Assinatura* assinatura, Pu
         unsigned char computed_pk[N];
         int remaining_steps = W - 1 - b[i];
         
+        // Pré-calcular máscaras uma única vez para esta chave
+        unsigned char masks[W - 1][N];
+        deriveMasksForKey(i, masks);
+        
         if (remaining_steps > 0) {
             unsigned char ADRS[32];
             setADRS_WOTS_HASH(ADRS, i, 0, 0);
-            chainFunctionWOTSplus(assinatura->assinatura[i], remaining_steps, computed_pk, ADRS, b[i], i);
+            chainFunctionWOTSplus(assinatura->assinatura[i], remaining_steps,
+                                  computed_pk, ADRS, b[i], masks);
         } else {
             memcpy(computed_pk, assinatura->assinatura[i], N);
         }

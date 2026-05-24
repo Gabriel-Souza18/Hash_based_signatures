@@ -12,10 +12,11 @@ NC='\033[0m' # No Color
 
 echo -e "${BLUE}========================================${NC}"
 echo -e "${BLUE}  TESTE DE ALGORITMOS DE ASSINATURA    ${NC}"
+echo -e "${BLUE}  (LOTS, WOTS+, HORS)                  ${NC}"
 echo -e "${BLUE}========================================${NC}"
 
 # Número de testes
-TESTES=100
+TESTES=${TESTES:-100}
 TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
 RESULTADO_DIR="resultados_metricas"
 mkdir -p "$RESULTADO_DIR"
@@ -39,16 +40,6 @@ echo
 # Cria cabeçalho do CSV DEPOIS da compilação (para não ser apagado pelo make clean)
 HEADER="Algoritmo,Teste,Tempo_SecretKeys,Tempo_PublicKeys,Tempo_Masks,Tempo_Assinatura,Hashes_Assinatura,Tamanho_SecretKeys,Tamanho_PublicKeys,Tamanho_Assinatura,Valgrind_Bytes,Valgrind_Erros"
 printf "%s\n" "$HEADER" > "$RESULTADO_FILE"
-
-# Compilar HORS especificamente
-echo -e "${YELLOW}Compilando HORS...${NC}"
-(cd ../HORS && make clean > /dev/null 2>&1)
-(cd ../HORS && make > /dev/null 2>&1)
-if [ $? -ne 0 ]; then
-    echo -e "${RED}Erro ao compilar HORS!${NC}"
-    exit 1
-fi
-echo -e "${GREEN}HORS compilado com sucesso!${NC}"
 
 echo -e "${GREEN}✓ Arquivo CSV criado: $RESULTADO_FILE${NC}"
 echo -e "${BLUE}Header: $(head -1 "$RESULTADO_FILE")${NC}"
@@ -271,105 +262,6 @@ testar_hors() {
     echo "  SK: ${tempo_secret_keys}s | PK: ${tempo_public_keys}s | Assinatura: ${tempo_assinatura}s | Hashes: $hashes_assinatura"
 }
 
-# Função para testar HORST
-testar_horst() {
-    local teste_num=$1
-    echo -e "${BLUE}Testando HORST - Teste $teste_num${NC}"
-    
-    # Limpar arquivos anteriores do HORST
-    (cd ../HORST && rm -f *.bin mensagem.txt 2>/dev/null || true)
-    
-    # HORST é interativo, gera métricas durante execução
-    # Gerar chaves (opção 1), Assinar (opção 2), Verificar (opção 3)
-    local output=$(cd ../HORST && echo -e "1\n2\nmensagem_teste_horst_${teste_num}\n3\n0" | timeout 30 ./testeHORST 2>&1)
-    
-    if [ $? -ne 0 ]; then
-        echo -e "${RED}Erro no teste HORST $teste_num${NC}"
-        # Valores padrão para falha
-        echo "HORST,$teste_num,0,0,0,0,0,32768,32768,832" >> "$RESULTADO_FILE"
-        return 1
-    fi
-    
-    # Extrair tempos do output
-    local tempo_secret_keys=$(echo "$output" | grep "Tempo para gerar Chaves Secretas:" | awk -F': ' '{print $2}' | awk '{print $1}')
-    local tempo_public_keys=$(echo "$output" | grep "Tempo para gerar Chave Publica:" | awk -F': ' '{print $2}' | awk '{print $1}')
-    local tempo_assinatura=$(echo "$output" | grep "Tempo para Assinar:" | awk -F': ' '{print $2}' | awk '{print $1}')
-    
-    # Valores padrão se não encontrados
-    tempo_secret_keys=${tempo_secret_keys:-"0"}
-    tempo_public_keys=${tempo_public_keys:-"0"}
-    tempo_assinatura=${tempo_assinatura:-"0"}
-    
-    # Tamanho real dos arquivos (se existirem)
-    local tamanho_secret=$(file_size_or_default "../HORST/seckeys.bin" "32768")
-    local tamanho_public=$(file_size_or_default "../HORST/pubkey.bin" "32")
-    local tamanho_assinatura=$(file_size_or_default "../HORST/assinatura.bin" "832")
-    
-    # Extrair hashes do output
-    local hashes_keygen=$(echo "$output" | grep "Total de hashes SHA256 (keygen)" | awk -F': ' '{print $2}')
-    local hashes_assinatura=$(echo "$output" | grep "Total de hashes SHA256 (assinatura)" | awk -F': ' '{print $2}')
-    hashes_keygen=${hashes_keygen:-"0"}
-    hashes_assinatura=${hashes_assinatura:-"0"}
-    
-    # Coleta valgrind (só na 1ª execução)
-    local vg_metrics="0,0"
-    if [ "$teste_num" -eq 1 ]; then
-        vg_metrics=$(coletar_valgrind "./testeHORST" "../HORST" "1\n2\nmensagem_valgrind\n3\n0")
-    fi
-    
-    # Salva no CSV (hashes_assinatura = soma keygen + assinatura para linha única)
-    echo "HORST,$teste_num,$tempo_secret_keys,$tempo_public_keys,0,$tempo_assinatura,$hashes_assinatura,$tamanho_secret,$tamanho_public,$tamanho_assinatura,$vg_metrics" >> "$RESULTADO_FILE"
-    
-    echo -e "${GREEN}HORST Teste $teste_num: OK${NC}"
-    echo "  SK: ${tempo_secret_keys}s | PK: ${tempo_public_keys}s | Assinatura: ${tempo_assinatura}s"
-}
-
-# Função para testar MSS
-testar_mss() {
-    local teste_num=$1
-    echo -e "${BLUE}Testando MSS - Teste $teste_num${NC}"
-    
-    # Limpar arquivos anteriores do MSS
-    (cd ../MSS && rm -f *.txt *.bin 2>/dev/null || true)
-    
-    # MSS é interativo: Gerar árvore (1), Assinar (2), Verificar (3)
-    local output=$(cd ../MSS && echo -e "1\n2\nmensagem_teste_mss_${teste_num}\n3\n0" | timeout 120 ./mss 2>&1)
-    
-    if [ $? -ne 0 ]; then
-        echo -e "${RED}Erro no teste MSS $teste_num${NC}"
-        # Valores padrão para falha
-        echo "MSS,$teste_num,0,0,0,0,0,2144,2144,2144" >> "$RESULTADO_FILE"
-        return 1
-    fi
-    
-    # Extrair tempos do MSS
-    local tempo_folhas=$(echo "$output" | grep "Tempo para gerar Folhas:" | awk -F': ' '{print $2}' | awk '{print $1}')
-    local tempo_arvore=$(echo "$output" | grep "Tempo para gerar Árvore:" | awk -F': ' '{print $2}' | awk '{print $1}')
-    local tempo_assinatura=$(echo "$output" | grep "Tempo para Assinar:" | awk -F': ' '{print $2}' | awk '{print $1}')
-    
-    # Valores padrão se não encontrados
-    tempo_folhas=${tempo_folhas:-"0"}
-    tempo_arvore=${tempo_arvore:-"0"}
-    tempo_assinatura=${tempo_assinatura:-"0"}
-    
-    # Tamanho real dos arquivos (se existirem)
-    local tamanho_secret=$(file_size_or_default "../MSS/folhas.txt" "0")
-    local tamanho_public=$(file_size_or_default "../MSS/public_key.txt" "0")
-    local tamanho_assinatura=$(file_size_or_default "../MSS/assinatura.txt" "0")
-    
-    # Coleta valgrind (só na 1ª execução, e com timeout maior)
-    local vg_metrics="0,0"
-    if [ "$teste_num" -eq 1 ]; then
-        vg_metrics=$(coletar_valgrind "./mss" "../MSS" "1\n2\nmensagem_valgrind\n3\n0")
-    fi
-    
-    # Salva no CSV (tempo_folhas, tempo_arvore, 0, tempo_assinatura)
-    # Usando colunas: Tempo_SecretKeys=folhas, Tempo_PublicKeys=arvore, Tempo_Masks=0, Tempo_Assinatura
-    echo "MSS,$teste_num,$tempo_folhas,$tempo_arvore,0,$tempo_assinatura,0,$tamanho_secret,$tamanho_public,$tamanho_assinatura,$vg_metrics" >> "$RESULTADO_FILE"
-    
-    echo -e "${GREEN}MSS Teste $teste_num: OK${NC}"
-    echo "  Folhas: ${tempo_folhas}s | Árvore: ${tempo_arvore}s | Assinatura: ${tempo_assinatura}s"
-}
 
 echo -e "${YELLOW}Iniciando testes ($TESTES execuções para cada algoritmo)...${NC}"
 echo
@@ -388,14 +280,6 @@ for i in $(seq 1 $TESTES); do
     
     # Testa HORS
     testar_hors $i
-    sleep 1
-    
-    # Testa HORST
-    testar_horst $i
-    sleep 1
-    
-    # Testa MSS
-    testar_mss $i
     sleep 1
     
     echo

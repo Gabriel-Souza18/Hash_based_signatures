@@ -30,13 +30,17 @@ int main(){
 
         initializeSeeds();
 
-        clock_t inicioSk= clock();
+        clock_t inicioSk = clock();
+        sha256_reset_counter();
         generateSKeys(sKeys);
         clock_t fimSk = clock();
+        unsigned long long hashes_sk = sha256_get_counter();
 
         clock_t inicioPk = clock();
+        sha256_reset_counter();
         generatePKeys(pKeys, sKeys);
         clock_t fimPk = clock();
+        unsigned long long hashes_pk = sha256_get_counter();
 
         char mensagem[1001];
         printf("Digite sua mensagem:\n");
@@ -52,8 +56,10 @@ int main(){
         sha256_bytes(mensagem, strlen(mensagem), msgHash);
 
         clock_t inicioAssinatura = clock();
+        sha256_reset_counter();
         assinarMensagem(msgHash,assinatura, sKeys);
         clock_t fimAssinatura = clock();
+        unsigned long long hashes_sign = sha256_get_counter();
 
         escreverAssinatura("Assinatura.txt",assinatura);
         escreverMensagem("Mensagem.txt", mensagem);
@@ -68,7 +74,10 @@ int main(){
         printf("Tempo para Assinar: %lfs\n", 
             (double)(fimAssinatura-inicioAssinatura)/CLOCKS_PER_SEC);
         
-        printf("Total de hashes SHA256: %llu\n", sha256_get_counter());
+        printf("Hashes_SK: %llu\n", hashes_sk);
+        printf("Hashes_PK: %llu\n", hashes_pk);
+        printf("Hashes_Sign: %llu\n", hashes_sign);
+        printf("Total de hashes SHA256: %llu\n", hashes_sk + hashes_pk + hashes_sign);
     
         // Calcula o tamanho real da assinatura WOTS
         unsigned long tamanho_assinatura = L * N; // 67 * 32 = 2.144 bytes

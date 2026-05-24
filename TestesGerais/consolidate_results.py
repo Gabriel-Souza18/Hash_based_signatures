@@ -62,9 +62,11 @@ def calculate_averages(rows, numeric_fields):
     
     return averages
 
-def get_latest_csv(directory, pattern):
+def get_latest_csv(directory, pattern, exclude_pattern=None):
     """Encontra o CSV mais recente que corresponde ao padrão"""
     files = list(Path(directory).glob(pattern))
+    if exclude_pattern:
+        files = [f for f in files if exclude_pattern not in f.name]
     if files:
         return sorted(files)[-1]
     return None
@@ -76,17 +78,29 @@ def main():
     
     results_dir = sys.argv[1]
     
-    # Encontrar CSVs mais recentes
-    algo_csv = get_latest_csv(results_dir, 'resultados_*.csv')
+    # Encontrar CSVs mais recentes (geral vs mss_horst)
+    algo_csv = get_latest_csv(results_dir, 'resultados_*.csv', exclude_pattern='mss_horst')
+    mss_horst_csv = get_latest_csv(results_dir, 'resultados_mss_horst_*.csv')
     valgrind_csv = get_latest_csv(results_dir, 'valgrind_bytes_*.csv')
     
     algo_data = {}
     valgrind_data = {}
     
+    # Carregar dados gerais
     if algo_csv:
-        algo_data = parse_algorithm_csv(str(algo_csv))
+        general_data = parse_algorithm_csv(str(algo_csv))
+        for algo, rows in general_data.items():
+            algo_data[algo] = rows
     else:
-        print("Aviso: Nenhum CSV de algoritmos encontrado", file=sys.stderr)
+        print("Aviso: Nenhum CSV de algoritmos gerais encontrado", file=sys.stderr)
+        
+    # Carregar dados de MSS/HORST
+    if mss_horst_csv:
+        mss_horst_data = parse_algorithm_csv(str(mss_horst_csv))
+        for algo, rows in mss_horst_data.items():
+            algo_data[algo] = rows
+    else:
+        print("Aviso: Nenhum CSV de MSS/HORST encontrado", file=sys.stderr)
     
     if valgrind_csv:
         valgrind_data = parse_valgrind_csv(str(valgrind_csv))

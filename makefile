@@ -5,6 +5,8 @@ SHA256_DIR = SHA256
 LOTS_DIR = LOTS
 WOTS_DIR = WOTS
 MSS_DIR = MSS
+HORS_DIR = HORS
+HORST_DIR = HORST
 TESTE_DIR = TesteHash
 
 # Arquivo de teste libsodium
@@ -12,7 +14,7 @@ SODIUM_TEST_SRC = libsodium_test.c
 SODIUM_TEST_BIN = libsodium_test
 
 # Target padrao: compilar tudo
-all: sha256 lamport wots mss sodium
+all: sha256 lamport wots mss hors horst sodium
 
 # Compilar biblioteca SHA256
 sha256:
@@ -36,6 +38,18 @@ wots: sha256
 mss: sha256
 	@echo "Compilando MSS..."
 	$(MAKE) -C $(MSS_DIR)
+	@echo ""
+
+# Compilar HORS
+hors: sha256
+	@echo "Compilando HORS..."
+	$(MAKE) -C $(HORS_DIR)
+	@echo ""
+
+# Compilar HORST
+horst: sha256
+	@echo "Compilando HORST..."
+	$(MAKE) -C $(HORST_DIR)
 	@echo ""
 
 # Compilar TesteHash
@@ -62,6 +76,8 @@ clean:
 	$(MAKE) -C $(LOTS_DIR) clean
 	$(MAKE) -C $(WOTS_DIR) clean
 	$(MAKE) -C $(MSS_DIR) clean
+	$(MAKE) -C $(HORS_DIR) clean
+	$(MAKE) -C $(HORST_DIR) clean
 	$(MAKE) -C $(TESTE_DIR) clean
 	rm -f $(SODIUM_TEST_BIN)
 	@echo ""
@@ -82,12 +98,14 @@ rebuild: clean all
 help:
 	@echo "Makefile - SHA256 C/CPP"
 	@echo "Targets disponiveis:"
-	@echo "  make           - Compila biblioteca SHA256, Lamport, WOTS e MSS"
+	@echo "  make           - Compila biblioteca SHA256, Lamport, WOTS, MSS, HORS e HORST"
 	@echo "  make all       - Mesmo que 'make'"
 	@echo "  make sha256    - Compila apenas a biblioteca SHA256"
-	@echo "  make lots  	- Compila apenas LOTS"
+	@echo "  make lots      - Compila apenas LOTS"
 	@echo "  make wots      - Compila apenas WOTS"
 	@echo "  make mss       - Compila apenas MSS"
+	@echo "  make hors      - Compila apenas HORS"
+	@echo "  make horst     - Compila apenas HORST"
 	@echo "  make teste     - Compila TesteHash"
 	@echo "  make sodium    - Compila o teste do libsodium"
 	@echo "  make test      - Compila e executa testes automatizados"
@@ -95,4 +113,4 @@ help:
 	@echo "  make rebuild   - Limpa e recompila tudo"
 	@echo "  make help      - Mostra esta mensagem"
 
-.PHONY: all sha256 lots wots mss teste sodium test clean rebuild help
+.PHONY: all sha256 lots wots mss hors horst teste sodium test clean rebuild help

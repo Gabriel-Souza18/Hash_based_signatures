@@ -38,7 +38,7 @@ void generatePKeys(PublicKeys*, SecretKeys*);
 
 void mensageForBlocks(const unsigned char msgHash[N], int* output);
 void chainFunction(unsigned char* src, int steps, unsigned char* output, unsigned char* ADRS_base, int start_index);
-void chainFunctionWOTSplus(unsigned char* src, int steps, unsigned char* output, unsigned char* ADRS_base, int start_index, int key_index);
+void chainFunctionWOTSplus(unsigned char* src, int steps, unsigned char* output, unsigned char* ADRS_base, int start_index, const unsigned char masks[W - 1][N]);
 void calcularChecksum(const int* message_blocks, int* checksum_blocks);
 
 void assinarMensagem(const unsigned char msgHash[N], Assinatura*, SecretKeys*);

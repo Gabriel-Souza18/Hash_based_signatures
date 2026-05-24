@@ -24,6 +24,9 @@ int main() {
         return 1;
     }
 
+    // Reseta contador global de hashes SHA256
+    sha256_reset_counter();
+
     int opcao;
     while(1) {
         opcao = menu();
@@ -85,6 +88,8 @@ int gerarChaves() {
         return 0;
     }
     printf("Chaves geradas com sucesso!\n");
+    printf("Total de hashes SHA256 (keygen): %llu\n", sha256_get_counter());
+    sha256_reset_counter();
     return 1;
 }
 
@@ -140,6 +145,8 @@ int assinarMsg() {
     
     liberarArvore(raiz);
     printf("Mensagem assinada com sucesso!\n");
+    printf("Total de hashes SHA256 (assinatura): %llu\n", sha256_get_counter());
+    sha256_reset_counter();
     return 1;
 }
 
@@ -191,7 +198,8 @@ int verificarMsg() {
     } else {
         printf("ASSINATURA INVÁLIDA!\n");
     }
-    
+    printf("Total de hashes SHA256 (verificacao): %llu\n", sha256_get_counter());
+    sha256_reset_counter();
     return resultado;
 }
 
