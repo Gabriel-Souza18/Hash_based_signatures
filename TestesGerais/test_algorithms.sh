@@ -17,14 +17,16 @@ echo -e "${BLUE}========================================${NC}"
 # Número de testes
 TESTES=10
 TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
-RESULTADO_FILE="resultados_${TIMESTAMP}.csv"
+RESULTADO_DIR="resultados_metricas"
+mkdir -p "$RESULTADO_DIR"
+RESULTADO_FILE="$RESULTADO_DIR/resultados_${TIMESTAMP}.csv"
 
 # Mensagem de teste padrão
 MENSAGEM_TESTE="Esta é uma mensagem de teste para avaliar os algoritmos de assinatura digital."
 
 echo -e "${YELLOW}Compilando algoritmos...${NC}"
-make clean > /dev/null 2>&1
-make all > /dev/null 2>&1
+(cd .. && make clean > /dev/null 2>&1)
+(cd .. && make all > /dev/null 2>&1)
 
 if [ $? -ne 0 ]; then
     echo -e "${RED}Erro na compilação!${NC}"
@@ -40,15 +42,13 @@ printf "%s\n" "$HEADER" > "$RESULTADO_FILE"
 
 # Compilar HORS especificamente
 echo -e "${YELLOW}Compilando HORS...${NC}"
-make -C HORS clean > /dev/null 2>&1
-make -C HORS > /dev/null 2>&1
+(cd ../HORS && make clean > /dev/null 2>&1)
+(cd ../HORS && make > /dev/null 2>&1)
 if [ $? -ne 0 ]; then
     echo -e "${RED}Erro ao compilar HORS!${NC}"
     exit 1
 fi
 echo -e "${GREEN}HORS compilado com sucesso!${NC}"
-
-echo -e "${GREEN}✓ Arquivo CSV criado: $RESULTADO_FILE${NC}"
 
 echo -e "${GREEN}✓ Arquivo CSV criado: $RESULTADO_FILE${NC}"
 echo -e "${BLUE}Header: $(head -1 "$RESULTADO_FILE")${NC}"
@@ -67,8 +67,11 @@ testar_lamport() {
     local teste_num=$1
     echo -e "${BLUE}Testando Lamport - Teste $teste_num${NC}"
     
+    # Limpar arquivos anteriores do LOTS
+    (cd ../LOTS && rm -f assinatura.txt mensagem.txt publicKeys.txt 2>/dev/null || true)
+    
     # Teste de assinatura (opção 1)
-    local output_assinatura=$(echo -e "1\n$MENSAGEM_TESTE" | timeout 30 ./LOTS/lots 2>&1)
+    local output_assinatura=$(echo -e "1\n$MENSAGEM_TESTE" | timeout 30 ../LOTS/lots 2>&1)
     
     if [ $? -ne 0 ]; then
         echo -e "${RED}Erro no teste Lamport $teste_num (assinatura)${NC}"
@@ -76,7 +79,7 @@ testar_lamport() {
     fi
     
     # Teste de verificação (opção 2)
-    local output_verificacao=$(echo "2" | timeout 30 ./LOTS/lots 2>&1)
+    local output_verificacao=$(echo "2" | timeout 30 ../LOTS/lots 2>&1)
     
     if [ $? -ne 0 ]; then
         echo -e "${RED}Erro no teste Lamport $teste_num (verificação)${NC}"
@@ -115,8 +118,11 @@ testar_wots() {
     local teste_num=$1
     echo -e "${BLUE}Testando WOTS - Teste $teste_num${NC}"
     
+    # Limpar arquivos anteriores do WOTS
+    (cd ../WOTS && rm -f Assinatura.txt Mensagem.txt PublicKeys.txt Masks.txt 2>/dev/null || true)
+    
     # Teste de assinatura (opção 1)
-    local output_assinatura=$(echo -e "1\n$MENSAGEM_TESTE" | timeout 30 ./WOTS/wots 2>&1)
+    local output_assinatura=$(echo -e "1\n$MENSAGEM_TESTE" | timeout 30 ../WOTS/wots 2>&1)
     
     if [ $? -ne 0 ]; then
         echo -e "${RED}Erro no teste WOTS $teste_num (assinatura)${NC}"
@@ -157,8 +163,11 @@ testar_hors() {
     local teste_num=$1
     echo -e "${BLUE}Testando HORS - Teste $teste_num${NC}"
     
+    # Limpar arquivos anteriores do HORS
+    (cd ../HORS && rm -f assinatura.txt mensagem.txt publicKeys.txt secretKeys.txt assinatura.bin publicKeys.bin 2>/dev/null || true)
+    
     # Teste com hors_test (sem menu)
-    local output_assinatura=$(./HORS/hors_test "$MENSAGEM_TESTE" 2>&1)
+    local output_assinatura=$(../HORS/hors_test "$MENSAGEM_TESTE" 2>&1)
     
     if [ $? -ne 0 ]; then
         echo -e "${RED}Erro no teste HORS $teste_num${NC}"
@@ -218,9 +227,10 @@ echo -e "${GREEN}========================================${NC}"
 echo -e "${GREEN}Resultados salvos em: $RESULTADO_FILE${NC}"
 echo
 
-
-echo "Arquivo CSV gerado: $RESULTADO_FILE"
-
 echo
 echo -e "${GREEN}Script finalizado!${NC}"
 echo -e "${BLUE}Arquivo de resultados: ${YELLOW}$RESULTADO_FILE${NC}"
+
+echo -e "${YELLOW}Limpando arquivos temporários...${NC}"
+(cd .. && make clean > /dev/null 2>&1)
+echo -e "${GREEN}Limpeza concluída!${NC}"

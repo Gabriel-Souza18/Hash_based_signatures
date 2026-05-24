@@ -4,13 +4,10 @@ set -u
 # Script de Valgrind específico por algoritmo (fluxo interativo real de cada um).
 # Executa remetente/destinatário com entradas diferentes por programa.
 
-ROOT_DIR="$(cd "$(dirname "$0")" && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 
-if [ -e "$ROOT_DIR/resultados" ] && [ ! -d "$ROOT_DIR/resultados" ]; then
-  LOG_DIR="$ROOT_DIR/resultados_valgrind"
-else
-  LOG_DIR="$ROOT_DIR/resultados/valgrind"
-fi
+LOG_DIR="$SCRIPT_DIR/Resultados_Valgrind"
 mkdir -p "$LOG_DIR"
 
 VALGRIND="valgrind"
@@ -109,3 +106,7 @@ rodar_horst || true
 rodar_mss || true
 
 echo "Concluido. Logs em: $LOG_DIR"
+
+echo "Limpando arquivos temporários..."
+(cd "$ROOT_DIR" && make clean > /dev/null 2>&1)
+echo "Limpeza concluída!"
