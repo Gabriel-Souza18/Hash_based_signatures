@@ -116,21 +116,17 @@ valgrind --track-origins=yes --leak-check=full ./WOTS/wots
 
 # Fase 8 - shortpaper SBSEG
 - [x] Refazer testes com valgrind
-- [] Focar no artigo
-- [] Trocar lib de hash para openssl
+- [x] Focar no artigo
+- [x] Trocar lib de hash para openssl
 
 ## Falar na proxima reunião 
 
 
 
 ## Corrigir Artigo
-Exemplo de aplicação 2.1 do artigo: armazenamento de senha
-Mostrar exemplos da sha2 e sha3 e nao focar tanto nas diferenças
-Falar que a padronização ja esta concluida com a FIPS 205 WOTS+, etc
-Deixar claro a diferença entre stateful e stateless
-Deixar claro que os 26mil qubits é um preprint
-
-Na metodologia descrever as metricas que vao ser avaliadas
+Enxugar mais, principalmente na introdução e nos trabalhos relacionados, abstract/resumo
+resumir o tamanho pela metade
+ a verificarção acontece por meio da comparacao...
 ---
 ## Strings de busca usadas
 - hash AND signature AND digital AND (ESP32 OR arduino OR iot)
