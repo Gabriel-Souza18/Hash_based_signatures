@@ -151,8 +151,8 @@ void criarAssinatura(AssinaturaMSS* assinatura, No* raiz,
     
     // Cria assinatura WOTS da mensagem
     assinatura->wotsSignature = mallocAssinatura();
-    char msgHash[SHA256_HEX_SIZE];
-    sha256_hex(mensagem, strlen(mensagem), msgHash);
+    unsigned char msgHash[32];
+    sha256_bytes((unsigned char*)mensagem, strlen(mensagem), msgHash);
     assinarMensagem(msgHash, assinatura->wotsSignature, folhaUsada->Skeys);
 
     folhaUsada->usada = 1;
@@ -165,8 +165,8 @@ void criarAssinatura(AssinaturaMSS* assinatura, No* raiz,
 
 int verificarAssinatura(AssinaturaMSS* assinatura, char* Pkey, PublicKeys* folhaPkeys){
     // Primeiro verifica a assinatura WOTS da mensagem
-    char msgHash[SHA256_HEX_SIZE];
-    sha256_hex(assinatura->mensagem, strlen(assinatura->mensagem), msgHash);
+    unsigned char msgHash[32];
+    sha256_bytes((unsigned char*)assinatura->mensagem, strlen(assinatura->mensagem), msgHash);
     
     int wotsValido = verificarMensagem(msgHash, assinatura->wotsSignature, folhaPkeys);
     if (!wotsValido) {

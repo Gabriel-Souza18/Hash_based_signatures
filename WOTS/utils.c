@@ -107,8 +107,12 @@ void lerPkeys(char* caminho, PublicKeys *pKeys, unsigned char* pk_seed, unsigned
     }
     
     // Lê PK_SEED e SK_SEED
-    fread(pk_seed, 1, N, arquivo);
-    fread(sk_seed, 1, N, arquivo);
+    if (fread(pk_seed, 1, N, arquivo) != N) {
+        printf("Erro ao ler PK_seed\n");
+    }
+    if (fread(sk_seed, 1, N, arquivo) != N) {
+        printf("Erro ao ler SK_seed\n");
+    }
     
     // Lê as chaves públicas
     size_t lidos = fread(pKeys, sizeof(PublicKeys), 1, arquivo);
