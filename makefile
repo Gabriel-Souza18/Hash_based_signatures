@@ -23,7 +23,7 @@ sha256:
 	@echo ""
 
 # Compilar LOTS
-lamport: sha256
+lots: sha256
 	@echo "Compilando LOTS..."
 	$(MAKE) -C $(LOTS_DIR)
 	@echo ""
@@ -65,9 +65,17 @@ sodium:
 	@echo ""
 
 # Executar testes automatizados
-test: all
-	@echo "Executando testes..."
-	./test_algorithms.sh
+master_tests: all
+	@echo "Executando teste Geral..."
+	./TestesGerais/master_tests.sh
+
+sing_tests: lots wots hors
+	@echo "Testando LOTS, WOTS, e HORS"
+	./TestesGerais/test_algorithms.sh
+
+tree_test: mss horst
+	@echo "Testando MSS e HORST"
+	./TestesGerais/test_mss_horst.sh
 
 # Limpar tudo
 clean:
