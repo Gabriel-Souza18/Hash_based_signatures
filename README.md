@@ -5,7 +5,7 @@ Este projeto implementa e compara algoritmos de assinatura digital baseados em h
 
 ---
 
-## 📁 Estrutura do Projeto
+##  Estrutura do Projeto
 
 ```
 HASH_BASED_SIGNATURES/
@@ -73,7 +73,7 @@ valgrind --track-origins=yes --leak-check=full ./"DIR"/"Executavel"
 ## Strings de busca usadas
 - hash AND signature AND digital AND (ESP32 OR arduino OR iot)
 
-## 📚 Referência Principal 
+##  Referência Principal 
 
 ### An Overview of Hash Based Signatures <br>
 #### Vikas Srivastava , Anubhab Baksi, and Sumit Kumar Debnath1<br>
