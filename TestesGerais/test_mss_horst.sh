@@ -35,7 +35,7 @@ fi
 echo -e "${GREEN}HORST compilado com sucesso!${NC}"
 
 echo -e "${YELLOW}Compilando MSS...${NC}"
-(cd .. && make clean > /dev/null 2>&1 && make all > /dev/null 2>&1)
+(cd ../SHA256 && make > /dev/null 2>&1 && cd ../MSS && make clean > /dev/null 2>&1 && make > /dev/null 2>&1)
 if [ $? -ne 0 ]; then
     echo -e "${RED}Erro ao compilar MSS!${NC}"
     exit 1
@@ -73,17 +73,27 @@ coletar_valgrind() {
     local input="$3"
     local timeout_val="${4:-120}"
 
-    local vg_output
-    vg_output=$(cd "$dir" && echo -e "$input" | timeout "$timeout_val" \
-        valgrind --tool=memcheck --leak-check=full --error-exitcode=0 \
-        $executavel 2>&1 | tail -20)
+    # Usa --log-file para separar o relatório Valgrind do stdout do programa
+    local vg_log
+    vg_log=$(mktemp /tmp/vg_XXXXXX.log)
 
+    (cd "$dir" && echo -e "$input" | timeout "$timeout_val" \
+        valgrind --tool=memcheck --leak-check=full --error-exitcode=0 \
+        --log-file="$vg_log" \
+        $executavel > /dev/null 2>&1) || true
+
+    local vg_output
+    vg_output=$(cat "$vg_log" 2>/dev/null)
+    rm -f "$vg_log"
+
+    # Extrai bytes alocados no total (total heap usage)
     local bytes_uso
-    bytes_uso=$(echo "$vg_output" | grep -i "in use at exit" | grep -oP '[0-9,]+(?= bytes)' | tr -d ',' | head -1)
+    bytes_uso=$(echo "$vg_output" | grep -i "total heap usage" | grep -oP '[0-9,]+(?= bytes allocated)' | tr -d ',' | head -1)
     bytes_uso=${bytes_uso:-"0"}
 
+    # Extrai erros totais
     local erros
-    erros=$(echo "$vg_output" | grep -i "ERROR SUMMARY" | grep -oP '[0-9]+(?= errors)' | head -1)
+    erros=$(echo "$vg_output" | grep -i "ERROR SUMMARY" | grep -oP '^[0-9]+' | head -1)
     erros=${erros:-"0"}
 
     echo "${bytes_uso},${erros}"

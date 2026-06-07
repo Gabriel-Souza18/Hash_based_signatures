@@ -26,10 +26,14 @@ RESULTADO_FILE="$RESULTADO_DIR/resultados_${TIMESTAMP}.csv"
 MENSAGEM_TESTE="Esta é uma mensagem de teste para avaliar os algoritmos de assinatura digital."
 
 echo -e "${YELLOW}Compilando algoritmos...${NC}"
-(cd .. && make clean > /dev/null 2>&1)
-(cd .. && make all > /dev/null 2>&1)
+# Compilar módulos individualmente (o make all da raiz pode não suportar todos os targets)
+compile_err=0
+(cd ../SHA256 && make > /dev/null 2>&1) || { echo -e "${RED}Erro ao compilar SHA256!${NC}"; compile_err=1; }
+(cd ../LOTS   && make clean > /dev/null 2>&1; make > /dev/null 2>&1) || { echo -e "${RED}Erro ao compilar LOTS!${NC}"; compile_err=1; }
+(cd ../WOTS   && make clean > /dev/null 2>&1; make > /dev/null 2>&1) || { echo -e "${RED}Erro ao compilar WOTS!${NC}"; compile_err=1; }
+(cd ../HORS   && make clean > /dev/null 2>&1; make > /dev/null 2>&1) || { echo -e "${RED}Erro ao compilar HORS!${NC}"; compile_err=1; }
 
-if [ $? -ne 0 ]; then
+if [ "$compile_err" -ne 0 ]; then
     echo -e "${RED}Erro na compilação!${NC}"
     exit 1
 fi
@@ -64,26 +68,44 @@ file_size_or_default() {
 }
 
 # Função para coletar métricas de memória com valgrind
-# Retorna "bytes_em_uso,erros_totais"
+# Uso: coletar_valgrind <exe> <dir> <stdin_input> [timeout] [args...]
+# Retorna "bytes_alocados_total,erros_totais"
 coletar_valgrind() {
     local executavel="$1"
     local dir="$2"
     local input="$3"
+    local timeout_val="${4:-60}"
+    shift 4 || shift $#
+    local extra_args=("$@")
 
-    # Executa com valgrind --tool=memcheck
+    # Usa --log-file para separar o relatório Valgrind do stdout do programa
+    local vg_log
+    vg_log=$(mktemp /tmp/vg_XXXXXX.log)
+
+    if [ -n "$input" ]; then
+        (cd "$dir" && echo -e "$input" | timeout "$timeout_val" \
+            valgrind --tool=memcheck --leak-check=full --error-exitcode=0 \
+            --log-file="$vg_log" \
+            $executavel "${extra_args[@]}" > /dev/null 2>&1) || true
+    else
+        (cd "$dir" && timeout "$timeout_val" \
+            valgrind --tool=memcheck --leak-check=full --error-exitcode=0 \
+            --log-file="$vg_log" \
+            $executavel "${extra_args[@]}" > /dev/null 2>&1) || true
+    fi
+
     local vg_output
-    vg_output=$(cd "$dir" && echo -e "$input" | timeout 60 \
-        valgrind --tool=memcheck --leak-check=full --error-exitcode=0 \
-        $executavel 2>&1 | tail -20)
+    vg_output=$(cat "$vg_log" 2>/dev/null)
+    rm -f "$vg_log"
 
-    # Extrai bytes em uso no exit
+    # Extrai bytes alocados no total (total heap usage)
     local bytes_uso
-    bytes_uso=$(echo "$vg_output" | grep -i "in use at exit" | grep -oP '[0-9,]+(?= bytes)' | tr -d ',' | head -1)
+    bytes_uso=$(echo "$vg_output" | grep -i "total heap usage" | grep -oP '[0-9,]+(?= bytes allocated)' | tr -d ',' | head -1)
     bytes_uso=${bytes_uso:-"0"}
 
     # Extrai erros totais
     local erros
-    erros=$(echo "$vg_output" | grep -i "ERROR SUMMARY" | grep -oP '[0-9]+(?= errors)' | head -1)
+    erros=$(echo "$vg_output" | grep -i "ERROR SUMMARY" | grep -oP '^[0-9]+' | head -1)
     erros=${erros:-"0"}
 
     echo "${bytes_uso},${erros}"
@@ -252,7 +274,8 @@ testar_hors() {
     # Coleta valgrind (só na 1ª execução)
     local vg_metrics="0,0"
     if [ "$teste_num" -eq 1 ]; then
-        vg_metrics=$(coletar_valgrind "./hors_test" "../HORS" "$MENSAGEM_TESTE")
+        # hors_test recebe a mensagem como argumento de linha de comando
+        vg_metrics=$(coletar_valgrind "./hors_test" "../HORS" "" 60 "$MENSAGEM_TESTE")
     fi
     
     # Salva no CSV (HORS não tem masks, então usa 0)
