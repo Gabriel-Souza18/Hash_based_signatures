@@ -14,7 +14,7 @@ SODIUM_TEST_SRC = libsodium_test.c
 SODIUM_TEST_BIN = libsodium_test
 
 # Target padrao: compilar tudo
-all: sha256 lamport wots mss hors horst sodium
+all: sha256 lots wots mss hors horst sodium
 
 # Compilar biblioteca SHA256
 sha256:
