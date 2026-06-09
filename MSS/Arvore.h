@@ -2,16 +2,20 @@
 #define ARVORE_H
 
 #define sizeTree 256
+#define MSS_HASH_SIZE 32  // SHA-256 em bytes brutos
+
 #include "../SHA256/sha256.h"
 #include "../WOTS/keys.h"
+
 typedef struct {
     int usada; //0 = nao, 1 = sim
     SecretKeys* Skeys;
     PublicKeys* Pkeys;
-    char hash[SHA256_HEX_SIZE];  // Hash da chave pública
-    unsigned char leaf_PK_seed[32];  // Seeds específicos desta folha
+    unsigned char hash[MSS_HASH_SIZE];  // Hash da PK em bytes brutos
+    unsigned char leaf_PK_seed[32];     // Seeds específicos desta folha
     unsigned char leaf_SK_seed[32];
 }Folha;
+
 typedef enum {
     TIPO_NO,      // Filho é um nó interno
     TIPO_FOLHA    // Filho é uma folha
@@ -19,31 +23,31 @@ typedef enum {
 
 // Estrutura para nós internos da árvore
 typedef struct no{
-    char hash[SHA256_HEX_SIZE];
-    
+    unsigned char hash[MSS_HASH_SIZE];  // Hash em bytes brutos
+
     // Ponteiros void para permitir apontar para No ou Folha
     void* filho_esq;
     void* filho_dir;
-    
+
     // Flags para identificar o tipo dos filhos
     TipoFilho tipo_filho_esq;
     TipoFilho tipo_filho_dir;
-    
+
     // Nível do nó na árvore (0 = raiz, aumenta para baixo)
     int nivel;
 }No;
 
 
 typedef struct{
-    char PublicKeysGeral[SHA256_HEX_SIZE];
+    unsigned char PublicKeysGeral[MSS_HASH_SIZE];  // Raiz da árvore em bytes brutos
     int alturaArvore;
     int totalFolhas;
-    // Armazenar apenas a hash da folha usada (evita dangling pointer ao liberar a árvore)
-    char hashFolha[SHA256_HEX_SIZE];
+    // Hash da folha usada em bytes brutos
+    unsigned char hashFolha[MSS_HASH_SIZE];
     int indiceFolha;
     int tamanhoCaminho;
-    char caminho[32][SHA256_HEX_SIZE];
-    // Direções: 0 = alvo estava à esquerda (concat: alvo||irmão), 1 = alvo estava à direita (concat: irmão||alvo)
+    unsigned char caminho[32][MSS_HASH_SIZE];      // Caminho de autenticação em bytes brutos
+    // Direções: 0 = alvo estava à esquerda, 1 = alvo estava à direita
     unsigned char caminhoDirecao[32];
     // Mensagem e assinatura WOTS
     char mensagem[1001];
@@ -58,17 +62,19 @@ AssinaturaMSS * alocarAssinatura();
 // Criação
 void criarFolhas(Folha *folhas, int quantFolhas);
 void criarPai(No *pai);
-void criarAssinatura(AssinaturaMSS* assinatura, No* raiz, 
+void criarAssinatura(AssinaturaMSS* assinatura, No* raiz,
                     Folha* folhaUsada,int indice, int numFolhas, char* mensagem);
 
-int verificarAssinatura(AssinaturaMSS*assinatura, char* Pkey, PublicKeys* folhaPkeys);
+int verificarAssinatura(AssinaturaMSS*assinatura, unsigned char* Pkey, PublicKeys* folhaPkeys);
 
 // Funcoes auxiliares
 void conectarFolhasAoNo(No *no, Folha *folha_esq, Folha *folha_dir);
 
 void coletarCaminhoAutenticacao(AssinaturaMSS *assinatura, No* raiz);
-int coletarCaminhoRecursivo(No* no, const char* folhaAlvoHash, char caminhoAuth[][SHA256_HEX_SIZE], 
-                            unsigned char direcoes[], int* tamanhoPath, int indiceFolha, int numFolhas);
+int coletarCaminhoRecursivo(No* no, const unsigned char* folhaAlvoHash,
+                            unsigned char caminhoAuth[][MSS_HASH_SIZE],
+                            unsigned char direcoes[], int* tamanhoPath,
+                            int indiceFolha, int numFolhas);
 
 
 // Liberação de memória
@@ -90,10 +96,13 @@ void lerFolhas(char* caminho, Folha* folhas, int* numFolhas);
 void escreverArvore(char* caminho, No* raiz);
 void lerArvore(char* caminho, Folha* folhas, int numFolhas, No** raiz);
 
-// Escreve a chave pública geral (hash da raiz) em arquivo texto
-void escreverPublicKey(char* caminho, const char* publicKey);
-// Lê a chave pública geral de um arquivo texto (retorna 1 em sucesso, 0 em falha)
-int lerPublicKey(char* caminho, char* outPublicKey);
+// Escreve/lê a chave pública geral (raiz) em arquivo texto (serializada em hex)
+void escreverPublicKey(char* caminho, const unsigned char* publicKey);
+int lerPublicKey(char* caminho, unsigned char* outPublicKey);
 
+// Utilitário: converte MSS_HASH_SIZE bytes em string hex (buf deve ter >= 65 bytes)
+void bytes_to_hex(const unsigned char* bytes, char* hex);
+// Converte string hex (64 chars) em MSS_HASH_SIZE bytes
+void hex_to_bytes(const char* hex, unsigned char* bytes);
 
 #endif

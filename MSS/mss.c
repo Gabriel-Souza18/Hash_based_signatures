@@ -75,8 +75,11 @@ void gerarArvore() {
     No* raiz = mssTree(folhas);
     
     printf("\nÁrvore gerada com sucesso!\n");
-    printf("Hash da Raiz: %s\n", raiz->hash);
-    
+    // Imprime raiz em hex (bytes brutos)
+    char raiz_hex[MSS_HASH_SIZE * 2 + 1];
+    bytes_to_hex(raiz->hash, raiz_hex);
+    printf("Hash da Raiz: %s\n", raiz_hex);
+
     // Salva árvore e folhas em formato texto
     escreverArvore("arvore.txt", raiz);
     escreverFolhas("folhas.txt", folhas, NUM_FOLHAS);
@@ -172,14 +175,16 @@ void verificarAssinaturaMenu() {
     AssinaturaMSS* assinatura = alocarAssinatura();
     lerAssinaturaMSS("assinatura.txt", assinatura);
     
-    printf("\nAssinatura carregada:\n");
-    printf("  Índice da Folha: %d\n", assinatura->indiceFolha);
+    printf("\n  Índice da Folha: %d\n", assinatura->indiceFolha);
     printf("  Mensagem: %s\n", assinatura->mensagem);
-    printf("  Public Key: %.64s...\n", assinatura->PublicKeysGeral);
+    // PublicKeysGeral agora é bytes brutos — converte para hex para imprimir
+    char pk_hex[MSS_HASH_SIZE * 2 + 1];
+    bytes_to_hex(assinatura->PublicKeysGeral, pk_hex);
+    printf("  Public Key: %.16s...\n", pk_hex);
     printf("  Tamanho do caminho: %d\n", assinatura->tamanhoCaminho);
     
-    // Carrega a chave pública geral do arquivo
-    char publicKey[SHA256_HEX_SIZE];
+    // Carrega a chave pública geral do arquivo (bytes brutos)
+    unsigned char publicKey[MSS_HASH_SIZE];
     lerPublicKey("public_key.txt", publicKey);
 
     // Carrega as folhas para pegar a chave pública WOTS
@@ -269,7 +274,9 @@ No* mssTree(Folha* folhas){
     fflush(stdout);
 
     printf("\nTerminou de gerar Arvore\n");
-    printf("ultimo no: %s\n", andarAtual[0]->hash);
+    char ultimo_hex[MSS_HASH_SIZE * 2 + 1];
+    bytes_to_hex(andarAtual[0]->hash, ultimo_hex);
+    printf("ultimo no: %s\n", ultimo_hex);
     No* raiz = andarAtual[0];
     free(andarAtual);
     return raiz;
