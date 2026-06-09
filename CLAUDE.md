@@ -1,6 +1,6 @@
 # CLAUDE.md - Instruções para Assistente IA
 
-## 📋 Regras Gerais
+## Regras Gerais
 
 1. **Sempre pergunte antes de modificar arquivos fora da pasta especificada**
    - Se o usuário não indicar uma pasta, pergunte: "Qual pasta posso modificar?"
@@ -31,7 +31,7 @@
    - Use Markdown para respostas técnicas
    - Forneça exemplos de compilação/teste quando relevante
 
-## 🔒 O Que NÃO Fazer
+## O Que NÃO Fazer
 
 - ❌ Modificar arquivos fora da pasta indicada sem permissão
 - ❌ Remover código funcional sem justificativa
