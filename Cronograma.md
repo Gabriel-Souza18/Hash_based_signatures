@@ -63,13 +63,22 @@
 ## Falar na proxima reunião 
 
 artigo do SPHINCS:
-    mostrar o arrtigo e tentar entender 
+    mostrar o artigo e tentar entender 
+
 Implementação:
     inicio da implementação
     falar que estava revisando o codigo antigo procurando erros, falar sobre função hex e byte
+
 TCC:
     cenarios de testes, e perguntar sobre algoritmos no texto
 
 
+## Anotaçoes reuniao
+medir vazao de dados(quantos bits ele consegue transmitir)
+pesquisar se da pra medir consumo de enegia do esp32
+procurar tamnho do pacote MQtt
 
 ## Corrigir TCC
+colocar tempo de verificação e vazao
+detalhar mais os 3 itens da metotologia 
+explicar MQTT e comparar HTTP
