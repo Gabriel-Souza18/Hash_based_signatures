@@ -8,8 +8,8 @@
 #include <stdbool.h>
 #include <time.h> 
 
-void assinarMSG(char* msgHash, SecretKeys *sKeys, uint8_t assinatura[256][KEY_SIZE]);
-bool verificarMSG(char* msgHash, PublicKeys *pKeys, uint8_t assinatura[256][KEY_SIZE]);
+void assinarMSG(const uint8_t msgHash[32], SecretKeys *sKeys, uint8_t assinatura[256][KEY_SIZE]);
+bool verificarMSG(const uint8_t msgHash[32], PublicKeys *pKeys, uint8_t assinatura[256][KEY_SIZE]);
 
 int main(void){
     int opção;
@@ -48,14 +48,14 @@ int main(void){
             mensagem[len-1] = '\0';
         }
 
-        char msgHash[SHA256_HEX_SIZE];
-        sha256_hex(mensagem,strlen(mensagem), msgHash);
+        uint8_t msgHash[SHA256_BYTES_SIZE];
+        sha256_bytes(mensagem, strlen(mensagem), msgHash);
 
         // Assinatura agora é array de bytes (32 bytes por posição)
         uint8_t assinatura[256][KEY_SIZE];
 
         clock_t inicioAssin = clock();
-        assinarMSG(msgHash,sKeys, assinatura);
+        assinarMSG(msgHash, sKeys, assinatura);
         clock_t fimAssin = clock();
 
         printf("Chaves geradas no tempo: \n");
@@ -87,9 +87,9 @@ int main(void){
     case 2:
         char mensagemLida[1000]; // Buffer para a mensagem lida
         lerMensagem("mensagem.txt", mensagemLida);
-        char msgLidaHash[SHA256_HEX_SIZE];
+        uint8_t msgLidaHash[SHA256_BYTES_SIZE];
 
-        sha256_hex(mensagemLida, strlen(mensagemLida), msgLidaHash);
+        sha256_bytes(mensagemLida, strlen(mensagemLida), msgLidaHash);
         PublicKeys *pKeysVerif = lerPkeys("publicKeys.txt");
         if (!pKeysVerif) {
             return 1;
@@ -117,28 +117,14 @@ int main(void){
 
 }
 
-void assinarMSG(char* msgHash, SecretKeys *sKeys, uint8_t assinatura[256][KEY_SIZE]){
+void assinarMSG(const uint8_t msgHash[32], SecretKeys *sKeys, uint8_t assinatura[256][KEY_SIZE]){
     // Para cada bit da mensagem (256 bits no total)
     for (int i = 0; i < 256; i++){
-        // Calcula qual caractere hex e qual bit dentro dele
-        int charIndex = i / 4;  // Cada caractere hex representa 4 bits
-        int bitIndex = i % 4;   // Posição do bit dentro do caractere hex
-        
-        // Converte caractere hex para valor numérico
-            char hexChar = msgHash[charIndex];
-            int hexValue = 0;
-        if (hexChar >= '0' && hexChar <= '9') {
-            hexValue = hexChar - '0';
-        } else if (hexChar >= 'a' && hexChar <= 'f') {
-            hexValue = hexChar - 'a' + 10;
-        } else if (hexChar >= 'A' && hexChar <= 'F') {
-            hexValue = hexChar - 'A' + 10;
-        } else {
-            hexValue = 0;
-        }
+        int byteIndex = i / 8;
+        int bitIndex = i % 8;
         
         // Extrai o bit específico (do mais significativo para o menos)
-        int bit = (hexValue >> (3 - bitIndex)) & 1;
+        int bit = (msgHash[byteIndex] >> (7 - bitIndex)) & 1;
         
         // Copia a chave secreta correspondente ao bit (máscara de bits)
         if (bit == 1){
@@ -149,30 +135,17 @@ void assinarMSG(char* msgHash, SecretKeys *sKeys, uint8_t assinatura[256][KEY_SI
     }   
 }
 
-bool verificarMSG(char* msgHash, PublicKeys *pKeys, uint8_t assinatura[256][KEY_SIZE]){
+bool verificarMSG(const uint8_t msgHash[32], PublicKeys *pKeys, uint8_t assinatura[256][KEY_SIZE]){
     for (int i = 0; i < 256; i++) {
         uint8_t hashAssinatura[KEY_SIZE];
         
         // Hash da assinatura (32 bytes)
         sha256_bytes(assinatura[i], KEY_SIZE, hashAssinatura);
         
-        // Calcula qual bit do hash original
-        int charIndex = i / 4;
-        int bitIndex = i % 4;
+        int byteIndex = i / 8;
+        int bitIndex = i % 8;
         
-        char hexChar = msgHash[charIndex];
-        int hexValue;
-        if (hexChar >= '0' && hexChar <= '9') {
-            hexValue = hexChar - '0';
-        } else if (hexChar >= 'a' && hexChar <= 'f') {
-            hexValue = hexChar - 'a' + 10;
-        } else if (hexChar >= 'A' && hexChar <= 'F') {
-            hexValue = hexChar - 'A' + 10;
-        } else {
-            hexValue = 0;
-        }
-        
-        int bit = (hexValue >> (3 - bitIndex)) & 1;
+        int bit = (msgHash[byteIndex] >> (7 - bitIndex)) & 1;
         
         // Verifica se o hash da assinatura corresponde à chave pública correta
         if (bit == 1) {
