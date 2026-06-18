@@ -62,6 +62,14 @@
 
 ## Falar na proxima reunião 
 
+artigo do SPHINCS:
+    mostrar o arrtigo e tentar entender 
+Implementação:
+    inicio da implementação
+    falar que estava revisando o codigo antigo procurando erros, falar sobre função hex e byte
+TCC:
+    cenarios de testes, e perguntar sobre algoritmos no texto
+
 
 
 ## Corrigir Artigo
