@@ -57,8 +57,8 @@
 - [] Pesquisar e entender SPHINCS
 - [] Implementar o SPHICS
 - [] Realizar testes
-- [] Atualiazr Documentação  e testes
-
+- [] Atualizar Documentação  e testes
+- [] Separar todos os algoritmos em destinatario e remetente
 
 ## Falar na proxima reunião 
 
