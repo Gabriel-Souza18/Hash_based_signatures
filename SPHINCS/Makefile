@@ -57,5 +57,5 @@ clean:
 	rm -f ../HORST/horst_tree.o
 	rm -f remet_sphincs dest_sphincs
 	rm -f test_address test_ltree test_xmss test_sphincs
-
+	rm -f *.bin
 .PHONY: all clean

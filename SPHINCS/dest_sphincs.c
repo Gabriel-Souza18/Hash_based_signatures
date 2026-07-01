@@ -72,7 +72,6 @@ int main(int argc, char *argv[]) {
     int resultado = sphincs_verify(&sig, mensagem, msg_len, &pk, sk_seed);
     clock_t fim_verif = clock();
 
-    printf("\n=== SPHINCS-256: Resumo da Verificação ===\n");
     printf("Verificação: %s\n", resultado ? "VÁLIDA" : "INVÁLIDA");
     printf("Tempo Verificação: %lfs\n", (double)(fim_verif - inicio_verif) / CLOCKS_PER_SEC);
     printf("Total de hashes SHA256 na verificação: %llu\n", sha256_get_counter());

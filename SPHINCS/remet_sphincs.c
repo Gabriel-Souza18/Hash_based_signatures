@@ -64,7 +64,6 @@ int main(int argc, char *argv[]) {
     sphincs_sign(&sig, mensagem, msg_len, &sk);
     clock_t fim_sign = clock();
 
-    printf("\n=== SPHINCS-256: Resumo da Assinatura ===\n");
     printf("Tempo Geração de Chaves: %lfs\n", (double)(fim_keygen - inicio_keygen) / CLOCKS_PER_SEC);
     printf("Tempo Assinatura: %lfs\n", (double)(fim_sign - inicio_sign) / CLOCKS_PER_SEC);
     printf("Total de hashes SHA256 (sign + keygen): %llu\n", sha256_get_counter());
