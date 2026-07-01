@@ -54,31 +54,27 @@
 
 
 # Fase 9 - SPHINCS
-- [] Pesquisar e entender SPHINCS
-- [] Implementar o SPHICS
+- [x] Pesquisar e entender SPHINCS
+- [x] Implementar o SPHICS
 - [] Realizar testes
 - [] Atualizar Documentação  e testes
 - [] Separar todos os algoritmos em destinatario e remetente
 
 ## Falar na proxima reunião 
 
-artigo do SPHINCS:
-    mostrar o artigo e tentar entender 
+Apresentação de segunda
 
 Implementação:
-    inicio da implementação
-    falar que estava revisando o codigo antigo procurando erros, falar sobre função hex e byte
+    sphichs e falar que ainda nao terminou
+    LOTS e WOTS separados em remetente de destinatario
 
-TCC:
-    cenarios de testes, e perguntar sobre algoritmos no texto
+Perguntar sobre tempo de apresentação de TCC
 
+Falar sobre MQTT
 
 ## Anotaçoes reuniao
-medir vazao de dados(quantos bits ele consegue transmitir)
+medir o de dados (quantos bits ele consegue transmitir)
 pesquisar se da pra medir consumo de enegia do esp32
-procurar tamnho do pacote MQtt
+procurar tamanho do pacote MQTT
 
 ## Corrigir TCC
-colocar tempo de verificação e vazao
-detalhar mais os 3 itens da metotologia 
-explicar MQTT e comparar HTTP
