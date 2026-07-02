@@ -70,7 +70,9 @@ Implementação:
 
 Perguntar sobre tempo de apresentação de TCC
 
-Falar sobre MQTT
+MQTT
+
+INA226
 
 ## Anotaçoes reuniao
 medir o de dados (quantos bits ele consegue transmitir)
