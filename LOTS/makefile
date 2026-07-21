@@ -1,4 +1,4 @@
-# Makefile para lots OTS
+# Makefile para LOTS (Lamport OTS)
 
 CC = gcc
 CFLAGS = -Wall -O2 -I../SHA256
@@ -9,15 +9,10 @@ COMMON_SRC = keys.c utils.c
 COMMON_OBJ = $(COMMON_SRC:.c=.o)
 
 # Executáveis
-TARGETS = lots remet_lots dest_lots
+TARGETS = remet_lots dest_lots
 
 # Target padrão
 all: $(TARGETS)
-
-# Compilar executável original lots
-lots: lots.o $(COMMON_OBJ) ../SHA256/libsha256.a
-	$(CC) lots.o $(COMMON_OBJ) -o lots $(LDFLAGS)
-	@echo "lots OTS compilado!"
 
 # Compilar remet_lots
 remet_lots: remet_lots.o $(COMMON_OBJ) ../SHA256/libsha256.a
@@ -33,9 +28,6 @@ dest_lots: dest_lots.o $(COMMON_OBJ) ../SHA256/libsha256.a
 %.o: %.c %.h
 	$(CC) $(CFLAGS) -c $< -o $@
 
-lots.o: lots.c utils.h keys.h
-	$(CC) $(CFLAGS) -c lots.c -o lots.o
-
 remet_lots.o: remet_lots.c utils.h keys.h
 	$(CC) $(CFLAGS) -c remet_lots.c -o remet_lots.o
 
@@ -49,8 +41,8 @@ dest_lots.o: dest_lots.c utils.h keys.h
 
 # Limpar arquivos gerados
 clean:
-	@echo "Limpando lots OTS..."
-	rm -f *.o $(TARGETS)
+	@echo "Limpando LOTS..."
+	rm -f *.o $(TARGETS) lots
 	rm -f assinatura.txt mensagem.txt publicKeys.txt
 	@echo "Limpeza concluída!"
 
