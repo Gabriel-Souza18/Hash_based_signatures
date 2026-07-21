@@ -56,9 +56,14 @@
 # Fase 9 - SPHINCS
 - [x] Pesquisar e entender SPHINCS
 - [x] Implementar o SPHICS
-- [] Realizar testes
+- [x] Realizar testes
 - [] Atualizar Documentação  e testes
 - [] Separar todos os algoritmos em destinatario e remetente
+
+# Fase 10 - MQTT
+- [x] Testar ESP
+- [] Criar comunicação MQTT pc - ESP
+
 
 ## Falar na proxima reunião 
 Implementação:
