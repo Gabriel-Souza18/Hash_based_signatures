@@ -1,5 +1,4 @@
-
-##  Histórico de Desenvolvimento
+# Histórico de Desenvolvimento
 
 ### Fase 1: Implementação SHA256 (22/09 - 03/10)
 - [x] Implementação da função SHA256
@@ -20,65 +19,64 @@
 - [x] Testes de desempenho
 
 ### Fase 4: Reorganização e Testes (21/10 - 29/10)
-- [x]  Reorganização modular do projeto
+- [x] Reorganização modular do projeto
 - [x] Criação de makefiles individuais
 - [x] Biblioteca SHA256 separada
 - [x] Script de testes automatizados aprimorado
 - [x] Coleta detalhada de métricas de desempenho
 
-### Fase 5: MSS(29/10 -17/11)
+### Fase 5: MSS (29/10 - 17/11)
 - [x] Assisti a aula do Christof Paar sobre MSS
-- [x] Implementando Arvore que gera Hashs 
+- [x] Implementando Arvore que gera Hashs
 - [x] Corrigindo problemas e gerando assinatura
-- [x] implementar verificação da assinatura 
-- [x] Corrigir Lamport 
+- [x] implementar verificação da assinatura
+- [x] Corrigir Lamport
+
 ---
-# Fase 6: TESTES(18/11)
+
+### Fase 6: TESTES (18/11)
 - [x] Colocar no padrao do NIST FIPS ( NAO COLOQUEI O MSS)
 - [x] Realizar teste de memoria com valgrind
 
-
-# Fase 7: HORS e artigo
-
+### Fase 7: HORS e artigo
 - [x] Procurar mais artigos com assunto relacionados para colocar no artigo.
-- [x] Inicar a escrita do artigo com alguns resultados preliminares e trabalhos relacionados 
+- [x] Inicar a escrita do artigo com alguns resultados preliminares e trabalhos relacionados
 - [x] Implementar algoritmo HORS
 - [x] Implementar HORTS
-- [x] Testar algoritmos implementados 
-- 
+- [x] Testar algoritmos implementados
 
-# Fase 8 - shortpaper SBSEG
+### Fase 8: Shortpaper SBSEG
 - [x] Refazer testes com valgrind
 - [x] Focar no artigo
 - [x] Trocar lib de hash para openssl
 
-
-# Fase 9 - SPHINCS
+### Fase 9: SPHINCS
 - [x] Pesquisar e entender SPHINCS
 - [x] Implementar o SPHICS
 - [x] Realizar testes
-- [] Atualizar Documentação  e testes
-- [] Separar todos os algoritmos em destinatario e remetente
+- [x] Atualizar Documentação e testes
+- [ ] Separar todos os algoritmos em destinatario e remetente
 
-# Fase 10 - MQTT
+### Fase 10: MQTT
 - [x] Testar ESP
-- [] Criar comunicação MQTT pc - ESP
+- [x] Criar comunicação MQTT pc - ESP
+- [ ] Testar algoritimos na ESP
+---
 
+## Falar na próxima reunião
 
-## Falar na proxima reunião 
-Implementação:
-    sphichs e falar que ainda nao terminou
-    LOTS e WOTS separados em remetente de destinatario
+- **Implementação:**
+  - sphichs e falar que ainda nao terminou
+  - LOTS e WOTS separados em remetente de destinatario
+- To com a Esp, e olhar especs dela
+- MQTT
+- INA226
+- Falar sobre ferias, e quando volta as reunioes
 
-To com a Esp, e olhar especs dela 
+---
 
-MQTT
+## Anotações reunião
 
-INA226
-
-Falar sobre ferias, e quando volta as reunioes
-
-## Anotaçoes reuniao
-Fazer testes nas ferias (talvez incluir no relatorio de IC)
-Escrever relatorio de IC
-Preencher formulario 1a, 11a, talvez 17
+- Fazer testes nas ferias (talvez incluir no relatorio de IC)
+- Escrever relatorio de IC
+- Preencher formulario 1a, 11a, talvez 17
