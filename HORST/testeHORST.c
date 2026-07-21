@@ -185,7 +185,10 @@ int verificarMsg() {
     }
     
     // Verificar assinatura
+    clock_t inicio_verify = clock();
     int resultado = verificarAssinatura(mensagem, len, &assinatura, &pk);
+    clock_t fim_verify = clock();
+    double tempo_verify = (double)(fim_verify - inicio_verify) / CLOCKS_PER_SEC;
     
     if(resultado) {
         printf("ASSINATURA VÁLIDA!\n");
@@ -193,6 +196,7 @@ int verificarMsg() {
     } else {
         printf("ASSINATURA INVÁLIDA!\n");
     }
+    printf("Tempo Verificação: %lfs\n", tempo_verify);
     printf("Total de hashes SHA256 (verificacao): %llu\n", sha256_get_counter());
     sha256_reset_counter();
     return resultado;

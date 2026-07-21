@@ -208,7 +208,10 @@ void verificarAssinaturaMenu() {
     memcpy(SK_seed, folhas[assinatura->indiceFolha].leaf_SK_seed, 32);
     
     // Verifica (compara com a chave pública lida)
+    clock_t inicio_verify = clock();
     int resultado = verificarAssinatura(assinatura, publicKey, folhas[assinatura->indiceFolha].Pkeys);
+    clock_t fim_verify = clock();
+    double tempo_verify = (double)(fim_verify - inicio_verify) / CLOCKS_PER_SEC;
     
     printf("\n");
     if (resultado == 1) {
@@ -216,6 +219,7 @@ void verificarAssinaturaMenu() {
     } else {
         printf("ASSINATURA INVÁLIDA!\n");
     }
+    printf("Tempo Verificação: %.6f segundos\n", tempo_verify);
     
 
 }

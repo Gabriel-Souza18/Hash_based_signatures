@@ -7,6 +7,7 @@ WOTS_DIR = WOTS
 MSS_DIR = MSS
 HORS_DIR = HORS
 HORST_DIR = HORST
+SPHINCS_DIR = SPHINCS
 TESTE_DIR = TesteHash
 
 # Arquivo de teste libsodium
@@ -14,7 +15,7 @@ SODIUM_TEST_SRC = libsodium_test.c
 SODIUM_TEST_BIN = libsodium_test
 
 # Target padrao: compilar tudo
-all: sha256 lots wots mss hors horst sodium
+all: sha256 lots wots mss hors horst sphincs sodium
 
 # Compilar biblioteca SHA256
 sha256:
@@ -52,6 +53,12 @@ horst: sha256
 	$(MAKE) -C $(HORST_DIR)
 	@echo ""
 
+# Compilar SPHINCS
+sphincs: sha256
+	@echo "Compilando SPHINCS..."
+	$(MAKE) -C $(SPHINCS_DIR)
+	@echo ""
+
 # Compilar TesteHash
 teste: sha256
 	@echo "Compilando TesteHash..."
@@ -69,8 +76,8 @@ master_tests: all
 	@echo "Executando teste Geral..."
 	./TestesGerais/master_tests.sh
 
-sing_tests: lots wots hors
-	@echo "Testando LOTS, WOTS, e HORS"
+sing_tests: lots wots hors sphincs
+	@echo "Testando LOTS, WOTS, HORS e SPHINCS"
 	./TestesGerais/test_algorithms.sh
 
 tree_test: mss horst
@@ -86,6 +93,7 @@ clean:
 	$(MAKE) -C $(MSS_DIR) clean
 	$(MAKE) -C $(HORS_DIR) clean
 	$(MAKE) -C $(HORST_DIR) clean
+	$(MAKE) -C $(SPHINCS_DIR) clean
 	$(MAKE) -C $(TESTE_DIR) clean
 	rm -f $(SODIUM_TEST_BIN)
 	@echo ""
@@ -106,7 +114,7 @@ rebuild: clean all
 help:
 	@echo "Makefile - SHA256 C/CPP"
 	@echo "Targets disponiveis:"
-	@echo "  make           - Compila biblioteca SHA256, Lamport, WOTS, MSS, HORS e HORST"
+	@echo "  make           - Compila biblioteca SHA256, Lamport, WOTS, MSS, HORS, HORST e SPHINCS"
 	@echo "  make all       - Mesmo que 'make'"
 	@echo "  make sha256    - Compila apenas a biblioteca SHA256"
 	@echo "  make lots      - Compila apenas LOTS"
@@ -114,11 +122,12 @@ help:
 	@echo "  make mss       - Compila apenas MSS"
 	@echo "  make hors      - Compila apenas HORS"
 	@echo "  make horst     - Compila apenas HORST"
+	@echo "  make sphincs   - Compila apenas SPHINCS"
 	@echo "  make teste     - Compila TesteHash"
 	@echo "  make sodium    - Compila o teste do libsodium"
-	@echo "  make test      - Compila e executa testes automatizados"
+	@echo "  make master_tests - Compila e executa suíte completa de testes automatizados"
 	@echo "  make clean     - Remove todos os arquivos compilados"
 	@echo "  make rebuild   - Limpa e recompila tudo"
 	@echo "  make help      - Mostra esta mensagem"
 
-.PHONY: all sha256 lots wots mss hors horst teste sodium test clean rebuild help
+.PHONY: all sha256 lots wots mss hors horst sphincs teste sodium master_tests sing_tests tree_test clean cleanSaida rebuild help

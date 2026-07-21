@@ -36,8 +36,13 @@ int main(int argc, char *argv[]) {
     printf("Tempo para Assinar: %lf s\n", tempo_sign);
 
     // Verifica a assinatura
+    clock_t inicio_verify = clock();
     int resultado = verificarAssinatura(mensagem, len, &assinatura, keys.PKeys);
+    clock_t fim_verify = clock();
+    double tempo_verify = (double)(fim_verify - inicio_verify) / CLOCKS_PER_SEC;
+
     printf("Verificacao: %s\n", resultado ? "VALIDA" : "INVALIDA");
+    printf("Tempo Verificação: %lfs\n", tempo_verify);
 
     // Informações sobre hashes
     unsigned long long hashes = sha256_get_counter();

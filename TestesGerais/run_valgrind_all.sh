@@ -1,8 +1,7 @@
 #!/usr/bin/env bash
 set -u
 
-# Script de Valgrind específico por algoritmo (fluxo interativo real de cada um).
-# Executa remetente/destinatário com entradas diferentes por programa.
+# Script de Valgrind específico por algoritmo (fluxo real de remetente e destinatário).
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
@@ -12,7 +11,7 @@ mkdir -p "$LOG_DIR"
 
 VALGRIND="valgrind"
 VALGRIND_OPTS=(--track-origins=yes --leak-check=full --show-leak-kinds=all)
-TIMEOUT_SECS=40
+TIMEOUT_SECS=60
 
 MENSAGEM_BASE="mensagem_teste_valgrind_$(date +%Y%m%d_%H%M%S)"
 
@@ -65,14 +64,16 @@ run_valgrind_cmd() {
 
 rodar_lots() {
   build_modulo "LOTS" || return 1
-  run_valgrind_cmd "LOTS" "lots" "remetente" "1\n${MENSAGEM_BASE}_lots\n"
-  run_valgrind_cmd "LOTS" "lots" "destinatario" "2\n"
+  printf "%s\n" "${MENSAGEM_BASE}_lots" > "$ROOT_DIR/LOTS/mensagem.txt"
+  run_valgrind_cmd "LOTS" "remet_lots" "remetente" "" "mensagem.txt" "publicKeys.txt" "assinatura.txt"
+  run_valgrind_cmd "LOTS" "dest_lots" "destinatario" "" "mensagem.txt" "publicKeys.txt" "assinatura.txt"
 }
 
 rodar_wots() {
   build_modulo "WOTS" || return 1
-  run_valgrind_cmd "WOTS" "wots" "remetente" "1\n${MENSAGEM_BASE}_wots\n"
-  run_valgrind_cmd "WOTS" "wots" "destinatario" "2\n"
+  printf "%s\n" "${MENSAGEM_BASE}_wots" > "$ROOT_DIR/WOTS/mensagem.txt"
+  run_valgrind_cmd "WOTS" "remet_wots" "remetente" "" "mensagem.txt" "PublicKeys.bin" "Assinatura.bin"
+  run_valgrind_cmd "WOTS" "dest_wots" "destinatario" "" "mensagem.txt" "PublicKeys.bin" "Assinatura.bin"
 }
 
 rodar_hors() {
@@ -89,12 +90,16 @@ rodar_horst() {
 
 rodar_mss() {
   build_modulo "MSS" || return 1
-
-  # MSS executa apenas uma opção por execução. No remetente fazemos duas execuções:
-  # 1) gerar árvore, 2) criar assinatura.
   run_valgrind_cmd "MSS" "mss" "remetente_gerar_arvore" "1\n"
   run_valgrind_cmd "MSS" "mss" "remetente_assinar" "2\n${MENSAGEM_BASE}_mss\n"
   run_valgrind_cmd "MSS" "mss" "destinatario" "3\n"
+}
+
+rodar_sphincs() {
+  build_modulo "SPHINCS" || return 1
+  printf "%s\n" "${MENSAGEM_BASE}_sphincs" > "$ROOT_DIR/SPHINCS/mensagem.txt"
+  run_valgrind_cmd "SPHINCS" "remet_sphincs" "remetente" "" "mensagem.txt" "pubkey.bin" "sig.bin" "sk_seed.bin" "seckey.bin"
+  run_valgrind_cmd "SPHINCS" "dest_sphincs" "destinatario" "" "mensagem.txt" "pubkey.bin" "sig.bin" "sk_seed.bin"
 }
 
 echo "Iniciando Valgrind com fluxo específico por algoritmo..."
@@ -104,6 +109,7 @@ rodar_wots || true
 rodar_hors || true
 rodar_horst || true
 rodar_mss || true
+rodar_sphincs || true
 
 echo "Concluido. Logs em: $LOG_DIR"
 

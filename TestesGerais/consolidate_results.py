@@ -114,6 +114,7 @@ def main():
         'Tempo_Medio_PK_s',
         'Tempo_Medio_Masks_s',
         'Tempo_Medio_Assinatura_s',
+        'Tempo_Medio_Verificacao_s',
         'Hashes_Medio',
         'Tamanho_SK_bytes',
         'Tamanho_PK_bytes',
@@ -134,7 +135,7 @@ def main():
         algo_rows = algo_data.get(algo, [])
         algo_avg = calculate_averages(
             algo_rows,
-            ['Tempo_SecretKeys', 'Tempo_PublicKeys', 'Tempo_Masks', 'Tempo_Assinatura', 'Hashes_Assinatura']
+            ['Tempo_SecretKeys', 'Tempo_PublicKeys', 'Tempo_Masks', 'Tempo_Assinatura', 'Tempo_Verificacao', 'Hashes_Assinatura']
         )
         
         # Tamanhos (devem ser iguais para todas as linhas do mesmo algoritmo)
@@ -161,6 +162,7 @@ def main():
             f"{algo_avg.get('Tempo_PublicKeys', 0):.6f}",
             f"{algo_avg.get('Tempo_Masks', 0):.6f}",
             f"{algo_avg.get('Tempo_Assinatura', 0):.6f}",
+            f"{algo_avg.get('Tempo_Verificacao', 0):.6f}",
             f"{algo_avg.get('Hashes_Assinatura', 0):.0f}",
             f"{tamanho_sk}",
             f"{tamanho_pk}",

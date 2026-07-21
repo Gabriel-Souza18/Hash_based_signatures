@@ -50,9 +50,13 @@ int main(int argc, char *argv[]) {
     
     lerAssinatura(caminhoAssinatura, assinaturaVerif);
     
+    clock_t inicioVerif = clock();
     int resultado = verificarMensagem(msgLidaHash, assinaturaVerif, pKeysVerif);
+    clock_t fimVerif = clock();
+    double tempoVerif = (double)(fimVerif - inicioVerif) / CLOCKS_PER_SEC;
+
     printf("Verificação: %s\n", resultado ? "VÁLIDA" : "INVÁLIDA");
-    
+    printf("Tempo Verificação: %lfs\n", tempoVerif);
     printf("Total de hashes SHA256: %llu\n", sha256_get_counter());
     
     // Limpeza

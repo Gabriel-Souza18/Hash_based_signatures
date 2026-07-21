@@ -43,9 +43,13 @@ int main(int argc, char *argv[]) {
         return 1;
     }
     
+    clock_t inicioVerif = clock();
     bool resultado = verificarMSG(msgLidaHash, pKeysVerif, assinaturaVerif);
+    clock_t fimVerif = clock();
+    double tempoVerif = (double)(fimVerif - inicioVerif) / CLOCKS_PER_SEC;
+
     printf("Verificação: %s\n", resultado ? "VÁLIDA" : "INVÁLIDA");
-    
+    printf("Tempo Verificação: %lfs\n", tempoVerif);
     printf("Total de hashes SHA256: %llu\n", sha256_get_counter());
     
     // Limpeza
