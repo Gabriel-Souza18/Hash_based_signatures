@@ -61,22 +61,19 @@
 - [] Separar todos os algoritmos em destinatario e remetente
 
 ## Falar na proxima reunião 
-
-Apresentação de segunda
-
 Implementação:
     sphichs e falar que ainda nao terminou
     LOTS e WOTS separados em remetente de destinatario
 
-Perguntar sobre tempo de apresentação de TCC
+To com a Esp, e olhar especs dela 
 
 MQTT
 
 INA226
 
-## Anotaçoes reuniao
-medir o de dados (quantos bits ele consegue transmitir)
-pesquisar se da pra medir consumo de enegia do esp32
-procurar tamanho do pacote MQTT
+Falar sobre ferias, e quando volta as reunioes
 
-## Corrigir TCC
+## Anotaçoes reuniao
+Fazer testes nas ferias (talvez incluir no relatorio de IC)
+Escrever relatorio de IC
+Preencher formulario 1a, 11a, talvez 17
