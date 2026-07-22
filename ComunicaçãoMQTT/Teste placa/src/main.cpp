@@ -41,9 +41,10 @@ void callback(char* topic, byte* payload, unsigned int length) {
 }
 
 void setup() {
+  Serial.begin(115200);
+  delay(1000); // Aguarda a serial se estabilizar
   Serial.println("Teste Serial OK");
   pinMode(LED_PIN, OUTPUT);
-  Serial.begin(115200);
   WiFi.begin(ssid, password);
   while (WiFi.status() != WL_CONNECTED) {
 //    digitalWrite(LED_PIN, LOW);
@@ -60,10 +61,14 @@ void setup() {
 
 void reconectar() {
   while (!client.connected()) {
+    Serial.print("Tentando conectar ao broker MQTT...");
     if (client.connect("ESP32_Cliente")) {
       client.subscribe("teste/esp");
-      Serial.println("Conectado ao broker");
+      Serial.println(" conectado!");
     } else {
+      Serial.print(" falhou, rc=");
+      Serial.print(client.state());
+      Serial.println(". Tentando novamente em 5 segundos...");
       delay(5000);
     }
   }
