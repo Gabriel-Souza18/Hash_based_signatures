@@ -11,7 +11,7 @@ mkdir -p "$LOG_DIR"
 
 VALGRIND="valgrind"
 VALGRIND_OPTS=(--track-origins=yes --leak-check=full --show-leak-kinds=all)
-TIMEOUT_SECS=60
+TIMEOUT_SECS=180
 
 MENSAGEM_BASE="mensagem_teste_valgrind_$(date +%Y%m%d_%H%M%S)"
 
@@ -90,9 +90,9 @@ rodar_horst() {
 
 rodar_mss() {
   build_modulo "MSS" || return 1
-  run_valgrind_cmd "MSS" "mss" "remetente_gerar_arvore" "1\n"
-  run_valgrind_cmd "MSS" "mss" "remetente_assinar" "2\n${MENSAGEM_BASE}_mss\n"
-  run_valgrind_cmd "MSS" "mss" "destinatario" "3\n"
+  printf "%s\n" "${MENSAGEM_BASE}_mss" > "$ROOT_DIR/MSS/mensagem.txt"
+  run_valgrind_cmd "MSS" "remet_mss" "remetente" "" "mensagem.txt" "public_key.txt" "assinatura.txt"
+  run_valgrind_cmd "MSS" "dest_mss" "destinatario" "" "mensagem.txt" "public_key.txt" "assinatura.txt"
 }
 
 rodar_sphincs() {

@@ -4,29 +4,36 @@ CC = gcc
 CFLAGS = -Wall -g -O0 -I../SHA256 -I../WOTS
 LDFLAGS = -L../SHA256 -lsha256 -lm -lsodium -lcrypto -Wl,-rpath,/usr/local/lib
 
-# Arquivos fonte
-SRC = mss.c Arvore.c
-OBJ = $(SRC:.c=.o)
+# Objetos comuns
+COMMON_OBJ = Arvore.o
 
 # Objetos do WOTS que precisamos linkar
 WOTS_OBJ = ../WOTS/keys.o ../WOTS/utils.o ../WOTS/prf.o
 
-TARGET = mss
+TARGETS = remet_mss dest_mss
 
 # Target padrão
-all: $(TARGET)
+all: $(TARGETS)
 
-# Compilar executável
-$(TARGET): $(OBJ) $(WOTS_OBJ) ../SHA256/libsha256.a
-	$(CC) $(OBJ) $(WOTS_OBJ) -o $(TARGET) $(LDFLAGS)
-	@echo "MSS compilado!"
+# Compilar remet_mss
+remet_mss: remet_mss.o $(COMMON_OBJ) $(WOTS_OBJ) ../SHA256/libsha256.a
+	$(CC) remet_mss.o $(COMMON_OBJ) $(WOTS_OBJ) -o remet_mss $(LDFLAGS)
+	@echo "remet_mss compilado!"
+
+# Compilar dest_mss
+dest_mss: dest_mss.o $(COMMON_OBJ) $(WOTS_OBJ) ../SHA256/libsha256.a
+	$(CC) dest_mss.o $(COMMON_OBJ) $(WOTS_OBJ) -o dest_mss $(LDFLAGS)
+	@echo "dest_mss compilado!"
 
 # Compilar objetos
 %.o: %.c %.h
 	$(CC) $(CFLAGS) -c $< -o $@
 
-mss.o: mss.c Arvore.h
-	$(CC) $(CFLAGS) -c mss.c -o mss.o
+remet_mss.o: remet_mss.c Arvore.h
+	$(CC) $(CFLAGS) -c remet_mss.c -o remet_mss.o
+
+dest_mss.o: dest_mss.c Arvore.h
+	$(CC) $(CFLAGS) -c dest_mss.c -o dest_mss.o
 
 # Garantir que a biblioteca SHA256 está compilada
 ../SHA256/libsha256.a:
@@ -41,7 +48,7 @@ $(WOTS_OBJ):
 # Limpar arquivos gerados
 clean:
 	@echo "Limpando MSS..."
-	rm -f $(OBJ) $(TARGET)
+	rm -f *.o $(TARGETS) mss
 	rm -f *.bin
 	rm -f *.txt
 	@echo "Limpeza concluída!"
