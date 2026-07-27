@@ -130,17 +130,14 @@ bool verificarMSG(const uint8_t msgHash[32], PublicKeys *pKeys, uint8_t assinatu
         // Verifica se o hash da assinatura corresponde à chave pública correta
         if (bit == 1) {
             if (memcmp(hashAssinatura, pKeys->PK1[i], KEY_SIZE) != 0) {
-                printf("Falha na verificação no bit %d (esperado 1)\n", i);
                 return false;
             }
         } else {
             if (memcmp(hashAssinatura, pKeys->PK0[i], KEY_SIZE) != 0) {
-                printf("Falha na verificação no bit %d (esperado 0)\n", i);
                 return false;
             }
         }
     }
     
-    printf("✓ Todos os 256 bits verificados com sucesso!\n");
     return true;
 }
