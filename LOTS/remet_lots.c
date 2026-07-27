@@ -8,7 +8,6 @@
 #include <stdbool.h>
 #include <time.h> 
 
-void assinarMSG(const uint8_t msgHash[32], SecretKeys *sKeys, uint8_t assinatura[256][KEY_SIZE]);
 
 int main(int argc, char *argv[]) {
     if (argc < 3) {
@@ -69,22 +68,4 @@ int main(int argc, char *argv[]) {
     freeKeys(pKeys, sKeys);
     
     return 0;
-}
-
-void assinarMSG(const uint8_t msgHash[32], SecretKeys *sKeys, uint8_t assinatura[256][KEY_SIZE]){
-    // Para cada bit da mensagem (256 bits no total)
-    for (int i = 0; i < 256; i++){
-        int byteIndex = i / 8;
-        int bitIndex = i % 8;
-        
-        // Extrai o bit específico (do mais significativo para o menos)
-        int bit = (msgHash[byteIndex] >> (7 - bitIndex)) & 1;
-        
-        // Copia a chave secreta correspondente ao bit (máscara de bits)
-        if (bit == 1){
-            memcpy(assinatura[i], sKeys->SK1[i], KEY_SIZE);
-        } else {
-            memcpy(assinatura[i], sKeys->SK0[i], KEY_SIZE);
-        }
-    }   
 }

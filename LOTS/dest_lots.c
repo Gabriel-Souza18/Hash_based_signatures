@@ -8,7 +8,6 @@
 #include <stdbool.h>
 #include <time.h> 
 
-bool verificarMSG(const uint8_t msgHash[32], PublicKeys *pKeys, uint8_t assinatura[256][KEY_SIZE]);
 
 int main(int argc, char *argv[]) {
     if (argc < 3) {
@@ -59,32 +58,3 @@ int main(int argc, char *argv[]) {
     return resultado ? 0 : 1;
 }
 
-bool verificarMSG(const uint8_t msgHash[32], PublicKeys *pKeys, uint8_t assinatura[256][KEY_SIZE]){
-    for (int i = 0; i < 256; i++) {
-        uint8_t hashAssinatura[KEY_SIZE];
-        
-        // Hash da assinatura (32 bytes)
-        sha256_bytes(assinatura[i], KEY_SIZE, hashAssinatura);
-        
-        int byteIndex = i / 8;
-        int bitIndex = i % 8;
-        
-        int bit = (msgHash[byteIndex] >> (7 - bitIndex)) & 1;
-        
-        // Verifica se o hash da assinatura corresponde à chave pública correta
-        if (bit == 1) {
-            if (memcmp(hashAssinatura, pKeys->PK1[i], KEY_SIZE) != 0) {
-                printf("Falha na verificação no bit %d (esperado 1)\n", i);
-                return false;
-            }
-        } else {
-            if (memcmp(hashAssinatura, pKeys->PK0[i], KEY_SIZE) != 0) {
-                printf("Falha na verificação no bit %d (esperado 0)\n", i);
-                return false;
-            }
-        }
-    }
-    
-    printf("✓ Todos os 256 bits verificados com sucesso!\n");
-    return true;
-}

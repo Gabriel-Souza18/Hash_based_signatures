@@ -2,6 +2,7 @@
 #define KEYS_H
 
 #include <stdint.h>
+#include <stdbool.h>
 
 #define KEY_SIZE 32  // 256 bits = 32 bytes 
 typedef struct {
@@ -18,6 +19,9 @@ SecretKeys *malloc_Skeys();
 PublicKeys *malloc_Pkeys();
 void generateSecretKeys(SecretKeys *keys);
 void generatePublicKeys(PublicKeys *Pkeys, SecretKeys *Skeys);
+void assinarMSG(const uint8_t msgHash[32], SecretKeys *sKeys, uint8_t assinatura[256][KEY_SIZE]);
+bool verificarMSG(const uint8_t msgHash[32], PublicKeys *pKeys, uint8_t assinatura[256][KEY_SIZE]);
+
 void printKeys(PublicKeys *Pkeys, SecretKeys *Skeys);
 void printSecretKeyBits(uint8_t *key, int keyIndex, int bit);
 void freeKeys(PublicKeys *Pkeys, SecretKeys *Skeys);
