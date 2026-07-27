@@ -3,89 +3,39 @@
 
 #include <stdio.h>
 #include <stdint.h>
+#include <stdbool.h>
 
-/**
- * @brief Escreve uma mensagem (texto) em um arquivo.
- * 
- * @param caminho Caminho para o arquivo de destino.
- * @param mensagem Ponteiro para a string com a mensagem.
- */
+// --- Funções de Leitura e Escrita de Mensagens (Texto) ---
 void escreverMensagem(const char *caminho, const char *mensagem);
-
-/**
- * @brief Escreve uma mensagem em uma stream de saída (ex: stdout, arquivo já aberto).
- * 
- * @param stream Stream de destino (FILE *).
- * @param mensagem Ponteiro para a string com a mensagem.
- */
 void escreverMensagemStream(FILE *stream, const char *mensagem);
-
-/**
- * @brief Lê uma mensagem de um arquivo, alocando memória dinamicamente.
- * 
- * O array de retorno terá o tamanho exato da mensagem lida (mais o caractere '\0').
- * Se a mensagem possuir uma quebra de linha ao final, ela será removida.
- * 
- * @param caminho Caminho para o arquivo a ser lido.
- * @return char* Ponteiro para a mensagem alocada dinamicamente, ou NULL em caso de erro.
- *               O chamador é responsável por liberar a memória com free().
- */
 char* lerMensagem(const char *caminho);
-
-/**
- * @brief Lê uma mensagem de uma stream de entrada (ex: stdin) até encontrar '\n' ou EOF.
- * 
- * A alocação é dinâmica e utiliza realloc progressivamente para redimensionar 
- * o buffer e um realloc final para ajustar ao tamanho exato.
- * 
- * @param stream Stream de entrada (FILE *).
- * @return char* Ponteiro para a mensagem alocada dinamicamente, ou NULL se nenhum
- *               caractere for lido antes de EOF ou erro.
- *               O chamador é responsável por liberar a memória com free().
- */
 char* lerMensagemStream(FILE *stream);
 
-/**
- * @brief Escreve uma assinatura (dados binários) em um arquivo.
- * 
- * @param caminho Caminho para o arquivo de destino.
- * @param assinatura Ponteiro para o buffer contendo a assinatura.
- * @param tamanho Tamanho da assinatura em bytes.
- */
+// --- Funções de Leitura e Escrita de Assinaturas / Dados Brutos (Binário) ---
 void escreverAssinatura(const char *caminho, const uint8_t *assinatura, size_t tamanho);
-
-/**
- * @brief Escreve uma assinatura em uma stream de saída.
- * 
- * @param stream Stream de destino (FILE *).
- * @param assinatura Ponteiro para o buffer contendo a assinatura.
- * @param tamanho Tamanho da assinatura em bytes.
- */
 void escreverAssinaturaStream(FILE *stream, const uint8_t *assinatura, size_t tamanho);
-
-/**
- * @brief Lê uma assinatura (dados binários) de um arquivo.
- * 
- * O buffer retornado terá o tamanho exato da assinatura lida do arquivo.
- * 
- * @param caminho Caminho para o arquivo a ser lido.
- * @param tamanho_lido Ponteiro para retornar o número de bytes lidos.
- * @return uint8_t* Ponteiro para o buffer alocado dinamicamente contendo os bytes lidos,
- *                  ou NULL em caso de erro. O chamador deve liberar a memória com free().
- */
 uint8_t* lerAssinatura(const char *caminho, size_t *tamanho_lido);
+uint8_t* lerAssinaturaStream(FILE *stream, size_t *tamanho_lido);
+
+// --- Funções de Serialização Genérica (Empacotamento para Comunicação) ---
+/**
+ * @brief Empacota opcionalmente mensagem, chave pública e assinatura em um único payload binário.
+ * 
+ * O formato de serialização gerado é:
+ * [Tamanho Msg (4B)] + [Msg] + [Tamanho PKey (4B)] + [PKey] + [Tamanho Assinatura (4B)] + [Assinatura]
+ * Campos omitidos (ponteiros NULL ou tamanho 0) terão o tamanho gravado como 0 e não ocuparão espaço de dados.
+ * 
+ * @return uint8_t* Ponteiro para o buffer alocado dinamicamente. O chamador deve liberar com free().
+ */
+uint8_t* empacotarDados(const char *mensagem, const uint8_t *pkey, size_t tamanho_pkey, const uint8_t *assinatura, size_t tamanho_assinatura, size_t *tamanho_pacote);
 
 /**
- * @brief Lê uma assinatura de uma stream até encontrar EOF.
+ * @brief Desempacota os dados estruturados de um payload binário de comunicação única.
  * 
- * Aloca memória dinamicamente, dobrando a capacidade sempre que necessário,
- * e executa um realloc final para ajustar ao tamanho exato dos bytes lidos.
- * 
- * @param stream Stream de entrada (FILE *).
- * @param tamanho_lido Ponteiro para retornar o número de bytes lidos.
- * @return uint8_t* Ponteiro para o buffer alocado dinamicamente, ou NULL se nada for lido.
- *                  O chamador deve liberar a memória com free().
+ * Os ponteiros de retorno (*mensagem, *pkey, *assinatura) serão alocados dinamicamente.
+ * Caso algum campo seja inexistente no pacote (tamanho 0), o respectivo retorno será definido como NULL.
+ * O chamador deve liberar cada retorno não-nulo com free().
  */
-uint8_t* lerAssinaturaStream(FILE *stream, size_t *tamanho_lido);
+bool desempacotarDados(const uint8_t *pacote, size_t tamanho_pacote, char **mensagem, uint8_t **pkey, size_t *tamanho_pkey, uint8_t **assinatura, size_t *tamanho_assinatura);
 
 #endif // IO_H

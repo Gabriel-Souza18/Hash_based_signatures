@@ -28,16 +28,81 @@ WiFiClient espClient;
 PubSubClient client(espClient);
 
 void callback(char* topic, byte* payload, unsigned int length) {
-  Serial.print("Recebido [");
+  Serial.print("\nRecebido pacote no topico [");
   Serial.print(topic);
-  Serial.print("]: ");
-  digitalWrite(LED_PIN, HIGH);
-  delay(500);
-  digitalWrite(LED_PIN, LOW);
-  for (int i = 0; i < length; i++) {
-    Serial.print((char)payload[i]);
+  Serial.print("] com ");
+  Serial.print(length);
+  Serial.println(" bytes.");
+
+  if (length < 8) {
+    Serial.println("Erro: Pacote curto demais.");
+    return;
   }
-  Serial.println();
+
+  // Pisca o LED indicando recepcao
+  digitalWrite(LED_PIN, HIGH);
+  delay(100);
+  digitalWrite(LED_PIN, LOW);
+
+  // 1. Extrai o tamanho da mensagem (primeiros 4 bytes)
+  uint32_t tamanho_msg;
+  memcpy(&tamanho_msg, payload, 4);
+
+  if (4 + tamanho_msg + 4 > length) {
+    Serial.println("Erro: Tamanho da mensagem invalido ou pacote truncado.");
+    return;
+  }
+
+  // 2. Extrai a mensagem
+  char* mensagem = (char*)malloc(tamanho_msg + 1);
+  if (mensagem == NULL) {
+    Serial.println("Erro de memoria ao alocar string da mensagem.");
+    return;
+  }
+  memcpy(mensagem, payload + 4, tamanho_msg);
+  mensagem[tamanho_msg] = '\0';
+
+  // 3. Extrai o tamanho da assinatura (4 bytes após a mensagem)
+  uint32_t tamanho_assinatura;
+  memcpy(&tamanho_assinatura, payload + 4 + tamanho_msg, 4);
+
+  if (4 + tamanho_msg + 4 + tamanho_assinatura != length) {
+    Serial.println("Erro: Integridade do pacote corrompida (tamanho assinatura incorreto).");
+    free(mensagem);
+    return;
+  }
+
+  // 4. Extrai a assinatura binaria
+  byte* assinatura = (byte*)malloc(tamanho_assinatura);
+  if (assinatura == NULL) {
+    Serial.println("Erro de memoria ao alocar buffer da assinatura.");
+    free(mensagem);
+    return;
+  }
+  memcpy(assinatura, payload + 4 + tamanho_msg + 4, tamanho_assinatura);
+
+  // Exibe informações desempacotadas
+  Serial.println("====== DADOS DESEMPACOTADOS ======");
+  Serial.print("Mensagem: \"");
+  Serial.print(mensagem);
+  Serial.println("\"");
+  
+  Serial.print("Tamanho Assinatura: ");
+  Serial.print(tamanho_assinatura);
+  Serial.println(" bytes.");
+  
+  Serial.print("Assinatura (primeiros 16 bytes em HEX): ");
+  for (unsigned int i = 0; i < 16 && i < tamanho_assinatura; i++) {
+    char hexBuf[3];
+    sprintf(hexBuf, "%02x", assinatura[i]);
+    Serial.print(hexBuf);
+  }
+  Serial.println("...");
+  Serial.println("==================================");
+
+  // Libera a memória alocada
+  free(mensagem);
+  free(assinatura);
 }
 
 void setup() {
