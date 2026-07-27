@@ -1,6 +1,8 @@
 #include <Arduino.h>
 #include <WiFi.h>
 #include <PubSubClient.h>
+#include "soc/soc.h"
+#include "soc/rtc_cntl_reg.h"
 #include "mbedtls/sha256.h"
 
 // Configuração da Rede e Broker
@@ -110,10 +112,14 @@ void callback(char* topic, byte* payload, unsigned int length) {
     Serial.print(tamanho_assinatura);
     Serial.println(" bytes.");
 
+
+
     // 4. Gera hash SHA-256 local da mensagem recebida
     uint8_t msgHash[32];
     sha256_bytes((const uint8_t*)mensagem, strlen(mensagem), msgHash);
 
+    //4.1 mudadno 1 byte da hash
+    //msgHash[0] ^= 0xFF;
     // 5. Verifica a assinatura
     Serial.println("[LOTS] Iniciando verificacao da assinatura...");
     bool resultado = verificarMSG(msgHash, pKeys, assinatura);
@@ -135,17 +141,28 @@ void callback(char* topic, byte* payload, unsigned int length) {
         digitalWrite(LED_PIN, LOW);
     }
 
-    // Libera buffers
+    // Libera buffers com depuração para encontrar o estouro de heap
+    Serial.print("[Debug] Endereco mensagem: 0x");
+    Serial.println((uint32_t)mensagem, HEX);
+    Serial.print("[Debug] Endereco pKeys: 0x");
+    Serial.println((uint32_t)pKeys, HEX);
+    Serial.print("[Debug] Endereco assinatura: 0x");
+    Serial.println((uint32_t)assinatura, HEX);
+
+    Serial.println("[Debug] Liberando mensagem...");
     free(mensagem);
+    Serial.println("[Debug] Liberando pKeys...");
     free(pKeys);
+    Serial.println("[Debug] Liberando assinatura...");
     free(assinatura);
+    Serial.println("[Debug] Todos os buffers liberados com sucesso!");
 }
 
 void reconectar() {
     while (!client.connected()) {
         Serial.print("Tentando conectar ao broker MQTT...");
         if (client.connect("ESP32_LOTS_Receiver")) {
-            client.subscribe("lots");
+            client.subscribe("lots",1);
             Serial.println(" conectado!");
         } else {
             Serial.print(" falhou, rc=");
@@ -157,6 +174,7 @@ void reconectar() {
 }
 
 void setup() {
+    WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, 0); // Desabilita o detector de Brownout (evita reboots por oscilacao de energia USB)
     Serial.begin(115200);
     delay(1000);
     Serial.println("\nInicializando receptor LOTS...");

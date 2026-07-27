@@ -1,6 +1,6 @@
 CC = gcc
 CFLAGS = -Wall -O2 -I../../../LOTS -I../../../SHA256 -I../..
-LDFLAGS = -lmosquitto -lsodium -lcrypto
+LDFLAGS = -lmosquitto -lsodium -lcrypto -lpthread
 
 # Arquivos fonte
 SOURCES = publisherLots.c ../../Utils/IO.c ../../../LOTS/keys.c ../../../SHA256/sha256.c

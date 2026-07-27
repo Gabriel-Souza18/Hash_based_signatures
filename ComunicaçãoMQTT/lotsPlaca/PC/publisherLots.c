@@ -43,6 +43,9 @@ int main() {
     }
     printf("Conectado com sucesso ao broker!\n\n");
 
+    // Inicia o loop de rede em segundo plano para manter a conexão ativa (keep-alive)
+    mosquitto_loop_start(mosq);
+
     // Geração do par de chaves LOTS
     printf("[LOTS] Gerando par de chaves LOTS para o publicador...\n");
     SecretKeys *sKeys = malloc_Skeys();
@@ -95,7 +98,7 @@ int main() {
             
             if (pacote != NULL) {
                 // 4. Publica o pacote binário no broker MQTT
-                rc = mosquitto_publish(mosq, NULL, MQTT_TOPIC, tamanho_pacote, pacote, 0, false);
+                rc = mosquitto_publish(mosq, NULL, MQTT_TOPIC, tamanho_pacote, pacote, 1, false);
                 if (rc == MOSQ_ERR_SUCCESS) {
                     printf("[MQTT] Pacote (Mensagem + Chave Pública + Assinatura) publicado com sucesso! (%zu bytes)\n", tamanho_pacote);
                 } else {
@@ -118,6 +121,7 @@ int main() {
     freeKeys(pKeys, sKeys);
 
     // Desconecta e limpa recursos do Mosquitto
+    mosquitto_loop_stop(mosq, true);
     mosquitto_disconnect(mosq);
     mosquitto_destroy(mosq);
     mosquitto_lib_cleanup();
