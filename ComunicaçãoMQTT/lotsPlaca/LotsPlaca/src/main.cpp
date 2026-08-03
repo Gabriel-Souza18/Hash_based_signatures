@@ -24,6 +24,8 @@ extern "C" {
 
 // Callback do MQTT para receber e processar o pacote
 void callback(char* topic, byte* payload, unsigned int length) {
+    uint32_t heap_inicio = ESP.getFreeHeap();
+
     Serial.print("\n[MQTT] Pacote recebido no topico [");
     Serial.print(topic);
     Serial.print("] com ");
@@ -101,6 +103,10 @@ void callback(char* topic, byte* payload, unsigned int length) {
     }
     memcpy(assinatura, ptr, tamanho_assinatura);
 
+    // Calcula a memória RAM alocada para os buffers
+    uint32_t heap_depois_alloc = ESP.getFreeHeap();
+    uint32_t ram_alocada = heap_inicio - heap_depois_alloc;
+
     // Exibe dados básicos
     Serial.print("Mensagem: \"");
     Serial.print(mensagem);
@@ -111,18 +117,22 @@ void callback(char* topic, byte* payload, unsigned int length) {
     Serial.print("Tamanho Assinatura: ");
     Serial.print(tamanho_assinatura);
     Serial.println(" bytes.");
-
-
+    Serial.print("Memória RAM Alocada (Heap): ");
+    Serial.print(ram_alocada);
+    Serial.println(" bytes.");
 
     // 4. Gera hash SHA-256 local da mensagem recebida
     uint8_t msgHash[32];
     sha256_bytes((const uint8_t*)mensagem, strlen(mensagem), msgHash);
 
-    //4.1 mudadno 1 byte da hash
-    //msgHash[0] ^= 0xFF;
-    // 5. Verifica a assinatura
+    // 5. Verifica a assinatura medindo tempo e hashes
     Serial.println("[LOTS] Iniciando verificacao da assinatura...");
+    sha256_reset_counter();
+    uint32_t t_inicio = micros();
     bool resultado = verificarMSG(msgHash, pKeys, assinatura);
+    uint32_t t_fim = micros();
+    uint32_t tempo_op = t_fim - t_inicio;
+    unsigned long long num_hashes = sha256_get_counter();
 
     if (resultado) {
         Serial.println("[LOTS] ASSINATURA VALIDA!");
@@ -139,6 +149,21 @@ void callback(char* topic, byte* payload, unsigned int length) {
         digitalWrite(LED_PIN, HIGH);
         delay(2000);
         digitalWrite(LED_PIN, LOW);
+    }
+
+    // 6. Publica as métricas calculadas na placa para o tópico "estat/esp"
+    char metricas_json[256];
+    snprintf(metricas_json, sizeof(metricas_json),
+             "{\"dispositivo\":\"ESP32\",\"algoritmo\":\"LOTS\",\"operacao\":\"verificacao\","
+             "\"tempo_verificacao_us\":%u,\"numero_hashes\":%llu,\"tamanho_assinatura_bytes\":%u,"
+             "\"uso_ram_bytes\":%u,\"resultado\":%d}",
+             tempo_op, num_hashes, tamanho_assinatura, ram_alocada, (resultado ? 1 : 0));
+    
+    if (client.publish("estat/esp", metricas_json)) {
+        Serial.print("[MQTT] Metricas da placa enviadas com sucesso: ");
+        Serial.println(metricas_json);
+    } else {
+        Serial.println("[MQTT] Erro ao enviar metricas da placa.");
     }
 
     // Libera buffers com depuração para encontrar o estouro de heap

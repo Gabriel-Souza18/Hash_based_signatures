@@ -6,6 +6,7 @@
 #include <string.h>
 #include <mosquitto.h>
 #include <sodium.h>
+#include <time.h>
 
 #define BROKER_ADDRESS "localhost"
 #define BROKER_PORT 1883
@@ -46,12 +47,22 @@ int main() {
     // Inicia o loop de rede em segundo plano para manter a conexão ativa (keep-alive)
     mosquitto_loop_start(mosq);
 
-    // Geração do par de chaves LOTS
+    // Geração do par de chaves LOTS medindo o tempo
     printf("[LOTS] Gerando par de chaves LOTS para o publicador...\n");
+    
+    struct timespec start_sk, end_sk;
+    clock_gettime(CLOCK_MONOTONIC, &start_sk);
     SecretKeys *sKeys = malloc_Skeys();
-    PublicKeys *pKeys = malloc_Pkeys();
     generateSecretKeys(sKeys);
+    clock_gettime(CLOCK_MONOTONIC, &end_sk);
+    long time_sk_us = (end_sk.tv_sec - start_sk.tv_sec) * 1000000 + (end_sk.tv_nsec - start_sk.tv_nsec) / 1000;
+
+    struct timespec start_pk, end_pk;
+    clock_gettime(CLOCK_MONOTONIC, &start_pk);
+    PublicKeys *pKeys = malloc_Pkeys();
     generatePublicKeys(pKeys, sKeys);
+    clock_gettime(CLOCK_MONOTONIC, &end_pk);
+    long time_pk_us = (end_pk.tv_sec - start_pk.tv_sec) * 1000000 + (end_pk.tv_nsec - start_pk.tv_nsec) / 1000;
     
     // Salva a chave pública localmente para posterior verificação
     const char *caminhoPkey = "publicKeys.txt";
@@ -83,6 +94,12 @@ int main() {
         if (strlen(mensagem) > 0) {
             printf("\nProcessando Mensagem: '%s'\n", mensagem);
             
+            // Reinicia o contador de hashes para medir a operação de assinatura
+            sha256_reset_counter();
+
+            struct timespec start_sig, end_sig;
+            clock_gettime(CLOCK_MONOTONIC, &start_sig);
+
             // 1. Gera o hash SHA-256 da mensagem
             uint8_t msgHash[32];
             sha256_bytes(mensagem, strlen(mensagem), msgHash);
@@ -90,7 +107,12 @@ int main() {
             // 2. Assina o hash usando as chaves secretas do LOTS
             uint8_t assinatura[256][KEY_SIZE];
             assinarMSG(msgHash, sKeys, assinatura);
-            printf("[LOTS] Mensagem assinada! (Assinatura: %d bytes)\n", 256 * KEY_SIZE);
+            
+            clock_gettime(CLOCK_MONOTONIC, &end_sig);
+            long time_op_us = (end_sig.tv_sec - start_sig.tv_sec) * 1000000 + (end_sig.tv_nsec - start_sig.tv_nsec) / 1000;
+            unsigned long long num_hashes = sha256_get_counter();
+
+            printf("[LOTS] Mensagem assinada! (Assinatura: %d bytes, Tempo: %ld us)\n", 256 * KEY_SIZE, time_op_us);
             
             // 3. Empacota a mensagem, a chave pública e a assinatura em um único buffer binário
             size_t tamanho_pacote = 0;
@@ -100,7 +122,25 @@ int main() {
                 // 4. Publica o pacote binário no broker MQTT
                 rc = mosquitto_publish(mosq, NULL, MQTT_TOPIC, tamanho_pacote, pacote, 1, false);
                 if (rc == MOSQ_ERR_SUCCESS) {
-                    printf("[MQTT] Pacote (Mensagem + Chave Pública + Assinatura) publicado com sucesso! (%zu bytes)\n", tamanho_pacote);
+                    printf("[MQTT] Pacote publicado com sucesso! (%zu bytes)\n", tamanho_pacote);
+                    
+                    // 5. Envia as métricas calculadas no PC para o tópico "estat/pc"
+                    char metricas_json[512];
+                    snprintf(metricas_json, sizeof(metricas_json),
+                             "{\"dispositivo\":\"PC\",\"algoritmo\":\"LOTS\",\"operacao\":\"assinatura\","
+                             "\"tempo_sk_us\":%ld,\"tempo_pk_us\":%ld,\"tempo_assinatura_us\":%ld,"
+                             "\"numero_hashes\":%llu,\"tamanho_sk_bytes\":%zu,\"tamanho_pk_bytes\":%zu,"
+                             "\"tamanho_assinatura_bytes\":%zu,\"tamanho_pacote_bytes\":%zu}",
+                             time_sk_us, time_pk_us, time_op_us,
+                             num_hashes, sizeof(SecretKeys), sizeof(PublicKeys),
+                             (size_t)(256 * KEY_SIZE), tamanho_pacote);
+                    
+                    rc = mosquitto_publish(mosq, NULL, "estat/pc", strlen(metricas_json), metricas_json, 1, false);
+                    if (rc == MOSQ_ERR_SUCCESS) {
+                        printf("[MQTT] Métricas do PC enviadas: %s\n", metricas_json);
+                    } else {
+                        fprintf(stderr, "[MQTT] Erro ao publicar métricas do PC: %s\n", mosquitto_strerror(rc));
+                    }
                 } else {
                     fprintf(stderr, "[MQTT] Erro ao publicar pacote: %s\n", mosquitto_strerror(rc));
                 }
