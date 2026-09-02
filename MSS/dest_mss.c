@@ -49,50 +49,13 @@ int main(int argc, char *argv[]) {
     unsigned char publicKey[MSS_HASH_SIZE];
     if (lerPublicKey(caminhoPkey, publicKey) != 1) {
         fprintf(stderr, "Erro ao ler a chave pública de %s\n", caminhoPkey);
-        free(assinatura);
+        liberarAssinatura(assinatura);
         return 1;
     }
 
-    // Carrega as folhas para pegar a chave pública WOTS e os seeds
-    Folha *folhas = malloc(NUM_FOLHAS * sizeof(Folha));
-    if (!folhas) {
-        fprintf(stderr, "Erro ao alocar folhas\n");
-        if (assinatura) {
-            if (assinatura->wotsSignature) free(assinatura->wotsSignature);
-            free(assinatura);
-        }
-        return 1;
-    }
-
-    for(int i = 0; i < NUM_FOLHAS; i++){
-        folhas[i].Skeys = mallocSkeys();
-        folhas[i].Pkeys = mallocPkeys();
-    }
-
-    int numFolhasLidas;
-    lerFolhas("folhas.txt", folhas, &numFolhasLidas);
-
-    if (assinatura->indiceFolha < 0 || assinatura->indiceFolha >= numFolhasLidas) {
-        fprintf(stderr, "Erro: índice da folha na assinatura inválido (%d)\n", assinatura->indiceFolha);
-        for(int i = 0; i < NUM_FOLHAS; i++){
-            free(folhas[i].Skeys);
-            free(folhas[i].Pkeys);
-        }
-        free(folhas);
-        if (assinatura) {
-            if (assinatura->wotsSignature) free(assinatura->wotsSignature);
-            free(assinatura);
-        }
-        return 1;
-    }
-
-    // Carrega os seeds da folha que assinou
-    memcpy(PK_seed, folhas[assinatura->indiceFolha].leaf_PK_seed, 32);
-    memcpy(SK_seed, folhas[assinatura->indiceFolha].leaf_SK_seed, 32);
-
-    // Verifica (compara com a chave pública lida)
+    // Verifica (compara com a chave pública lida — sem necessidade de folhas.txt)
     clock_t inicio_verify = clock();
-    int resultado = verificarAssinatura(assinatura, publicKey, folhas[assinatura->indiceFolha].Pkeys);
+    int resultado = verificarAssinatura(assinatura, publicKey, NULL);
     clock_t fim_verify = clock();
     double tempo_verify = (double)(fim_verify - inicio_verify) / CLOCKS_PER_SEC;
 
@@ -105,19 +68,7 @@ int main(int argc, char *argv[]) {
     printf("Tempo Verificação: %.6f segundos\n", tempo_verify);
     printf("Total de hashes SHA256 na verificação: %llu\n", sha256_get_counter());
 
-    // Limpeza de memória
-    for(int i = 0; i < NUM_FOLHAS; i++){
-        free(folhas[i].Skeys);
-        free(folhas[i].Pkeys);
-    }
-    free(folhas);
-
-    if (assinatura) {
-        if (assinatura->wotsSignature) {
-            free(assinatura->wotsSignature);
-        }
-        free(assinatura);
-    }
+    liberarAssinatura(assinatura);
 
     return resultado == 1 ? 0 : 1;
 }

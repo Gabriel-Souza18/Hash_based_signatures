@@ -61,8 +61,19 @@ AssinaturaMSS * alocarAssinatura(){
         exit(1);
     }
     assinatura->wotsSignature = NULL;
+    assinatura->folhaPkeys = mallocPkeys();
+    memset(assinatura->leaf_PK_seed, 0, 32);
+    memset(assinatura->leaf_SK_seed, 0, 32);
     memset(assinatura->mensagem, 0, 1001);
     return assinatura;
+}
+
+void liberarAssinatura(AssinaturaMSS* assinatura) {
+    if (assinatura) {
+        if (assinatura->wotsSignature) free(assinatura->wotsSignature);
+        if (assinatura->folhaPkeys) free(assinatura->folhaPkeys);
+        free(assinatura);
+    }
 }
 
 /* ─── Geração da árvore ───────────────────────────────────────────────────── */
@@ -175,9 +186,17 @@ void criarAssinatura(AssinaturaMSS* assinatura, No* raiz,
     strncpy(assinatura->mensagem, mensagem, 1000);
     assinatura->mensagem[1000] = '\0';
 
+    memcpy(assinatura->leaf_PK_seed, folhaUsada->leaf_PK_seed, N);
+    memcpy(assinatura->leaf_SK_seed, folhaUsada->leaf_SK_seed, N);
     memcpy(PK_seed, folhaUsada->leaf_PK_seed, N);
     memcpy(SK_seed, folhaUsada->leaf_SK_seed, N);
 
+    if (!assinatura->folhaPkeys) assinatura->folhaPkeys = mallocPkeys();
+    for (int i = 0; i < L; i++) {
+        memcpy(assinatura->folhaPkeys->PK[i], folhaUsada->Pkeys->PK[i], N);
+    }
+
+    if (assinatura->wotsSignature) free(assinatura->wotsSignature);
     assinatura->wotsSignature = mallocAssinatura();
     unsigned char msgHash[32];
     sha256_bytes((unsigned char*)mensagem, strlen(mensagem), msgHash);
@@ -192,16 +211,35 @@ void criarAssinatura(AssinaturaMSS* assinatura, No* raiz,
 }
 
 int verificarAssinatura(AssinaturaMSS* assinatura, unsigned char* Pkey, PublicKeys* folhaPkeys){
-    // 1) Verifica assinatura WOTS da mensagem
+    PublicKeys* pk_folha = (folhaPkeys != NULL) ? folhaPkeys : assinatura->folhaPkeys;
+    if (!pk_folha) {
+        fprintf(stderr, "Erro: Chave pública WOTS da folha não fornecida na assinatura\n");
+        return 0;
+    }
+
+    // Configura os seeds da folha para derivação de máscaras WOTS+
+    memcpy(PK_seed, assinatura->leaf_PK_seed, N);
+    memcpy(SK_seed, assinatura->leaf_SK_seed, N);
+
+    // 1) Verifica assinatura WOTS da mensagem contra a chave pública WOTS da folha
     unsigned char msgHash[32];
     sha256_bytes((unsigned char*)assinatura->mensagem, strlen(assinatura->mensagem), msgHash);
 
-    int wotsValido = verificarMensagem(msgHash, assinatura->wotsSignature, folhaPkeys);
+    int wotsValido = verificarMensagem(msgHash, assinatura->wotsSignature, pk_folha);
     if (!wotsValido) return 0;
 
-    // 2) Reconstrói a raiz via caminho de autenticação (tudo em bytes brutos)
+    // 2) Computa o hash da folha a partir das chaves públicas WOTS
+    // Conforme especificação MSS: folha = H(PK[0] || PK[1] || ... || PK[L-1])
+    unsigned char pk_concat[L * N];
+    for(int j = 0; j < L; j++) {
+        memcpy(pk_concat + j * N, pk_folha->PK[j], N);
+    }
+    unsigned char hashFolhaComputado[MSS_HASH_SIZE];
+    sha256_bytes(pk_concat, L * N, hashFolhaComputado);
+
+    // 3) Reconstrói a raiz via caminho de autenticação subindo da folha computada
     unsigned char hashAtual[MSS_HASH_SIZE];
-    memcpy(hashAtual, assinatura->hashFolha, MSS_HASH_SIZE);
+    memcpy(hashAtual, hashFolhaComputado, MSS_HASH_SIZE);
 
     for (int i = 0; i < assinatura->tamanhoCaminho; i++){
         unsigned char concatenado[MSS_HASH_SIZE * 2];
@@ -218,7 +256,7 @@ int verificarAssinatura(AssinaturaMSS* assinatura, unsigned char* Pkey, PublicKe
         sha256_bytes(concatenado, MSS_HASH_SIZE * 2, hashAtual);
     }
 
-    // 3) Compara raiz reconstruída com a chave pública
+    // 4) Compara raiz reconstruída com a chave pública
     const unsigned char* ref = (Pkey != NULL) ? Pkey : assinatura->PublicKeysGeral;
     return (memcmp(hashAtual, ref, MSS_HASH_SIZE) == 0) ? 1 : 0;
 }
@@ -523,6 +561,24 @@ void escreverAssinaturaMSS(char* caminho, AssinaturaMSS* assinatura) {
     fprintf(arquivo, "Mensagem: %s\n", assinatura->mensagem);
     fprintf(arquivo, "---\n");
 
+    // Seeds da folha
+    fprintf(arquivo, "LEAF_PK_SEED:");
+    for(int i = 0; i < 32; i++) fprintf(arquivo, "%02x", assinatura->leaf_PK_seed[i]);
+    fprintf(arquivo, "\nLEAF_SK_SEED:");
+    for(int i = 0; i < 32; i++) fprintf(arquivo, "%02x", assinatura->leaf_SK_seed[i]);
+    fprintf(arquivo, "\n---\n");
+
+    // Chave pública WOTS da folha
+    if (assinatura->folhaPkeys) {
+        fprintf(arquivo, "WOTS_PK\n");
+        for(int i = 0; i < L; i++) {
+            for(int j = 0; j < N; j++)
+                fprintf(arquivo, "%02x", (unsigned char)assinatura->folhaPkeys->PK[i][j]);
+            fprintf(arquivo, "\n");
+        }
+        fprintf(arquivo, "---\n");
+    }
+
     // Assinatura WOTS
     fprintf(arquivo, "WOTS_SIGNATURE\n");
     for(int i = 0; i < L; i++) {
@@ -556,60 +612,66 @@ void lerAssinaturaMSS(char* caminho, AssinaturaMSS* assinatura) {
     if (!arquivo) { fprintf(stderr, "Erro ao abrir %s\n", caminho); return; }
 
     char linha[300];
-    fgets(linha, sizeof(linha), arquivo); // "ASSINATURA_MSS"
-    fgets(linha, sizeof(linha), arquivo); // "---"
+    if (!fgets(linha, sizeof(linha), arquivo)) { fclose(arquivo); return; } // "ASSINATURA_MSS"
+    if (!fgets(linha, sizeof(linha), arquivo)) { fclose(arquivo); return; } // "---"
 
     // PublicKey
-    fgets(linha, sizeof(linha), arquivo); // "PublicKey:..."
-    if (strncmp(linha, "PublicKey:", 10) == 0)
+    if (fgets(linha, sizeof(linha), arquivo) && strncmp(linha, "PublicKey:", 10) == 0)
         hex_to_bytes(linha + 10, assinatura->PublicKeysGeral);
 
-    fscanf(arquivo, "AlturaArvore: %d\n", &assinatura->alturaArvore);
-    fscanf(arquivo, "TotalFolhas: %d\n",  &assinatura->totalFolhas);
-    fscanf(arquivo, "IndiceFolha: %d\n",  &assinatura->indiceFolha);
+    if (fscanf(arquivo, "AlturaArvore: %d\n", &assinatura->alturaArvore) != 1) {}
+    if (fscanf(arquivo, "TotalFolhas: %d\n",  &assinatura->totalFolhas) != 1) {}
+    if (fscanf(arquivo, "IndiceFolha: %d\n",  &assinatura->indiceFolha) != 1) {}
 
     // HashFolha
-    fgets(linha, sizeof(linha), arquivo); // "HashFolha:..."
-    if (strncmp(linha, "HashFolha:", 10) == 0)
+    if (fgets(linha, sizeof(linha), arquivo) && strncmp(linha, "HashFolha:", 10) == 0)
         hex_to_bytes(linha + 10, assinatura->hashFolha);
 
-    fscanf(arquivo, "TamanhoCaminho: %d\n", &assinatura->tamanhoCaminho);
+    if (fscanf(arquivo, "TamanhoCaminho: %d\n", &assinatura->tamanhoCaminho) != 1) {}
 
-    fgets(linha, sizeof(linha), arquivo); // "Mensagem: ..."
-    if (strncmp(linha, "Mensagem:", 9) == 0) {
+    if (fgets(linha, sizeof(linha), arquivo) && strncmp(linha, "Mensagem:", 9) == 0) {
         strncpy(assinatura->mensagem, linha + 10, 1000);
-        assinatura->mensagem[strcspn(assinatura->mensagem, "\n")] = 0;
+        assinatura->mensagem[strcspn(assinatura->mensagem, "\n\r")] = 0;
     }
-    fgets(linha, sizeof(linha), arquivo); // "---"
 
-    // Assinatura WOTS
-    assinatura->wotsSignature = mallocAssinatura();
-    fgets(linha, sizeof(linha), arquivo); // "WOTS_SIGNATURE"
-    for(int i = 0; i < L; i++) {
-        fgets(linha, sizeof(linha), arquivo);
-        for(int j = 0; j < N; j++) {
-            char hex[3] = { linha[j*2], linha[j*2+1], '\0' };
-            assinatura->wotsSignature->assinatura[i][j] = (unsigned char)strtol(hex, NULL, 16);
+    // Lê as seções restantes dinamicamente pelo cabeçalho
+    while (fgets(linha, sizeof(linha), arquivo)) {
+        if (strncmp(linha, "LEAF_PK_SEED:", 13) == 0) {
+            hex_to_bytes(linha + 13, assinatura->leaf_PK_seed);
+        } else if (strncmp(linha, "LEAF_SK_SEED:", 13) == 0) {
+            hex_to_bytes(linha + 13, assinatura->leaf_SK_seed);
+        } else if (strncmp(linha, "WOTS_PK", 7) == 0) {
+            if (!assinatura->folhaPkeys) assinatura->folhaPkeys = mallocPkeys();
+            for(int i = 0; i < L; i++) {
+                if (!fgets(linha, sizeof(linha), arquivo)) break;
+                for(int j = 0; j < N; j++) {
+                    char hex[3] = { linha[j*2], linha[j*2+1], '\0' };
+                    assinatura->folhaPkeys->PK[i][j] = (unsigned char)strtol(hex, NULL, 16);
+                }
+            }
+        } else if (strncmp(linha, "WOTS_SIGNATURE", 14) == 0) {
+            if (!assinatura->wotsSignature) assinatura->wotsSignature = mallocAssinatura();
+            for(int i = 0; i < L; i++) {
+                if (!fgets(linha, sizeof(linha), arquivo)) break;
+                for(int j = 0; j < N; j++) {
+                    char hex[3] = { linha[j*2], linha[j*2+1], '\0' };
+                    assinatura->wotsSignature->assinatura[i][j] = (unsigned char)strtol(hex, NULL, 16);
+                }
+            }
+        } else if (strncmp(linha, "CAMINHO", 7) == 0) {
+            for (int i = 0; i < assinatura->tamanhoCaminho; i++) {
+                if (!fgets(linha, sizeof(linha), arquivo)) break;
+                char* ptr = strchr(linha, ':');
+                if (ptr) hex_to_bytes(ptr + 1, assinatura->caminho[i]);
+            }
+        } else if (strncmp(linha, "DIRECOES", 8) == 0) {
+            for (int i = 0; i < assinatura->tamanhoCaminho; i++) {
+                int indice, direcao;
+                if (fscanf(arquivo, "%d: %d\n", &indice, &direcao) == 2) {
+                    assinatura->caminhoDirecao[i] = (unsigned char)direcao;
+                }
+            }
         }
-    }
-    fgets(linha, sizeof(linha), arquivo); // "---"
-
-    // Caminho de autenticação
-    fgets(linha, sizeof(linha), arquivo); // "CAMINHO"
-    for (int i = 0; i < assinatura->tamanhoCaminho; i++) {
-        fgets(linha, sizeof(linha), arquivo); // "N:hexhex..."
-        // Pula o prefixo "N:"
-        char* ptr = strchr(linha, ':');
-        if (ptr) hex_to_bytes(ptr + 1, assinatura->caminho[i]);
-    }
-    fgets(linha, sizeof(linha), arquivo); // "---"
-
-    // Direções
-    fgets(linha, sizeof(linha), arquivo); // "DIRECOES"
-    for (int i = 0; i < assinatura->tamanhoCaminho; i++) {
-        int indice, direcao;
-        fscanf(arquivo, "%d: %d\n", &indice, &direcao);
-        assinatura->caminhoDirecao[i] = (unsigned char)direcao;
     }
 
     fclose(arquivo);

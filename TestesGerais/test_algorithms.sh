@@ -311,6 +311,11 @@ echo -e "${GREEN}========================================${NC}"
 echo -e "${GREEN}  TESTES CONCLUÍDOS!                   ${NC}"
 echo -e "${GREEN}========================================${NC}"
 echo -e "${GREEN}Resultados salvos em: $RESULTADO_FILE${NC}"
+
+# Exporta automaticamente para JSON
+JSON_FILE="${RESULTADO_FILE%.csv}.json"
+python3 export_results_to_json.py "$RESULTADO_FILE" "$JSON_FILE"
+echo -e "${GREEN}Resultados em JSON:   ${YELLOW}$JSON_FILE${NC}"
 echo
 
 (cd .. && make clean > /dev/null 2>&1)

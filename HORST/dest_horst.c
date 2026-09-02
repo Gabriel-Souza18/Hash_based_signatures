@@ -62,7 +62,7 @@ int main(int argc, char *argv[]) {
     clock_t inicio_verify = clock();
     int resultado = verificarAssinatura(mensagem, (int)len, &assinatura, &pk);
     clock_t fim_verify = clock();
-    printf("Verificacao: %lf s\n", (double)(fim_verify - inicio_verify) / CLOCKS_PER_SEC);
+    printf("Tempo Verificação: %.6f segundos\n", (double)(fim_verify - inicio_verify) / CLOCKS_PER_SEC);
 
     if (resultado) {
         printf("Assinatura VALIDA\n");

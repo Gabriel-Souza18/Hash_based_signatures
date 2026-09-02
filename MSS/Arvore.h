@@ -52,12 +52,16 @@ typedef struct{
     // Mensagem e assinatura WOTS
     char mensagem[1001];
     Assinatura* wotsSignature;
+    PublicKeys* folhaPkeys;                        // Chave pública WOTS da folha usada
+    unsigned char leaf_PK_seed[32];
+    unsigned char leaf_SK_seed[32];
 }AssinaturaMSS;
 
 // Alocação
 No * alocarNo();
 Folha * alocarFolha();
 AssinaturaMSS * alocarAssinatura();
+void liberarAssinatura(AssinaturaMSS* assinatura);
 
 // Criação
 void criarFolhas(Folha *folhas, int quantFolhas);

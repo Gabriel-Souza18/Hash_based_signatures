@@ -42,7 +42,13 @@ int main(int argc, char *argv[]) {
     }
 
     printf("Gerando árvore com %d folhas...\n", NUM_FOLHAS);
+    criarFolhas(folhas, NUM_FOLHAS);
+
+    clock_t inicio_arvore = clock();
     No* raiz = mssTree(folhas);
+    clock_t fim_arvore = clock();
+    double tempo_arvore = (double)(fim_arvore - inicio_arvore) / CLOCKS_PER_SEC;
+    printf("Tempo para gerar Árvore: %.6f segundos\n", tempo_arvore);
 
     printf("\nÁrvore gerada com sucesso!\n");
     // Imprime raiz em hex (bytes brutos)
@@ -56,6 +62,10 @@ int main(int argc, char *argv[]) {
     // Salva árvore e folhas em formato texto
     escreverArvore("arvore.txt", raiz);
     escreverFolhas("folhas.txt", folhas, NUM_FOLHAS);
+
+    unsigned long long hashes_arvore = sha256_get_counter();
+    printf("Total de hashes SHA256 (arvore): %llu\n", hashes_arvore);
+    sha256_reset_counter();
 
     // Carrega a mensagem do arquivo
     char mensagem[1001];
@@ -76,7 +86,9 @@ int main(int argc, char *argv[]) {
     // Atualiza folhas (marca como usada)
     escreverFolhas("folhas.txt", folhas, NUM_FOLHAS);
 
-    printf("Total de hashes SHA256 no remetente: %llu\n", sha256_get_counter());
+    unsigned long long hashes_assinatura = sha256_get_counter();
+    printf("Total de hashes SHA256 (assinatura): %llu\n", hashes_assinatura);
+    printf("Total de hashes SHA256 no remetente: %llu\n", hashes_arvore + hashes_assinatura);
 
     // Limpeza de memória
     limparArvore(raiz);
@@ -85,21 +97,12 @@ int main(int argc, char *argv[]) {
         free(folhas[i].Pkeys);
     }
     free(folhas);
-
-    if (assinatura) {
-        if (assinatura->wotsSignature) {
-            free(assinatura->wotsSignature);
-        }
-        free(assinatura);
-    }
+    liberarAssinatura(assinatura);
 
     return 0;
 }
 
 No* mssTree(Folha* folhas){
-    clock_t inicio_arvore = clock();
-    
-    criarFolhas(folhas, NUM_FOLHAS);
     int andar = 1;
     int numNoAndar = NUM_FOLHAS/pow(2,andar);
     No **andarAtual = malloc(sizeof(No*)*numNoAndar);
@@ -137,11 +140,6 @@ No* mssTree(Folha* folhas){
         numNoAndar = numNosNovoAndar;
         andar++;
     }
-
-    clock_t fim_arvore = clock();
-    double tempo_arvore = (double)(fim_arvore - inicio_arvore) / CLOCKS_PER_SEC;
-    printf("Tempo para gerar Árvore: %.6f segundos\n", tempo_arvore);
-    fflush(stdout);
 
     printf("\nTerminou de gerar Arvore\n");
     char ultimo_hex[MSS_HASH_SIZE * 2 + 1];

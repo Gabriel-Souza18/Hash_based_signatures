@@ -66,6 +66,8 @@ coletar_valgrind() {
     local dir="$2"
     local input="$3"
     local timeout_val="${4:-120}"
+    shift 4
+    local extra_args=("$@")
 
     local vg_log
     vg_log=$(mktemp /tmp/vg_XXXXXX.log)
@@ -73,7 +75,7 @@ coletar_valgrind() {
     (cd "$dir" && echo -e "$input" | timeout "$timeout_val" \
         valgrind --tool=memcheck --leak-check=full --error-exitcode=0 \
         --log-file="$vg_log" \
-        $executavel > /dev/null 2>&1) || true
+        "$executavel" "${extra_args[@]}" > /dev/null 2>&1) || true
 
     local vg_output
     vg_output=$(cat "$vg_log" 2>/dev/null)
@@ -84,12 +86,13 @@ coletar_valgrind() {
     bytes_uso=${bytes_uso:-"0"}
 
     local erros
-    erros=$(echo "$vg_output" | grep -i "ERROR SUMMARY" | grep -oP '^[0-9]+' | head -1)
+    erros=$(echo "$vg_output" | grep -i "ERROR SUMMARY" | grep -oP '(?<=ERROR SUMMARY: )[0-9]+' | head -1)
     erros=${erros:-"0"}
 
     echo "${bytes_uso},${erros}"
 }
 
+# ── Função: testar HORST ──────────────────────────────────────────────────────
 # ── Função: testar HORST ──────────────────────────────────────────────────────
 testar_horst() {
     local teste_num=$1
@@ -97,11 +100,16 @@ testar_horst() {
 
     (cd ../HORST && rm -f *.bin mensagem.txt 2>/dev/null || true)
 
-    local output
-    output=$(cd ../HORST && echo -e "1\n2\nmensagem_teste_horst_${teste_num}\n3\n0" \
-             | timeout 30 ./testeHORST 2>&1)
+    local msg="mensagem_teste_horst_${teste_num}"
+    local output_remet output_dest
+    output_remet=$(cd ../HORST && timeout 30 ./remet_horst "$msg" 2>&1)
+    local ret_remet=$?
+    output_dest=$(cd ../HORST && timeout 30 ./dest_horst 2>&1)
+    local ret_dest=$?
 
-    if [ $? -ne 0 ]; then
+    local output="${output_remet}"$'\n'"${output_dest}"
+
+    if [ $ret_remet -ne 0 ] || [ $ret_dest -ne 0 ]; then
         echo -e "${RED}Erro no teste HORST $teste_num${NC}"
         echo "HORST,$teste_num,0,0,0,0,0,0,32800,32,9152,0,0" >> "$RESULTADO_FILE"
         return 1
@@ -129,7 +137,7 @@ testar_horst() {
     local vg_metrics="0,0"
     if [ "$teste_num" -eq 1 ]; then
         echo -e "${YELLOW}  → Coletando métricas Valgrind (HORST)...${NC}"
-        vg_metrics=$(coletar_valgrind "./testeHORST" "../HORST" "1\n2\nmensagem_valgrind\n3\n0" 60)
+        vg_metrics=$(coletar_valgrind "./remet_horst" "../HORST" "" 60 "mensagem_valgrind")
     fi
 
     echo "HORST,$teste_num,$tempo_sk,$tempo_pk,0,$tempo_sign,$tempo_verif,$hashes_sign,$tam_sk,$tam_pk,$tam_sign,$vg_metrics" >> "$RESULTADO_FILE"
@@ -143,12 +151,17 @@ testar_mss() {
     echo -e "${BLUE}Testando MSS  - Teste $teste_num/${TESTES}${NC}"
 
     (cd ../MSS && rm -f *.txt *.bin 2>/dev/null || true)
+    printf "mensagem_teste_mss_%s\n" "$teste_num" > ../MSS/mensagem.txt
 
-    local output
-    output=$(cd ../MSS && echo -e "1\n2\nmensagem_teste_mss_${teste_num}\n3\n0" \
-             | timeout 120 ./mss 2>&1)
+    local output_remet output_dest
+    output_remet=$(cd ../MSS && timeout 60 ./remet_mss mensagem.txt public_key.txt assinatura.txt 2>&1)
+    local ret_remet=$?
+    output_dest=$(cd ../MSS && timeout 30 ./dest_mss mensagem.txt public_key.txt assinatura.txt 2>&1)
+    local ret_dest=$?
 
-    if [ $? -ne 0 ]; then
+    local output="${output_remet}"$'\n'"${output_dest}"
+
+    if [ $ret_remet -ne 0 ] || [ $ret_dest -ne 0 ]; then
         echo -e "${RED}Erro no teste MSS $teste_num${NC}"
         echo "MSS,$teste_num,0,0,0,0,0,0,0,0,0,0,0" >> "$RESULTADO_FILE"
         return 1
@@ -164,6 +177,10 @@ testar_mss() {
     tempo_sign=${tempo_sign:-"0"}
     tempo_verif=${tempo_verif:-"0"}
 
+    local hashes_sign
+    hashes_sign=$(echo "$output" | grep "Total de hashes SHA256 (assinatura):" | awk -F': ' '{print $2}')
+    hashes_sign=${hashes_sign:-"0"}
+
     local tam_folhas tam_pubkey tam_sign_file
     tam_folhas=$(file_size_or_default "../MSS/folhas.txt"      "0")
     tam_pubkey=$(file_size_or_default  "../MSS/public_key.txt" "0")
@@ -171,13 +188,13 @@ testar_mss() {
 
     local vg_metrics="0,0"
     if [ "$teste_num" -eq 1 ]; then
-        echo -e "${YELLOW}  → Coletando métricas Valgrind (MSS — pode demorar ~60s)...${NC}"
-        vg_metrics=$(coletar_valgrind "./mss" "../MSS" "1\n2\nmensagem_valgrind\n3\n0" 300)
+        echo -e "${YELLOW}  → Coletando métricas Valgrind (MSS)...${NC}"
+        vg_metrics=$(coletar_valgrind "./remet_mss" "../MSS" "" 120 "mensagem.txt" "public_key.txt" "assinatura.txt")
     fi
 
-    echo "MSS,$teste_num,$tempo_folhas,$tempo_arvore,0,$tempo_sign,$tempo_verif,0,$tam_folhas,$tam_pubkey,$tam_sign_file,$vg_metrics" >> "$RESULTADO_FILE"
+    echo "MSS,$teste_num,$tempo_folhas,$tempo_arvore,0,$tempo_sign,$tempo_verif,$hashes_sign,$tam_folhas,$tam_pubkey,$tam_sign_file,$vg_metrics" >> "$RESULTADO_FILE"
 
-    echo -e "${GREEN}  ✓ MSS  $teste_num: Folhas=${tempo_folhas}s | Árvore=${tempo_arvore}s | Sign=${tempo_sign}s | Verif=${tempo_verif}s${NC}"
+    echo -e "${GREEN}  ✓ MSS  $teste_num: Folhas=${tempo_folhas}s | Árvore=${tempo_arvore}s | Sign=${tempo_sign}s | Verif=${tempo_verif}s | Hashes=${hashes_sign}${NC}"
 }
 
 # ── Loop principal ─────────────────────────────────────────────────────────────
@@ -201,6 +218,11 @@ echo -e "${GREEN}========================================${NC}"
 echo -e "${GREEN}  TESTES CONCLUÍDOS!                   ${NC}"
 echo -e "${GREEN}========================================${NC}"
 echo -e "${GREEN}Resultados salvos em: ${YELLOW}$RESULTADO_FILE${NC}"
+
+# Exporta automaticamente para JSON
+JSON_FILE="${RESULTADO_FILE%.csv}.json"
+python3 export_results_to_json.py "$RESULTADO_FILE" "$JSON_FILE"
+echo -e "${GREEN}Resultados em JSON:   ${YELLOW}$JSON_FILE${NC}"
 echo
 
 echo -e "${GREEN}Script finalizado!${NC}"

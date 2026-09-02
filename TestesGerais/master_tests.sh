@@ -75,6 +75,8 @@ log_info "Consolidando resultados em tabela..."
 python3 "$SCRIPT_DIR/consolidate_results.py" "$SCRIPT_DIR/resultados_metricas" > "$SCRIPT_DIR/resultados_metricas/consolidated_results_${TIMESTAMP}.csv"
 if [ $? -eq 0 ]; then
     log_success "Resultados consolidados em CSV"
+    python3 "$SCRIPT_DIR/export_results_to_json.py" "$SCRIPT_DIR/resultados_metricas/consolidated_results_${TIMESTAMP}.csv" "$SCRIPT_DIR/resultados_metricas/consolidated_results_${TIMESTAMP}.json"
+    log_success "Resultados consolidados em JSON"
 else
     log_error "Falha ao consolidar resultados"
     exit 1
@@ -87,5 +89,6 @@ echo -e "${GREEN}========================================${NC}"
 echo -e "${BLUE}Resultados em:${NC}"
 echo "  - Métricas: $SCRIPT_DIR/resultados_metricas/"
 echo "  - Valgrind: $SCRIPT_DIR/Resultados_Valgrind/"
-echo -e "${YELLOW}Arquivo consolidado: $SCRIPT_DIR/resultados_metricas/consolidated_results_${TIMESTAMP}.csv${NC}"
+echo -e "${YELLOW}Arquivo CSV consolidado:  $SCRIPT_DIR/resultados_metricas/consolidated_results_${TIMESTAMP}.csv${NC}"
+echo -e "${YELLOW}Arquivo JSON consolidado: $SCRIPT_DIR/resultados_metricas/consolidated_results_${TIMESTAMP}.json${NC}"
 echo
