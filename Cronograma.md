@@ -55,7 +55,7 @@
 - [x] Implementar o SPHICS
 - [x] Realizar testes
 - [x] Atualizar Documentação e testes
-- [ ] Separar todos os algoritmos em destinatario e remetente
+- [x] Separar todos os algoritmos em destinatario e remetente
 
 ### Fase 10: MQTT
 - [x] Testar ESP
