@@ -4,24 +4,39 @@ CC = gcc
 CFLAGS = -Wall -O2 -I../SHA256 -DHORS_T=1024
 LDFLAGS = -lm -L../SHA256 -lsha256 -lsodium -lcrypto -Wl,-rpath,/usr/local/lib
 
-# Arquivos fonte
-SRC = keys.c hors.c utils.c
-OBJ = $(SRC:.c=.o)
+# Arquivos fonte comuns (keys + utils)
+COMMON_OBJ = keys.o utils.o
+
+# Executáveis remetente/destinatário
+REMET_TARGET = remet_hors
+DEST_TARGET = dest_hors
+
+# Executáveis legado (menu interativo e testes)
 TARGET = hors
 TEST_TARGET = testeHors
 QUICK_TEST = hors_test
 
-# Target padrão
-all: $(TARGET) $(QUICK_TEST)
+# Target padrão: remetente e destinatário separados
+all: $(REMET_TARGET) $(DEST_TARGET)
 
-# Compilar executável principal
-$(TARGET): $(OBJ) ../SHA256/libsha256.a
-	$(CC) $(OBJ) -o $(TARGET) $(LDFLAGS)
-	@echo "HORS compilado com HORS_T=1024!"
+# Remetente HORS
+$(REMET_TARGET): $(COMMON_OBJ) remet_hors.o ../SHA256/libsha256.a
+	$(CC) $(COMMON_OBJ) remet_hors.o -o $(REMET_TARGET) $(LDFLAGS)
+	@echo "remet_hors compilado!"
+
+# Destinatário HORS
+$(DEST_TARGET): $(COMMON_OBJ) dest_hors.o ../SHA256/libsha256.a
+	$(CC) $(COMMON_OBJ) dest_hors.o -o $(DEST_TARGET) $(LDFLAGS)
+	@echo "dest_hors compilado!"
+
+# Compilar executável com menu (legado)
+menu: $(COMMON_OBJ) hors.o ../SHA256/libsha256.a
+	$(CC) $(COMMON_OBJ) hors.o -o $(TARGET) $(LDFLAGS)
+	@echo "HORS (menu) compilado!"
 
 # Compilar teste rápido (sem menu)
-$(QUICK_TEST): keys.o utils.o hors_test.o ../SHA256/libsha256.a
-	$(CC) keys.o utils.o hors_test.o -o $(QUICK_TEST) $(LDFLAGS)
+$(QUICK_TEST): $(COMMON_OBJ) hors_test.o ../SHA256/libsha256.a
+	$(CC) $(COMMON_OBJ) hors_test.o -o $(QUICK_TEST) $(LDFLAGS)
 	@echo "hors_test compilado!"
 
 # Compilar teste com menu
@@ -42,6 +57,12 @@ keys.o: keys.c keys.h
 utils.o: utils.c utils.h
 	$(CC) $(CFLAGS) -c utils.c -o utils.o
 
+remet_hors.o: remet_hors.c keys.h utils.h
+	$(CC) $(CFLAGS) -c remet_hors.c -o remet_hors.o
+
+dest_hors.o: dest_hors.c keys.h utils.h
+	$(CC) $(CFLAGS) -c dest_hors.c -o dest_hors.o
+
 hors_test.o: hors_test.c keys.h utils.h
 	$(CC) $(CFLAGS) -c hors_test.c -o hors_test.o
 
@@ -56,10 +77,10 @@ testeHors.o: testeHors.c keys.h
 # Limpar arquivos gerados
 clean:
 	@echo "Limpando HORS..."
-	rm -f $(OBJ) testeHors.o hors_test.o $(TARGET) $(TEST_TARGET) $(QUICK_TEST)
+	rm -f $(COMMON_OBJ) hors.o remet_hors.o dest_hors.o testeHors.o hors_test.o
+	rm -f $(TARGET) $(REMET_TARGET) $(DEST_TARGET) $(TEST_TARGET) $(QUICK_TEST)
 	rm -f assinatura.txt mensagem.txt publicKeys.txt secretKeys.txt
 	rm -f assinatura.bin publicKeys.bin
 	@echo "Limpeza concluída!"
 
-.PHONY: all test clean
-
+.PHONY: all menu test clean

@@ -1,7 +1,7 @@
 # Assinaturas Digitais Baseadas em Hash
 ## Repositório para códigos desenvolvidos na Iniciação Científica
 
-Este projeto implementa e compara algoritmos de assinatura digital baseados em hash: **Lamport OTS**, **WOTS** (Winternitz One-Time Signature) e **MSS** (Merkle Signature Scheme).
+Este projeto implementa e compara algoritmos de assinatura digital baseados em hash: **LOTS**, **WOTS**, **MSS**, **HORS**, **HORST**  e **SHPINCHS**
 
 ---
 
