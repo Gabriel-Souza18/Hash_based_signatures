@@ -31,7 +31,7 @@ HASH_BASED_SIGNATURES/
 ├── SPHINCS/             # SPHINCS (stateless)
 │   ├── remet_sphincs    # Remetente
 │   └── dest_sphincs     # Destinatário
-├── ComunicaçãoMQTT/     # Comunicação MQTT (PC ↔ ESP)
+├── ComunicaçãoMQTT/     # Comunicação MQTT (PC ↔ ESP) → [Comunicação.md](ComunicaçãoMQTT/Comunicação.md)
 ├── TesteHash/           # Testes de hash
 ├── TestesGerais/        # Scripts de teste automatizados
 ├── makefile             # Makefile principal

@@ -14,10 +14,29 @@ A comunicação MQTT é realizada utilizando o broker [Mosquitto](https://mosqui
 O código presente no diretório `Teste placa/`:
 - Recebe a mensagem enviada pelo computador e pisca o LED ao recebê-la corretamente.
 - Envia uma mensagem de retorno para o computador.
+- **Serve como base para a criação de novos projetos em `Esquemas/`.**
 
 ---
 
-## Comunicação LOTS com Coleta de Métricas (`lotsPlaca/`)
+## Esquemas (`Esquemas/`)
+
+Contém as implementações da comunicação MQTT integradas com cada algoritmo de assinatura. Cada subpasta é um projeto PlatformIO independente para a ESP32.
+
+```
+Esquemas/
+├── LOTS/       ← Lamport OTS (implementado)
+├── WOTS/       ← Winternitz OTS (base)
+├── HORS/       ← Hash to Obtain Random Subset (base)
+├── HORST/      ← HORS with Trees (base)
+├── MSS/        ← Merkle Signature Scheme (base)
+└── SPHINCS/    ← SPHINCS (base)
+```
+
+> Pastas marcadas como **(base)** contêm apenas o projeto mínimo copiado de `Teste placa/`, sem implementação do algoritmo ainda.
+
+---
+
+## Comunicação LOTS com Coleta de Métricas (`Esquemas/LOTS/`)
 
 Este diretório contém a implementação da comunicação MQTT integrada com a assinatura **LOTS (Lamport OTS)** e um sistema automático de coleta de métricas de desempenho.
 
@@ -70,14 +89,14 @@ python3 logger.py
 
 **2. Iniciar o Publisher no PC (terminal 2):**
 ```bash
-cd ComunicaçãoMQTT/lotsPlaca/PC/
+cd ComunicaçãoMQTT/Esquemas/LOTS/PC/
 make
 ./publisherLots
 ```
 
 **3. Compilar e enviar firmware para a ESP32:**
 ```bash
-cd ComunicaçãoMQTT/lotsPlaca/LotsPlaca/
+cd ComunicaçãoMQTT/Esquemas/LOTS/
 pio run --target upload
 pio device monitor
 ```
