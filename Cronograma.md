@@ -59,19 +59,28 @@
 
 ### Fase 10: MQTT
 - [x] Testar ESP
-- [x] Criar comunicação MQTT pc - ESP
-- [ ] Testar algoritimos na ESP
+- [x] Criar comunicação MQTT pc -ESP
+- [x] LOTS
+- [] WOTS
+- [] MSS
+- [] HORS
+- [] HORST
+- [] SPHINCS
+- [] Testar algoritimos na ESP
 ---
 
 ## Falar na próxima reunião
 
 - **Implementação:**
-  - sphichs e falar que ainda nao terminou
-  - LOTS e WOTS separados em remetente de destinatario
-- To com a Esp, e olhar especs dela
-- MQTT
-- INA226
-- Falar sobre ferias, e quando volta as reunioes
+- Tudo separado, e organizado, os testes geram json, e geram os graficos a coluna de tamanho da SK da MSS.
+- Os codigos da esp ainda não estão prontos, somente o LOTS, mas esta bem padronizado, só copiar o mudar a chamada das funções.
+- E mostrar o json
+
+- **Texto IC/TCC**
+- **IC** Quase pronto, só falta terminar a metodologia, e colocar os novos resultados.
+- **TCC** Não mexi muito, so coloquei os algoritmos com a biblioteca
+
+
 
 ---
 

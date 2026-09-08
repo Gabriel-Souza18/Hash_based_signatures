@@ -200,24 +200,30 @@ testar_wots() {
     echo "  SK: ${tempo_secret_keys}s | PK: ${tempo_public_keys}s | Masks: ${tempo_masks}s | Assinatura: ${tempo_assinatura}s | Verificação: ${tempo_verificacao}s"
 }
 
-# Teste HORS
+## Teste HORS
 testar_hors() {
     local teste_num=$1
     echo -e "${BLUE}Testando HORS - Teste $teste_num${NC}"
     
     (cd ../HORS && rm -f *.txt *.bin 2>/dev/null || true)
     
-    local output_assinatura=$(cd ../HORS && ./hors_test "$MENSAGEM_TESTE" 2>&1)
+    local output_remet=$(cd ../HORS && timeout 30 ./remet_hors "$MENSAGEM_TESTE" 2>&1)
     if [ $? -ne 0 ]; then
-        echo -e "${RED}Erro no teste HORS $teste_num${NC}"
+        echo -e "${RED}Erro no teste HORS $teste_num (remetente)${NC}"
+        return 1
+    fi
+
+    local output_dest=$(cd ../HORS && timeout 30 ./dest_hors 2>&1)
+    if [ $? -ne 0 ]; then
+        echo -e "${RED}Erro no teste HORS $teste_num (destinatário)${NC}"
         return 1
     fi
     
-    local tempo_secret_keys=$(echo "$output_assinatura" | grep "Tempo para gerar Chaves Secretas:" | awk -F': ' '{print $2}' | awk '{print $1}')
-    local tempo_public_keys=$(echo "$output_assinatura" | grep "Tempo para gerar Chaves Publicas:" | awk -F': ' '{print $2}' | awk '{print $1}')
-    local tempo_assinatura=$(echo "$output_assinatura" | grep "Tempo para Assinar:" | awk -F': ' '{print $2}' | awk '{print $1}')
-    local tempo_verificacao=$(extrair_valor "$output_assinatura" "Tempo Verificação:")
-    local hashes_assinatura=$(echo "$output_assinatura" | grep "Total de hashes SHA256:" | awk -F': ' '{print $2}')
+    local tempo_secret_keys=$(echo "$output_remet" | grep -E "^(Geracao de chaves:|Tempo para gerar Chaves Secretas:)" | head -1 | awk -F': ' '{print $2}' | awk '{print $1}')
+    local tempo_public_keys="0"
+    local tempo_assinatura=$(echo "$output_remet"   | grep -E "^(Assinatura:|Tempo para Assinar:)"               | head -1 | awk -F': ' '{print $2}' | awk '{print $1}')
+    local tempo_verificacao=$(echo "$output_dest"  | grep -E "(Tempo Verificação:|Verificacao:)" | head -1 | awk -F': ' '{print $2}' | awk '{print $1}')
+    local hashes_assinatura=$(echo "$output_remet" | grep "Total de hashes SHA256" | head -1 | awk -F': ' '{print $2}')
     
     tempo_secret_keys=${tempo_secret_keys:-"0"}
     tempo_public_keys=${tempo_public_keys:-"0"}
@@ -225,13 +231,13 @@ testar_hors() {
     tempo_verificacao=${tempo_verificacao:-"0"}
     hashes_assinatura=${hashes_assinatura:-"0"}
     
-    local tamanho_secret=$(file_size_or_default "../HORS/secretKeys.txt" "32768")
-    local tamanho_public=$(file_size_or_default "../HORS/publicKeys.txt" "32768")
-    local tamanho_assinatura=$(file_size_or_default "../HORS/assinatura.txt" "832")
+    local tamanho_secret=$(file_size_or_default "../HORS/secretKeys.bin" "32768")
+    local tamanho_public=$(file_size_or_default "../HORS/publicKeys.bin" "32768")
+    local tamanho_assinatura=$(file_size_or_default "../HORS/assinatura.bin" "832")
     
     local vg_metrics="0,0"
     if [ "$teste_num" -eq 1 ]; then
-        vg_metrics=$(coletar_valgrind "./hors_test" "../HORS" "" 60 "$MENSAGEM_TESTE")
+        vg_metrics=$(coletar_valgrind "./remet_hors" "../HORS" "" 60 "$MENSAGEM_TESTE")
     fi
     
     echo "HORS,$teste_num,$tempo_secret_keys,$tempo_public_keys,0,$tempo_assinatura,$tempo_verificacao,$hashes_assinatura,$tamanho_secret,$tamanho_public,$tamanho_assinatura,$vg_metrics" >> "$RESULTADO_FILE"
@@ -286,25 +292,22 @@ testar_sphincs() {
     echo "  Keygen: ${tempo_secret_keys}s | Sign: ${tempo_assinatura}s | Verificação: ${tempo_verificacao}s | Hashes: $hashes_assinatura"
 }
 
-echo -e "${YELLOW}Iniciando testes ($TESTES execuções para cada algoritmo)...${NC}"
-echo
+TESTES_SEM_ARVORE=${TESTES_SEM_ARVORE:-100}
+TESTES_ARVORE=${TESTES_ARVORE:-20}
 
-for i in $(seq 1 $TESTES); do
-    echo -e "${YELLOW}=== EXECUÇÃO $i/$TESTES ===${NC}"
-    
+echo -e "${YELLOW}Iniciando testes de esquemas sem árvore (LOTS, WOTS, HORS — $TESTES_SEM_ARVORE execuções)...${NC}"
+for i in $(seq 1 $TESTES_SEM_ARVORE); do
+    echo -e "${YELLOW}=== EXECUÇÃO $i/$TESTES_SEM_ARVORE (Sem Árvore) ===${NC}"
     testar_lamport $i
-    sleep 1
-    
     testar_wots $i
-    sleep 1
-    
     testar_hors $i
-    sleep 1
+done
 
+echo
+echo -e "${YELLOW}Iniciando testes de esquemas baseados em árvore (SPHINCS — $TESTES_ARVORE execuções)...${NC}"
+for i in $(seq 1 $TESTES_ARVORE); do
+    echo -e "${YELLOW}=== EXECUÇÃO $i/$TESTES_ARVORE (SPHINCS) ===${NC}"
     testar_sphincs $i
-    sleep 1
-    
-    echo
 done
 
 echo -e "${GREEN}========================================${NC}"
