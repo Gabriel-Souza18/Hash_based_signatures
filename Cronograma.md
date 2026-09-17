@@ -86,6 +86,15 @@
 
 ## Anotações reunião
 
-- Fazer testes nas ferias (talvez incluir no relatorio de IC)
-- Escrever relatorio de IC
-- Preencher formulario 1a, 11a, talvez 17
+
+https://ufsj.edu.br/pic/relatorios.php
+- Preencher formulario 1a,4a, 11a, talvez 17
+ESSA SEMANA
+
+- olhar se artigo, esta no padrão.
+
+- analalisar ataque de canal lateral 
+
+Relatorio ate dia 23 agora
+
+Terminar ate novembro
