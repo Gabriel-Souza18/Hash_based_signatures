@@ -116,6 +116,7 @@ void assinarMSG(const uint8_t msgHash[32], SecretKeys *sKeys, uint8_t assinatura
 }
 
 bool verificarMSG(const uint8_t msgHash[32], PublicKeys *pKeys, uint8_t assinatura[256][KEY_SIZE]){
+    bool resultado = true;
     for (int i = 0; i < 256; i++) {
         uint8_t hashAssinatura[KEY_SIZE];
         
@@ -130,14 +131,14 @@ bool verificarMSG(const uint8_t msgHash[32], PublicKeys *pKeys, uint8_t assinatu
         // Verifica se o hash da assinatura corresponde à chave pública correta
         if (bit == 1) {
             if (memcmp(hashAssinatura, pKeys->PK1[i], KEY_SIZE) != 0) {
-                return false;
+                resultado = false;
             }
         } else {
             if (memcmp(hashAssinatura, pKeys->PK0[i], KEY_SIZE) != 0) {
-                return false;
+                resultado = false;
             }
         }
     }
     
-    return true;
+    return  resultado;
 }
