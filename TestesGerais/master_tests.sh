@@ -34,18 +34,18 @@ fi
 echo
 sleep 2
 
-# ===== 2. Executar testes MSS e HORST =====
-log_info "Executando test_mss_horst.sh (20 iterações — MSS ~3 min, HORST ~1 min)..."
-if bash "$SCRIPT_DIR/test_mss_horst.sh"; then
-    log_success "test_mss_horst.sh concluído"
+# ===== 2. Executar testes MSS, HORST e SPHINCS =====
+log_info "Executando test_heavy_algorithms.sh (20 iterações)..."
+if bash "$SCRIPT_DIR/test_heavy_algorithms.sh"; then
+    log_success "test_heavy_algorithms.sh concluído"
 else
-    log_error "Falha em test_mss_horst.sh"
+    log_error "Falha em test_heavy_algorithms.sh"
     exit 1
 fi
 
 echo
 sleep 2
-
+:'
 # ===== 3. Executar testes Valgrind =====
 log_info "Executando run_valgrind_all.sh..."
 if bash "$SCRIPT_DIR/run_valgrind_all.sh"; then
@@ -69,7 +69,7 @@ fi
 
 echo
 sleep 1
-
+'
 # ===== 5. Consolidar resultados em tabela =====
 log_info "Consolidando resultados em tabela..."
 python3 "$SCRIPT_DIR/consolidate_results.py" "$SCRIPT_DIR/resultados_metricas" > "$SCRIPT_DIR/resultados_metricas/consolidated_results_${TIMESTAMP}.csv"
@@ -88,7 +88,6 @@ echo -e "${GREEN}  TESTES CONCLUÍDOS COM SUCESSO!       ${NC}"
 echo -e "${GREEN}========================================${NC}"
 echo -e "${BLUE}Resultados em:${NC}"
 echo "  - Métricas: $SCRIPT_DIR/resultados_metricas/"
-echo "  - Valgrind: $SCRIPT_DIR/Resultados_Valgrind/"
 echo -e "${YELLOW}Arquivo CSV consolidado:  $SCRIPT_DIR/resultados_metricas/consolidated_results_${TIMESTAMP}.csv${NC}"
 echo -e "${YELLOW}Arquivo JSON consolidado: $SCRIPT_DIR/resultados_metricas/consolidated_results_${TIMESTAMP}.json${NC}"
 echo

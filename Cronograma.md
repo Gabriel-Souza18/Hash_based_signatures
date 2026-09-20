@@ -71,14 +71,9 @@
 
 ## Falar na próxima reunião
 
-- **Implementação:**
-- Tudo separado, e organizado, os testes geram json, e geram os graficos a coluna de tamanho da SK da MSS.
-- Os codigos da esp ainda não estão prontos, somente o LOTS, mas esta bem padronizado, só copiar o mudar a chamada das funções.
-- E mostrar o json
+Texto pronto
+apresentação SIC
 
-- **Texto IC/TCC**
-- **IC** Quase pronto, só falta terminar a metodologia, e colocar os novos resultados.
-- **TCC** Não mexi muito, so coloquei os algoritmos com a biblioteca
 
 
 
@@ -91,10 +86,13 @@ https://ufsj.edu.br/pic/relatorios.php
 - Preencher formulario 1a,4a, 11a, talvez 17
 ESSA SEMANA
 
-- olhar se artigo, esta no padrão.
+- olhar se artigo, esta no padrão. (Esta no padrão)   
 
-- analalisar ataque de canal lateral 
+- analisar ataque de canal lateral  (Tava)
 
-Relatorio ate dia 23 agora
+- Relatorio ate dia 23 agora
 
-Terminar ate novembro
+- Terminar ate novembro
+
+
+agy --conversation=4d085b18-2690-49d4-8d92-4aea1ff51210

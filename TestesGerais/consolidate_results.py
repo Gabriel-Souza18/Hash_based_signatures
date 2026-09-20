@@ -79,8 +79,8 @@ def main():
     results_dir = sys.argv[1]
     
     # Encontrar CSVs mais recentes (geral vs mss_horst)
-    algo_csv = get_latest_csv(results_dir, 'resultados_*.csv', exclude_pattern='mss_horst')
-    mss_horst_csv = get_latest_csv(results_dir, 'resultados_mss_horst_*.csv')
+    algo_csv = get_latest_csv(results_dir, 'resultados_OT*.csv', exclude_pattern='heavy')
+    mss_horst_csv = get_latest_csv(results_dir, 'resultados_heavy_*.csv')
     valgrind_csv = get_latest_csv(results_dir, 'valgrind_bytes_*.csv')
     
     algo_data = {}

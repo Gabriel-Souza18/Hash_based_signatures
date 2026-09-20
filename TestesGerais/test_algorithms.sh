@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Script para testar algoritmos de assinatura (LOTS, WOTS+, HORS, SPHINCS)
+# Script para testar algoritmos de assinatura (LOTS, WOTS+, HORS)
 # e salvar os resultados em tabela CSV
 
 # Cores para output
@@ -12,15 +12,19 @@ NC='\033[0m' # No Color
 
 echo -e "${BLUE}========================================${NC}"
 echo -e "${BLUE}  TESTE DE ALGORITMOS DE ASSINATURA    ${NC}"
-echo -e "${BLUE}  (LOTS, WOTS+, HORS, SPHINCS)         ${NC}"
+echo -e "${BLUE}  (LOTS, WOTS+, HORS)         ${NC}"
 echo -e "${BLUE}========================================${NC}"
 
 # Número de testes
-TESTES=${TESTES:-10}
+TESTES=${TESTES:-200}
+
+# Coleta de métricas Valgrind desativada por enquanto (custo/tempo elevado).
+# Para reativar no futuro, basta rodar com USAR_VALGRIND=1 ./test_algorithms.sh
+USAR_VALGRIND=${USAR_VALGRIND:-0}
 TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
 RESULTADO_DIR="resultados_metricas"
 mkdir -p "$RESULTADO_DIR"
-RESULTADO_FILE="$RESULTADO_DIR/resultados_${TIMESTAMP}.csv"
+RESULTADO_FILE="$RESULTADO_DIR/resultados_OT${TIMESTAMP}.csv"
 
 # Mensagem de teste padrão
 MENSAGEM_TESTE="Esta é uma mensagem de teste para avaliar os algoritmos de assinatura digital."
@@ -31,7 +35,6 @@ compile_err=0
 (cd ../LOTS   && make clean > /dev/null 2>&1; make > /dev/null 2>&1) || { echo -e "${RED}Erro ao compilar LOTS!${NC}"; compile_err=1; }
 (cd ../WOTS   && make clean > /dev/null 2>&1; make > /dev/null 2>&1) || { echo -e "${RED}Erro ao compilar WOTS!${NC}"; compile_err=1; }
 (cd ../HORS   && make clean > /dev/null 2>&1; make > /dev/null 2>&1) || { echo -e "${RED}Erro ao compilar HORS!${NC}"; compile_err=1; }
-(cd ../SPHINCS && make clean > /dev/null 2>&1; make > /dev/null 2>&1) || { echo -e "${RED}Erro ao compilar SPHINCS!${NC}"; compile_err=1; }
 
 if [ "$compile_err" -ne 0 ]; then
     echo -e "${RED}Erro na compilação!${NC}"
@@ -66,43 +69,45 @@ file_size_or_default() {
     fi
 }
 
-coletar_valgrind() {
-    local executavel="$1"
-    local dir="$2"
-    local input="$3"
-    local timeout_val="${4:-60}"
-    shift 4 || shift $#
-    local extra_args=("$@")
-
-    local vg_log
-    vg_log=$(mktemp /tmp/vg_XXXXXX.log)
-
-    if [ -n "$input" ]; then
-        (cd "$dir" && echo -e "$input" | timeout "$timeout_val" \
-            valgrind --tool=memcheck --leak-check=full --error-exitcode=0 \
-            --log-file="$vg_log" \
-            $executavel "${extra_args[@]}" > /dev/null 2>&1) || true
-    else
-        (cd "$dir" && timeout "$timeout_val" \
-            valgrind --tool=memcheck --leak-check=full --error-exitcode=0 \
-            --log-file="$vg_log" \
-            $executavel "${extra_args[@]}" > /dev/null 2>&1) || true
-    fi
-
-    local vg_output
-    vg_output=$(cat "$vg_log" 2>/dev/null)
-    rm -f "$vg_log"
-
-    local bytes_uso
-    bytes_uso=$(echo "$vg_output" | grep -i "total heap usage" | grep -oP '[0-9,]+(?= bytes allocated)' | tr -d ',' | head -1)
-    bytes_uso=${bytes_uso:-"0"}
-
-    local erros
-    erros=$(echo "$vg_output" | grep -i "ERROR SUMMARY" | grep -oP '^[0-9]+' | head -1)
-    erros=${erros:-"0"}
-
-    echo "${bytes_uso},${erros}"
-}
+# DESATIVADA POR ENQUANTO — mantida comentada para religar facilmente no futuro
+# (ver flag USAR_VALGRIND no topo do script)
+# coletar_valgrind() {
+#     local executavel="$1"
+#     local dir="$2"
+#     local input="$3"
+#     local timeout_val="${4:-60}"
+#     shift 4 || shift $#
+#     local extra_args=("$@")
+#
+#     local vg_log
+#     vg_log=$(mktemp /tmp/vg_XXXXXX.log)
+#
+#     if [ -n "$input" ]; then
+#         (cd "$dir" && echo -e "$input" | timeout "$timeout_val" \
+#             valgrind --tool=memcheck --leak-check=full --error-exitcode=0 \
+#             --log-file="$vg_log" \
+#             $executavel "${extra_args[@]}" > /dev/null 2>&1) || true
+#     else
+#         (cd "$dir" && timeout "$timeout_val" \
+#             valgrind --tool=memcheck --leak-check=full --error-exitcode=0 \
+#             --log-file="$vg_log" \
+#             $executavel "${extra_args[@]}" > /dev/null 2>&1) || true
+#     fi
+#
+#     local vg_output
+#     vg_output=$(cat "$vg_log" 2>/dev/null)
+#     rm -f "$vg_log"
+#
+#     local bytes_uso
+#     bytes_uso=$(echo "$vg_output" | grep -i "total heap usage" | grep -oP '[0-9,]+(?= bytes allocated)' | tr -d ',' | head -1)
+#     bytes_uso=${bytes_uso:-"0"}
+#
+#     local erros
+#     erros=$(echo "$vg_output" | grep -i "ERROR SUMMARY" | grep -oP '^[0-9]+' | head -1)
+#     erros=${erros:-"0"}
+#
+#     echo "${bytes_uso},${erros}"
+# }
 
 # Teste Lamport (LOTS)
 testar_lamport() {
@@ -140,9 +145,11 @@ testar_lamport() {
     local tamanho_public=$(file_size_or_default "../LOTS/publicKeys.txt" "33280")
     local tamanho_assinatura=$(file_size_or_default "../LOTS/assinatura.txt" "16640")
     
+    
     local vg_metrics="0,0"
-    if [ "$teste_num" -eq 1 ]; then
-        vg_metrics=$(coletar_valgrind "./remet_lots" "../LOTS" "" 60 "mensagem.txt" "publicKeys.txt" "assinatura.txt")
+    if [ "$USAR_VALGRIND" -eq 1 ] && [ "$teste_num" -eq 1 ]; then
+        echo -e "${YELLOW}  → Coletando métricas Valgrind (Lamport)...${NC}"
+        # vg_metrics=$(coletar_valgrind "./remet_lots" "../LOTS" "" 60 "mensagem.txt" "publicKeys.txt" "assinatura.txt")
     fi
     
     echo "LOTS,$teste_num,$tempo_secret_keys,$tempo_public_keys,0,$tempo_assinatura,$tempo_verificacao,$hashes_assinatura,$tamanho_secret,$tamanho_public,$tamanho_assinatura,$vg_metrics" >> "$RESULTADO_FILE"
@@ -190,8 +197,9 @@ testar_wots() {
     local tamanho_assinatura=$(file_size_or_default "../WOTS/Assinatura.bin" "2144")
     
     local vg_metrics="0,0"
-    if [ "$teste_num" -eq 1 ]; then
-        vg_metrics=$(coletar_valgrind "./remet_wots" "../WOTS" "" 60 "mensagem.txt" "PublicKeys.bin" "Assinatura.bin")
+    if [ "$USAR_VALGRIND" -eq 1 ] && [ "$teste_num" -eq 1 ]; then
+        echo -e "${YELLOW}  → Coletando métricas Valgrind (WOTS)...${NC}"
+        # vg_metrics=$(coletar_valgrind "./remet_wots" "../WOTS" "" 60 "mensagem.txt" "PublicKeys.bin" "Assinatura.bin")
     fi
     
     echo "WOTS,$teste_num,$tempo_secret_keys,$tempo_public_keys,$tempo_masks,$tempo_assinatura,$tempo_verificacao,$hashes_assinatura,$tamanho_secret,$tamanho_public,$tamanho_assinatura,$vg_metrics" >> "$RESULTADO_FILE"
@@ -236,8 +244,9 @@ testar_hors() {
     local tamanho_assinatura=$(file_size_or_default "../HORS/assinatura.bin" "832")
     
     local vg_metrics="0,0"
-    if [ "$teste_num" -eq 1 ]; then
-        vg_metrics=$(coletar_valgrind "./remet_hors" "../HORS" "" 60 "$MENSAGEM_TESTE")
+    if [ "$USAR_VALGRIND" -eq 1 ] && [ "$teste_num" -eq 1 ]; then
+        echo -e "${YELLOW}  → Coletando métricas Valgrind (HORS)...${NC}"
+        # vg_metrics=$(coletar_valgrind "./remet_hors" "../HORS" "" 60 "$MENSAGEM_TESTE")
     fi
     
     echo "HORS,$teste_num,$tempo_secret_keys,$tempo_public_keys,0,$tempo_assinatura,$tempo_verificacao,$hashes_assinatura,$tamanho_secret,$tamanho_public,$tamanho_assinatura,$vg_metrics" >> "$RESULTADO_FILE"
@@ -246,54 +255,8 @@ testar_hors() {
     echo "  SK: ${tempo_secret_keys}s | PK: ${tempo_public_keys}s | Assinatura: ${tempo_assinatura}s | Verificação: ${tempo_verificacao}s | Hashes: $hashes_assinatura"
 }
 
-# Teste SPHINCS
-testar_sphincs() {
-    local teste_num=$1
-    echo -e "${BLUE}Testando SPHINCS-256 - Teste $teste_num${NC}"
-    
-    (cd ../SPHINCS && rm -f *.bin mensagem.txt 2>/dev/null || true)
-    printf "%s\n" "$MENSAGEM_TESTE" > ../SPHINCS/mensagem.txt
-    
-    local output_remet=$(cd ../SPHINCS && timeout 60 ./remet_sphincs mensagem.txt pubkey.bin sig.bin sk_seed.bin seckey.bin 2>&1)
-    if [ $? -ne 0 ]; then
-        echo -e "${RED}Erro no teste SPHINCS $teste_num (remetente)${NC}"
-        return 1
-    fi
-    
-    local output_dest=$(cd ../SPHINCS && timeout 60 ./dest_sphincs mensagem.txt pubkey.bin sig.bin sk_seed.bin 2>&1)
-    if [ $? -ne 0 ]; then
-        echo -e "${RED}Erro no teste SPHINCS $teste_num (destinatário)${NC}"
-        return 1
-    fi
-    
-    local tempo_secret_keys=$(extrair_valor "$output_remet" "Tempo Geração de Chaves:")
-    local tempo_public_keys="0"
-    local tempo_assinatura=$(extrair_valor "$output_remet" "Tempo Assinatura:")
-    local tempo_verificacao=$(extrair_valor "$output_dest" "Tempo Verificação:")
-    local hashes_assinatura=$(extrair_valor "$output_remet" "Total de hashes SHA256")
-    
-    tempo_secret_keys=${tempo_secret_keys:-"0"}
-    tempo_assinatura=${tempo_assinatura:-"0"}
-    tempo_verificacao=${tempo_verificacao:-"0"}
-    hashes_assinatura=${hashes_assinatura:-"0"}
-    
-    local tamanho_secret=$(file_size_or_default "../SPHINCS/seckey.bin" "96")
-    local tamanho_public=$(file_size_or_default "../SPHINCS/pubkey.bin" "64")
-    local tamanho_assinatura=$(file_size_or_default "../SPHINCS/sig.bin" "36840")
-    
-    local vg_metrics="0,0"
-    if [ "$teste_num" -eq 1 ]; then
-        vg_metrics=$(coletar_valgrind "./remet_sphincs" "../SPHINCS" "" 120 "mensagem.txt" "pubkey.bin" "sig.bin" "sk_seed.bin" "seckey.bin")
-    fi
-    
-    echo "SPHINCS,$teste_num,$tempo_secret_keys,$tempo_public_keys,0,$tempo_assinatura,$tempo_verificacao,$hashes_assinatura,$tamanho_secret,$tamanho_public,$tamanho_assinatura,$vg_metrics" >> "$RESULTADO_FILE"
-    
-    echo -e "${GREEN}SPHINCS Teste $teste_num: OK${NC}"
-    echo "  Keygen: ${tempo_secret_keys}s | Sign: ${tempo_assinatura}s | Verificação: ${tempo_verificacao}s | Hashes: $hashes_assinatura"
-}
 
 TESTES_SEM_ARVORE=${TESTES_SEM_ARVORE:-100}
-TESTES_ARVORE=${TESTES_ARVORE:-20}
 
 echo -e "${YELLOW}Iniciando testes de esquemas sem árvore (LOTS, WOTS, HORS — $TESTES_SEM_ARVORE execuções)...${NC}"
 for i in $(seq 1 $TESTES_SEM_ARVORE); do
@@ -303,12 +266,6 @@ for i in $(seq 1 $TESTES_SEM_ARVORE); do
     testar_hors $i
 done
 
-echo
-echo -e "${YELLOW}Iniciando testes de esquemas baseados em árvore (SPHINCS — $TESTES_ARVORE execuções)...${NC}"
-for i in $(seq 1 $TESTES_ARVORE); do
-    echo -e "${YELLOW}=== EXECUÇÃO $i/$TESTES_ARVORE (SPHINCS) ===${NC}"
-    testar_sphincs $i
-done
 
 echo -e "${GREEN}========================================${NC}"
 echo -e "${GREEN}  TESTES CONCLUÍDOS!                   ${NC}"

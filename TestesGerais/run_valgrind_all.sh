@@ -78,14 +78,14 @@ rodar_wots() {
 
 rodar_hors() {
   build_modulo "HORS" || return 1
-  run_valgrind_cmd "HORS" "hors" "remetente" "1\n${MENSAGEM_BASE}_hors\n0\n"
-  run_valgrind_cmd "HORS" "hors" "destinatario" "2\n0\n"
+  run_valgrind_cmd "HORS" "remet_hors" "remetente" "" "${MENSAGEM_BASE}_hors"
+  run_valgrind_cmd "HORS" "dest_hors" "destinatario" ""
 }
 
 rodar_horst() {
   build_modulo "HORST" || return 1
-  run_valgrind_cmd "HORST" "testeHORST" "remetente" "1\n2\n${MENSAGEM_BASE}_horst\n0\n"
-  run_valgrind_cmd "HORST" "testeHORST" "destinatario" "3\n0\n"
+  run_valgrind_cmd "HORST" "remet_horst" "remetente" "" "${MENSAGEM_BASE}_horst"
+  run_valgrind_cmd "HORST" "dest_horst" "destinatario" ""
 }
 
 rodar_mss() {
