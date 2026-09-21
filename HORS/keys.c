@@ -28,7 +28,7 @@ void gerarKeys(Keys* keys){
     }
     clock_t fim_pk = clock();
     hors_tempo_pk = (double)(fim_pk - inicio_pk) / CLOCKS_PER_SEC;
-    printf("Chaves Geradas\n");
+   // printf("Chaves Geradas\n");
 }
 
 void assinarMensagem(const char* msg,int msg_len, 

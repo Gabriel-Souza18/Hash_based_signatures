@@ -18,6 +18,9 @@
 #include <time.h>
 #include "../SHA256/sha256.h"
 
+extern double hors_tempo_sk;
+extern double hors_tempo_pk;
+
 int main(int argc, char *argv[]) {
     if (argc < 2) {
         fprintf(stderr, "Uso: %s <mensagem>\n", argv[0]);
@@ -27,19 +30,19 @@ int main(int argc, char *argv[]) {
     char *mensagem = argv[1];
     size_t len = strlen(mensagem);
 
-    sha256_reset_counter();
 
     printf("=== HORS Remetente ===\n");
     printf("Mensagem: %s\n", mensagem);
     printf("Tamanho: %zu bytes\n", len);
-
+    sha256_reset_counter();
     // Gera as chaves
     Keys keys;
-    clock_t inicio_keygen = clock();
     gerarKeys(&keys);
-    clock_t fim_keygen = clock();
-    printf("Geracao de chaves: %lf s\n", (double)(fim_keygen - inicio_keygen) / CLOCKS_PER_SEC);
-
+    printf("Tempo para gerar Chaves Secretas: %lf s\n", hors_tempo_sk);
+    printf("Tempo para gerar Chaves Publicas: %lf s\n", hors_tempo_pk);
+    printf("Hashes Keygen: %llu\n", sha256_get_counter());
+    
+    sha256_reset_counter();
     // Assina a mensagem
     Assinatura assinatura;
     clock_t inicio_sign = clock();
@@ -47,6 +50,7 @@ int main(int argc, char *argv[]) {
     clock_t fim_sign = clock();
     printf("Assinatura: %lf s\n", (double)(fim_sign - inicio_sign) / CLOCKS_PER_SEC);
 
+    long long total_hash_sing = sha256_get_counter();
     // Salva arquivos para o destinatário
     clock_t inicio_save = clock();
     salvarPkeys((unsigned char *)keys.PKeys);
@@ -55,8 +59,8 @@ int main(int argc, char *argv[]) {
     clock_t fim_save = clock();
     printf("Salvamento em arquivo: %lf s\n", (double)(fim_save - inicio_save) / CLOCKS_PER_SEC);
 
-    printf("Total de hashes SHA256: %llu\n", sha256_get_counter());
-
+   
+    printf("Hashes assinuatura: %llu\n", total_hash_sing);
     // Tamanhos
     printf("Tamanho Publickeys: %zu bytes\n", sizeof(keys.PKeys));
     printf("Tamanho Assinatura: %zu bytes\n", sizeof(assinatura));
