@@ -35,7 +35,7 @@ int main(int argc, char *argv[]) {
     
     printf("Hashes Keygen: %llu\n", sha256_get_counter());
     
-    
+       sha256_reset_counter(); 
     char mensagem[1001];
     lerMensagem(caminhoMsg, mensagem);
     
@@ -43,7 +43,7 @@ int main(int argc, char *argv[]) {
     sha256_bytes(mensagem, strlen(mensagem), msgHash);
     
     uint8_t assinatura[256][KEY_SIZE];
-    sha256_reset_counter();
+
     clock_t inicioAssin = clock();
     assinarMSG(msgHash, sKeys, assinatura);
     clock_t fimAssin = clock();

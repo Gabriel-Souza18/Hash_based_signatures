@@ -23,8 +23,6 @@ int main(int argc, char *argv[]) {
     char *caminhoPkey = argv[2];
     char *caminhoAssinatura = (argc >= 4) ? argv[3] : "assinatura.txt";
 
-    // Reseta contador global de SHA256
-    sha256_reset_counter();
 
     printf("\n=== GERANDO NOVA ÁRVORE ===\n");
 
@@ -41,6 +39,8 @@ int main(int argc, char *argv[]) {
         folhas[i].usada = 0;
     }
 
+    // Reseta contador global de SHA256
+    sha256_reset_counter();
     printf("Gerando árvore com %d folhas...\n", NUM_FOLHAS);
     criarFolhas(folhas, NUM_FOLHAS);
 
@@ -63,8 +63,7 @@ int main(int argc, char *argv[]) {
     escreverArvore("arvore.txt", raiz);
     escreverFolhas("folhas.txt", folhas, NUM_FOLHAS);
 
-    unsigned long long hashes_arvore = sha256_get_counter();
-    printf("Total de hashes SHA256 (arvore): %llu\n", hashes_arvore);
+    printf("Hashes Keygen: %llu\n",sha256_get_counter());
     sha256_reset_counter();
 
     // Carrega a mensagem do arquivo
@@ -87,9 +86,7 @@ int main(int argc, char *argv[]) {
     escreverFolhas("folhas.txt", folhas, NUM_FOLHAS);
 
     unsigned long long hashes_assinatura = sha256_get_counter();
-    printf("Total de hashes SHA256 (assinatura): %llu\n", hashes_assinatura);
-    printf("Total de hashes SHA256 no remetente: %llu\n", hashes_arvore + hashes_assinatura);
-
+    printf("Hashes Assinatura: %llu\n", sha256_get_counter());  
     // Limpeza de memória
     limparArvore(raiz);
     for(int i = 0; i < NUM_FOLHAS; i++){

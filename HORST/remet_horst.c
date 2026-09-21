@@ -68,7 +68,7 @@ int main(int argc, char *argv[]) {
     }
     printf("Chave publica salva em '%s'\n", CAMINHO_PUBKEY);
 
-    printf("Total de hashes SHA256 (keygen): %llu\n", sha256_get_counter());
+    printf("Hashes Keygen: %llu\n", sha256_get_counter());
     sha256_reset_counter();
 
     // Assina a mensagem
@@ -88,10 +88,9 @@ int main(int argc, char *argv[]) {
 
     // Salva mensagem
     salvarMensagem(mensagem);
-    printf("Mensagem salva em '%s'\n", CAMINHO_MENSAGEM);
+    //printf("Mensagem salva em '%s'\n", CAMINHO_MENSAGEM);
 
-    printf("Total de hashes SHA256 (assinatura): %llu\n", sha256_get_counter());
-
+    printf("Hashes Assinatura: %llu\n", sha256_get_counter());
     // Tamanhos
     printf("Tamanho Publickey: %zu bytes\n", sizeof(keys.PKey));
     printf("Tamanho Assinatura: %zu bytes\n", sizeof(assinatura));

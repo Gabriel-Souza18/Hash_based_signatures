@@ -53,10 +53,10 @@ int main(int argc, char *argv[]) {
     sha256_reset_counter();
     
     // Verifica a assinatura
-    clock_t inicio_verify = clock();
+    clock_t inicio = clock();
     int resultado = verificarAssinatura(mensagem, (int)len, &assinatura, PKeys);
-    clock_t fim_verify = clock();
-    printf("Verificacao: %lf s\n", (double)(fim_verify - inicio_verify) / CLOCKS_PER_SEC);
+    clock_t fim = clock();
+    printf("Tempo Verificação: %lf s\n", (double)(fim - inicio) / CLOCKS_PER_SEC);
     printf("Hashes Verificacao: %llu\n", sha256_get_counter());
 
     

@@ -67,14 +67,15 @@ int main(int argc, char *argv[]) {
         fprintf(stderr, "Erro ao ler sk_seed de %s\n", caminhoSkSeed);
         return 1;
     }
-
+    sha256_reset_counter();
     clock_t inicio_verif = clock();
     int resultado = sphincs_verify(&sig, mensagem, msg_len, &pk, sk_seed);
     clock_t fim_verif = clock();
 
     printf("Verificação: %s\n", resultado ? "VÁLIDA" : "INVÁLIDA");
     printf("Tempo Verificação: %lfs\n", (double)(fim_verif - inicio_verif) / CLOCKS_PER_SEC);
-    printf("Total de hashes SHA256 na verificação: %llu\n", sha256_get_counter());
+    printf("Hashes Verificacao: %llu\n", sha256_get_counter());
+
 
     return resultado ? 0 : 1;
 }

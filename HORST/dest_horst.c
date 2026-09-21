@@ -27,7 +27,6 @@ int main(int argc, char *argv[]) {
     (void)argc;
     (void)argv;
 
-    sha256_reset_counter();
 
     printf("=== HORST Destinatario ===\n");
 
@@ -58,11 +57,13 @@ int main(int argc, char *argv[]) {
     printf("Mensagem: %s\n", mensagem);
     printf("Tamanho: %zu bytes\n", len);
 
+    sha256_reset_counter();
     // Verifica a assinatura
     clock_t inicio_verify = clock();
     int resultado = verificarAssinatura(mensagem, (int)len, &assinatura, &pk);
     clock_t fim_verify = clock();
     printf("Tempo Verificação: %.6f segundos\n", (double)(fim_verify - inicio_verify) / CLOCKS_PER_SEC);
+    printf("Hashes Verificacao: %llu\n", sha256_get_counter());
 
     if (resultado) {
         printf("Assinatura VALIDA\n");
@@ -70,7 +71,6 @@ int main(int argc, char *argv[]) {
         printf("Assinatura INVALIDA\n");
     }
 
-    printf("Total de hashes SHA256: %llu\n", sha256_get_counter());
-
+  
     return resultado ? 0 : 1;
 }

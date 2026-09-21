@@ -53,6 +53,8 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
+    // Reseta contador global de SHA256
+    sha256_reset_counter();
     // Verifica (compara com a chave pública lida — sem necessidade de folhas.txt)
     clock_t inicio_verify = clock();
     int resultado = verificarAssinatura(assinatura, publicKey, NULL);
@@ -66,7 +68,7 @@ int main(int argc, char *argv[]) {
         printf("Verificação: INVÁLIDA\n");
     }
     printf("Tempo Verificação: %.6f segundos\n", tempo_verify);
-    printf("Total de hashes SHA256 na verificação: %llu\n", sha256_get_counter());
+    printf("Hashes Verificacao: %llu\n", sha256_get_counter());
 
     liberarAssinatura(assinatura);
 

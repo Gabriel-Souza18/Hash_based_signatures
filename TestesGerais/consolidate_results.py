@@ -1,113 +1,98 @@
 #!/usr/bin/env python3
 """
-Script para consolidar resultados de métricas em uma tabela única
-Combina: test_algorithms.sh (tempo/hashes) + Valgrind (memória)
+Consolida resultados de métricas em uma tabela única.
+- Combina CSVs de test_algorithms.sh e test_heavy_algorithms.sh
+- Agrega Valgrind (quando disponível)
+- Produz uma linha por algoritmo com médias
+
+NOVO: três colunas de hashes separadas (Keygen, Assinatura, Verificação)
 """
 
-import os
 import sys
 import csv
 from pathlib import Path
 from collections import defaultdict
-import re
 
-def parse_algorithm_csv(csv_file):
-    """Lê CSV de métricas de algoritmos"""
+
+# Campos cujas médias serão calculadas.
+# Zeros legítimos (ex.: Tempo_Masks=0 para HORS) NÃO são removidos.
+TIME_FIELDS = [
+    'Tempo_SecretKeys', 'Tempo_PublicKeys', 'Tempo_Masks',
+    'Tempo_Assinatura', 'Tempo_Verificacao',
+]
+HASH_FIELDS = ['Hashes_Keygen', 'Hashes_Assinatura', 'Hashes_Verificacao']
+VALGRIND_FIELDS = ['Total_Alocado', 'Total_Liberado', 'Bytes_Vazados', 'Reachable']
+
+
+def parse_csv(csv_file):
+    """Lê CSV genérico, agrupando linhas por algoritmo."""
     data = defaultdict(list)
-    
     try:
         with open(csv_file, 'r') as f:
             reader = csv.DictReader(f)
             for row in reader:
-                algo = row['Algoritmo']
-                data[algo].append(row)
+                data[row['Algoritmo']].append(row)
     except Exception as e:
         print(f"Erro ao ler {csv_file}: {e}", file=sys.stderr)
-    
     return data
 
-def parse_valgrind_csv(csv_file):
-    """Lê CSV de Valgrind"""
-    data = defaultdict(list)
-    
-    try:
-        with open(csv_file, 'r') as f:
-            reader = csv.DictReader(f)
-            for row in reader:
-                algo = row['Algoritmo']
-                data[algo].append(row)
-    except Exception as e:
-        print(f"Erro ao ler {csv_file}: {e}", file=sys.stderr)
-    
-    return data
 
 def calculate_averages(rows, numeric_fields):
-    """Calcula médias de campos numéricos"""
+    """
+    Calcula médias. Campos ausentes viram 0.
+    Não remove zeros — zeros legítimos (ex.: máscaras) são preservados.
+    """
     averages = {}
-    
     for field in numeric_fields:
         values = []
         for row in rows:
-            try:
-                val = float(row.get(field, 0))
-                if val > 0:  # Ignorar zeros
-                    values.append(val)
-            except ValueError:
-                pass
-        
-        if values:
-            averages[field] = sum(values) / len(values)
-        else:
-            averages[field] = 0
-    
+            if field in row and row[field] not in (None, ''):
+                try:
+                    values.append(float(row[field]))
+                except ValueError:
+                    pass
+        averages[field] = sum(values) / len(values) if values else 0
     return averages
 
+
 def get_latest_csv(directory, pattern, exclude_pattern=None):
-    """Encontra o CSV mais recente que corresponde ao padrão"""
+    """Retorna o CSV mais recente que bate com o padrão."""
     files = list(Path(directory).glob(pattern))
     if exclude_pattern:
         files = [f for f in files if exclude_pattern not in f.name]
-    if files:
-        return sorted(files)[-1]
-    return None
+    return sorted(files)[-1] if files else None
+
 
 def main():
     if len(sys.argv) < 2:
         print("Usage: consolidate_results.py <results_dir>", file=sys.stderr)
         sys.exit(1)
-    
+
     results_dir = sys.argv[1]
-    
-    # Encontrar CSVs mais recentes (geral vs mss_horst)
+
     algo_csv = get_latest_csv(results_dir, 'resultados_OT*.csv', exclude_pattern='heavy')
-    mss_horst_csv = get_latest_csv(results_dir, 'resultados_heavy_*.csv')
+    heavy_csv = get_latest_csv(results_dir, 'resultados_heavy_*.csv')
     valgrind_csv = get_latest_csv(results_dir, 'valgrind_bytes_*.csv')
-    
+
     algo_data = {}
     valgrind_data = {}
-    
-    # Carregar dados gerais
+
     if algo_csv:
-        general_data = parse_algorithm_csv(str(algo_csv))
-        for algo, rows in general_data.items():
+        for algo, rows in parse_csv(str(algo_csv)).items():
             algo_data[algo] = rows
     else:
-        print("Aviso: Nenhum CSV de algoritmos gerais encontrado", file=sys.stderr)
-        
-    # Carregar dados de MSS/HORST
-    if mss_horst_csv:
-        mss_horst_data = parse_algorithm_csv(str(mss_horst_csv))
-        for algo, rows in mss_horst_data.items():
+        print("Aviso: nenhum CSV de algoritmos leves encontrado.", file=sys.stderr)
+
+    if heavy_csv:
+        for algo, rows in parse_csv(str(heavy_csv)).items():
             algo_data[algo] = rows
     else:
-        print("Aviso: Nenhum CSV de MSS/HORST encontrado", file=sys.stderr)
-    
+        print("Aviso: nenhum CSV de algoritmos pesados encontrado.", file=sys.stderr)
+
     if valgrind_csv:
-        valgrind_data = parse_valgrind_csv(str(valgrind_csv))
-    else:
-        print("Aviso: Nenhum CSV de Valgrind encontrado", file=sys.stderr)
-    
-    # Cabeçalho consolidado
+        valgrind_data = parse_csv(str(valgrind_csv))
+
+    # ── Cabeçalho consolidado ────────────────────────────────
     header = [
         'Algoritmo',
         'Tempo_Medio_SK_s',
@@ -115,65 +100,64 @@ def main():
         'Tempo_Medio_Masks_s',
         'Tempo_Medio_Assinatura_s',
         'Tempo_Medio_Verificacao_s',
-        'Hashes_Medio',
+        'Hashes_Medio_Keygen',
+        'Hashes_Medio_Assinatura',
+        'Hashes_Medio_Verificacao',
         'Tamanho_SK_bytes',
         'Tamanho_PK_bytes',
         'Tamanho_Assinatura_bytes',
         'Valgrind_Total_Alocado_bytes',
         'Valgrind_Total_Liberado_bytes',
         'Valgrind_Bytes_Vazados',
-        'Valgrind_Reachable_bytes'
+        'Valgrind_Reachable_bytes',
     ]
-    
     print(','.join(header))
-    
-    # Processar cada algoritmo
+
     all_algos = set(algo_data.keys()) | set(valgrind_data.keys())
-    
+
     for algo in sorted(all_algos):
-        # Médias de tempo/performance
-        algo_rows = algo_data.get(algo, [])
-        algo_avg = calculate_averages(
-            algo_rows,
-            ['Tempo_SecretKeys', 'Tempo_PublicKeys', 'Tempo_Masks', 'Tempo_Assinatura', 'Tempo_Verificacao', 'Hashes_Assinatura']
-        )
-        
-        # Tamanhos (devem ser iguais para todas as linhas do mesmo algoritmo)
-        tamanho_sk = tamanho_pk = tamanho_assinatura = 0
-        if algo_rows:
-            try:
-                tamanho_sk = int(algo_rows[0].get('Tamanho_SecretKeys', 0))
-                tamanho_pk = int(algo_rows[0].get('Tamanho_PublicKeys', 0))
-                tamanho_assinatura = int(algo_rows[0].get('Tamanho_Assinatura', 0))
-            except (ValueError, KeyError):
-                pass
-        
-        # Médias de Valgrind
-        valgrind_rows = valgrind_data.get(algo, [])
-        valgrind_avg = calculate_averages(
-            valgrind_rows,
-            ['Total_Alocado', 'Total_Liberado', 'Bytes_Vazados', 'Reachable']
-        )
-        
-        # Montar linha consolidada
+        rows = algo_data.get(algo, [])
+
+        avg_time = calculate_averages(rows, TIME_FIELDS)
+        avg_hash = calculate_averages(rows, HASH_FIELDS)
+
+        # Tamanhos: pega o primeiro valor válido
+        tamanho_sk = tamanho_pk = tamanho_sign = 0
+        if rows:
+            def first_int(field):
+                for r in rows:
+                    try:
+                        return int(r.get(field, 0))
+                    except (ValueError, TypeError):
+                        continue
+                return 0
+            tamanho_sk   = first_int('Tamanho_SecretKeys')
+            tamanho_pk   = first_int('Tamanho_PublicKeys')
+            tamanho_sign = first_int('Tamanho_Assinatura')
+
+        vg_rows = valgrind_data.get(algo, [])
+        vg_avg = calculate_averages(vg_rows, VALGRIND_FIELDS)
+
         row = [
             algo,
-            f"{algo_avg.get('Tempo_SecretKeys', 0):.6f}",
-            f"{algo_avg.get('Tempo_PublicKeys', 0):.6f}",
-            f"{algo_avg.get('Tempo_Masks', 0):.6f}",
-            f"{algo_avg.get('Tempo_Assinatura', 0):.6f}",
-            f"{algo_avg.get('Tempo_Verificacao', 0):.6f}",
-            f"{algo_avg.get('Hashes_Assinatura', 0):.0f}",
+            f"{avg_time.get('Tempo_SecretKeys', 0):.6f}",
+            f"{avg_time.get('Tempo_PublicKeys', 0):.6f}",
+            f"{avg_time.get('Tempo_Masks', 0):.6f}",
+            f"{avg_time.get('Tempo_Assinatura', 0):.6f}",
+            f"{avg_time.get('Tempo_Verificacao', 0):.6f}",
+            f"{avg_hash.get('Hashes_Keygen', 0):.0f}",
+            f"{avg_hash.get('Hashes_Assinatura', 0):.0f}",
+            f"{avg_hash.get('Hashes_Verificacao', 0):.0f}",
             f"{tamanho_sk}",
             f"{tamanho_pk}",
-            f"{tamanho_assinatura}",
-            f"{valgrind_avg.get('Total_Alocado', 0):.0f}",
-            f"{valgrind_avg.get('Total_Liberado', 0):.0f}",
-            f"{valgrind_avg.get('Bytes_Vazados', 0):.0f}",
-            f"{valgrind_avg.get('Reachable', 0):.0f}"
+            f"{tamanho_sign}",
+            f"{vg_avg.get('Total_Alocado', 0):.0f}",
+            f"{vg_avg.get('Total_Liberado', 0):.0f}",
+            f"{vg_avg.get('Bytes_Vazados', 0):.0f}",
+            f"{vg_avg.get('Reachable', 0):.0f}",
         ]
-        
         print(','.join(row))
+
 
 if __name__ == '__main__':
     main()

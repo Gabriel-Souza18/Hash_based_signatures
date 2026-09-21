@@ -48,9 +48,10 @@ int main(int argc, char *argv[]) {
     clock_t inicio_sign = clock();
     assinarMensagem(mensagem, (int)len, &assinatura, keys.SKeys);
     clock_t fim_sign = clock();
-    printf("Assinatura: %lf s\n", (double)(fim_sign - inicio_sign) / CLOCKS_PER_SEC);
+    printf("Tempo para Assinar: %lf s\n",
+       (double)(fim_sign - inicio_sign) / CLOCKS_PER_SEC);
 
-    long long total_hash_sing = sha256_get_counter();
+    printf("Hashes Assinatura: %llu\n",sha256_get_counter());
     // Salva arquivos para o destinatário
     clock_t inicio_save = clock();
     salvarPkeys((unsigned char *)keys.PKeys);
@@ -60,7 +61,6 @@ int main(int argc, char *argv[]) {
     printf("Salvamento em arquivo: %lf s\n", (double)(fim_save - inicio_save) / CLOCKS_PER_SEC);
 
    
-    printf("Hashes assinuatura: %llu\n", total_hash_sing);
     // Tamanhos
     printf("Tamanho Publickeys: %zu bytes\n", sizeof(keys.PKeys));
     printf("Tamanho Assinatura: %zu bytes\n", sizeof(assinatura));

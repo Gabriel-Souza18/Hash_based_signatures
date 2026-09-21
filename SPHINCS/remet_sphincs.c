@@ -50,7 +50,9 @@ int main(int argc, char *argv[]) {
     clock_t inicio_keygen = clock();
     sphincs_keygen(&pk, &sk);
     clock_t fim_keygen = clock();
-
+    printf("Hashes Keygen: %llu\n", sha256_get_counter());
+    
+    sha256_reset_counter();
     unsigned char mensagem[4096];
     size_t msg_len = 0;
     if (!ler_mensagem(caminhoMsg, mensagem, sizeof(mensagem), &msg_len)) {
@@ -63,7 +65,8 @@ int main(int argc, char *argv[]) {
     clock_t inicio_sign = clock();
     sphincs_sign(&sig, mensagem, msg_len, &sk);
     clock_t fim_sign = clock();
-
+    
+    printf("Hashes Assinatura: %llu\n", sha256_get_counter());
     printf("Tempo Geração de Chaves: %lfs\n", (double)(fim_keygen - inicio_keygen) / CLOCKS_PER_SEC);
     printf("Tempo Assinatura: %lfs\n", (double)(fim_sign - inicio_sign) / CLOCKS_PER_SEC);
     printf("Total de hashes SHA256 (sign + keygen): %llu\n", sha256_get_counter());
