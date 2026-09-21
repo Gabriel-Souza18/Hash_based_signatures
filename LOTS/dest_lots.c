@@ -19,8 +19,7 @@ int main(int argc, char *argv[]) {
     char *caminhoPkey = argv[2];
     char *caminhoAssinatura = (argc >= 4) ? argv[3] : "assinatura.txt";
     
-    // Reseta contador global
-    sha256_reset_counter();
+ 
     
     char mensagemLida[1001];
     lerMensagem(caminhoMsg, mensagemLida);
@@ -41,7 +40,8 @@ int main(int argc, char *argv[]) {
         freeKeys(pKeysVerif, NULL);
         return 1;
     }
-    
+       // Reseta contador global
+    sha256_reset_counter();
     clock_t inicioVerif = clock();
     bool resultado = verificarMSG(msgLidaHash, pKeysVerif, assinaturaVerif);
     clock_t fimVerif = clock();
@@ -49,7 +49,7 @@ int main(int argc, char *argv[]) {
 
     printf("Verificação: %s\n", resultado ? "VÁLIDA" : "INVÁLIDA");
     printf("Tempo Verificação: %lfs\n", tempoVerif);
-    printf("Total de hashes SHA256: %llu\n", sha256_get_counter());
+    printf("Hashes Verificacao: %llu\n", sha256_get_counter());
     
     // Limpeza
     free(assinaturaVerif);

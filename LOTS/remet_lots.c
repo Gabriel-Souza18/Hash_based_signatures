@@ -33,6 +33,9 @@ int main(int argc, char *argv[]) {
     generatePublicKeys(pKeys, sKeys);
     clock_t fimPkeys = clock();
     
+    printf("Hashes Keygen: %llu\n", sha256_get_counter());
+    
+    
     char mensagem[1001];
     lerMensagem(caminhoMsg, mensagem);
     
@@ -40,18 +43,18 @@ int main(int argc, char *argv[]) {
     sha256_bytes(mensagem, strlen(mensagem), msgHash);
     
     uint8_t assinatura[256][KEY_SIZE];
-    
+    sha256_reset_counter();
     clock_t inicioAssin = clock();
     assinarMSG(msgHash, sKeys, assinatura);
     clock_t fimAssin = clock();
-    
+    printf("Hashes Assinatura: %llu\n", sha256_get_counter());
+
     printf("Chaves geradas no tempo: \n");
     printf("SecretsKeys: %lfs\n", (double)(fimSkeys - inicioSkeys) / CLOCKS_PER_SEC);
     printf("PublicKeys: %lfs\n", (double)(fimPkeys - inicioPkeys) / CLOCKS_PER_SEC);
     
     printf("Mensagem Assinada em: %lf s\n", (double)(fimAssin - inicioAssin) / CLOCKS_PER_SEC);
     
-    printf("Total de hashes SHA256: %llu\n", sha256_get_counter());
     
     unsigned long tamanho_assinatura = 256 * KEY_SIZE;
     printf("Tamanho Assinatura: %lu bytes\n", tamanho_assinatura);
