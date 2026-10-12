@@ -70,9 +70,7 @@
 ---
 
 ## Falar na próxima reunião
-
-Texto pronto
-apresentação SIC
+Vou pegar o sensor de 
 
 
 
@@ -94,5 +92,6 @@ ESSA SEMANA
 
 - Terminar ate novembro
 
+- Pesquisar sobre teste de energia para TCC
 
 agy --conversation=4d085b18-2690-49d4-8d92-4aea1ff51210

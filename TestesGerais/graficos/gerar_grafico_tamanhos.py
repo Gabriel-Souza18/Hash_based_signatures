@@ -1,154 +1,217 @@
 #!/usr/bin/env python3
 """
 gerar_grafico_tamanhos.py
-Gera gráficos científicos comparativos dos tamanhos de Chaves Públicas,
-Chaves Secretas e Assinaturas para os 6 esquemas baseados em hash.
+Gera dois gráficos científicos comparativos dos tamanhos de chaves e assinaturas
+para os 6 esquemas baseados em hash.
+
+Figura 1: SK, PK e Assinatura — escala logarítmica (cobre todas as ordens de grandeza)
+Figura 2: PK vs Assinatura  — escala linear em KB
 """
 
-import os
-import sys
 import json
+from pathlib import Path
 import numpy as np
 import matplotlib.pyplot as plt
-from pathlib import Path
 
-def carregar_dados_consolidados(json_path=None):
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Configuração geral
+# ─────────────────────────────────────────────────────────────────────────────
+
+ORDEM_ALGOS = ["LOTS", "WOTS", "HORS", "HORST", "MSS", "SPHINCS"]
+
+CORES = {
+    "SK":  "#1f77b4",   # azul
+    "PK":  "#2ca02c",   # verde
+    "SIG": "#d62728",   # vermelho
+}
+
+NOTA_SK = (
+    "* Estratégia de armazenamento da SK varia por esquema: "
+    "LOTS, WOTS+ e HORS armazenam valores expandidos; "
+    "HORST e SPHINCS armazenam sementes; "
+    "MSS armazena as folhas WOTS+ completas."
+)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Carregamento de dados
+# ─────────────────────────────────────────────────────────────────────────────
+
+def carregar_dados(json_path=None):
     if json_path is None:
         metricas_dir = Path(__file__).resolve().parent.parent / "resultados_metricas"
-        candidatos = sorted(list(metricas_dir.glob("consolidated_results_*.json")))
+        candidatos = sorted(metricas_dir.glob("consolidated_results_*.json"))
         if not candidatos:
-            raise FileNotFoundError("Nenhum arquivo consolidated_results_*.json encontrado!")
+            raise FileNotFoundError(
+                "Nenhum arquivo consolidated_results_*.json encontrado em "
+                f"{metricas_dir}"
+            )
         json_path = candidatos[-1]
-    
+
     print(f"Lendo dados de: {json_path}")
     with open(json_path, "r", encoding="utf-8") as f:
         data = json.load(f)
-    return data, json_path
 
-def formatar_bytes(val):
-    if val >= 1024:
-        return f"{val/1024:.1f} KB"
-    return f"{val} B"
-
-def gerar_graficos():
-    data, json_path = carregar_dados_consolidados()
     algos_dict = data.get("algoritmos", {})
+    algos = [a for a in ORDEM_ALGOS if a in algos_dict]
 
-    ordem_algos = ["LOTS", "WOTS", "HORS", "HORST", "MSS", "SPHINCS"]
-    algos = [a for a in ordem_algos if a in algos_dict]
+    sk  = [algos_dict[a]["tamanho_sk_bytes"]        for a in algos]
+    pk  = [algos_dict[a]["tamanho_pk_bytes"]        for a in algos]
+    sig = [algos_dict[a]["tamanho_assinatura_bytes"] for a in algos]
 
-    # Chave secreta com MSS omitida para escala linear comparável
-    sk_sizes = []
-    for a in algos:
-        if a == "MSS":
-            sk_sizes.append(0)  # SK do MSS omitida conforme solicitado
-        else:
-            sk_sizes.append(algos_dict[a]["tamanho_sk_bytes"])
-    pk_sizes = [algos_dict[a]["tamanho_pk_bytes"] for a in algos]
-    sig_sizes = [algos_dict[a]["tamanho_assinatura_bytes"] for a in algos]
+    return algos, sk, pk, sig, json_path
 
-    # Conversão para KB
-    sk_kb = [s / 1024 for s in sk_sizes]
-    pk_kb = [s / 1024 for s in pk_sizes]
-    sig_kb = [s / 1024 for s in sig_sizes]
 
-    # Configuração de estilo visual acadêmico
-    plt.style.use('seaborn-v0_8-whitegrid' if 'seaborn-v0_8-whitegrid' in plt.style.available else 'default')
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 7), dpi=300)
+# ─────────────────────────────────────────────────────────────────────────────
+# Helpers
+# ─────────────────────────────────────────────────────────────────────────────
 
-    # ──────────────────────────────────────────────────────────────────────────
-    # GRÁFICO 1: Barras Agrupadas com Escala Linear (sem SK do MSS)
-    # ──────────────────────────────────────────────────────────────────────────
+def formatar(bytes_val):
+    """Formata bytes em B ou KB, com 1 decimal quando em KB."""
+    if bytes_val >= 1024:
+        return f"{bytes_val / 1024:.1f} KB"
+    return f"{bytes_val} B"
+
+
+def aplicar_estilo():
+    """Aplica um estilo visual limpo, com fallback caso seaborn não exista."""
+    if "seaborn-v0_8-whitegrid" in plt.style.available:
+        plt.style.use("seaborn-v0_8-whitegrid")
+    else:
+        plt.style.use("default")
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Figura 1 — SK, PK e Assinatura em escala logarítmica
+# ─────────────────────────────────────────────────────────────────────────────
+
+def gerar_figura_tamanhos_geral(algos, sk, pk, sig, out_dir):
+    fig, ax = plt.subplots(figsize=(11, 6), dpi=300)
+
     x = np.arange(len(algos))
     largura = 0.26
 
-    cores = {
-        "SK": "#1f77b4",   # Azul
-        "PK": "#2ca02c",   # Verde
-        "SIG": "#d62728"   # Vermelho
-    }
+    # Converte para KB; uso de log exige valores > 0
+    sk_kb  = np.array([max(v, 1) for v in sk])  / 1024
+    pk_kb  = np.array([max(v, 1) for v in pk])  / 1024
+    sig_kb = np.array([max(v, 1) for v in sig]) / 1024
 
-    rects1 = ax1.bar(x - largura, sk_kb, largura, label="Chave Secreta (SK)*", color=cores["SK"], edgecolor='black', linewidth=0.8, alpha=0.9)
-    rects2 = ax1.bar(x,           pk_kb, largura, label="Chave Pública (PK)",  color=cores["PK"], edgecolor='black', linewidth=0.8, alpha=0.9)
-    rects3 = ax1.bar(x + largura, sig_kb, largura, label="Assinatura",          color=cores["SIG"], edgecolor='black', linewidth=0.8, alpha=0.9)
+    rects_sk  = ax.bar(x - largura, sk_kb,  largura, label="Chave Secreta (SK)",
+                       color=CORES["SK"],  edgecolor="black", linewidth=0.8)
+    rects_pk  = ax.bar(x,           pk_kb,  largura, label="Chave Pública (PK)",
+                       color=CORES["PK"],  edgecolor="black", linewidth=0.8)
+    rects_sig = ax.bar(x + largura, sig_kb, largura, label="Assinatura",
+                       color=CORES["SIG"], edgecolor="black", linewidth=0.8)
 
-    ax1.set_ylabel("Tamanho em Kilobytes (KB)", fontsize=12, fontweight='bold')
-    ax1.set_title("Comparação Geral de Tamanhos (Escala Linear em KB)", fontsize=13, fontweight='bold', pad=12)
-    ax1.set_xticks(x)
-    ax1.set_xticklabels(algos, fontsize=11, fontweight='bold')
-    ax1.set_ylim(0, max(max(sk_kb), max(pk_kb), max(sig_kb)) * 1.18)
-    ax1.legend(loc='upper left', frameon=True, framealpha=0.95, fontsize=10)
-    ax1.grid(True, ls="--", alpha=0.4)
+    ax.set_yscale("log")
+    ax.set_ylim(0.02, 500)   # 20 B a 500 KB
+    ax.set_ylabel("Tamanho (KB, escala logarítmica)", fontsize=12, fontweight="bold")
+    ax.set_title("Tamanhos de chave e assinatura por esquema",
+                 fontsize=13, fontweight="bold", pad=12)
+    ax.set_xticks(x)
+    ax.set_xticklabels(algos, fontsize=11, fontweight="bold")
+    ax.grid(True, which="both", ls="--", alpha=0.35)
+    ax.legend(loc="upper left", frameon=True, framealpha=0.95, fontsize=10)
 
-    # Rótulos dos valores sobre as barras do Gráfico 1
-    for rects, orig_bytes in [(rects1, sk_sizes), (rects2, pk_sizes), (rects3, sig_sizes)]:
-        for i, rect in enumerate(rects):
-            height = rect.get_height()
-            b = orig_bytes[i]
-            if b > 0:
-                texto = f"{height:.1f} KB" if height >= 1 else f"{b} B"
-                ax1.annotate(texto,
-                            xy=(rect.get_x() + rect.get_width() / 2, height),
-                            xytext=(0, 4),
-                            textcoords="offset points",
-                            ha='center', va='bottom',
-                            fontsize=8, rotation=35)
-            elif rect in rects1 and algos[i] == "MSS":
-                ax1.annotate("(Omitida)*",
-                            xy=(rect.get_x() + rect.get_width() / 2, 0.4),
-                            xytext=(0, 2),
-                            textcoords="offset points",
-                            ha='center', va='bottom',
-                            fontsize=7.5, color="#555555", style='italic')
+    # Anotações: valores reais (não os de escala)
+    def anotar(rects, valores):
+        for rect, b in zip(rects, valores):
+            h = rect.get_height()
+            ax.annotate(formatar(b),
+                        xy=(rect.get_x() + rect.get_width() / 2, h),
+                        xytext=(0, 3),
+                        textcoords="offset points",
+                        ha="center", va="bottom",
+                        fontsize=7.5, rotation=35)
 
-    # Nota explicativa na base da figura
-    fig.text(0.05, 0.01, "* Nota: Chave Secreta do MSS omitida no gráfico da esquerda para preservar a escala linear comparável.",
-             fontsize=9, style='italic', color='#444444')
+    anotar(rects_sk,  sk)
+    anotar(rects_pk,  pk)
+    anotar(rects_sig, sig)
 
-    # ──────────────────────────────────────────────────────────────────────────
-    # GRÁFICO 2: Foco em Chave Pública vs Tamanho da Assinatura (Bytes reais)
-    # ──────────────────────────────────────────────────────────────────────────
-    largura2 = 0.35
-    rects_pk = ax2.bar(x - largura2/2, [s/1024 for s in pk_sizes], largura2, label="Chave Pública (PK)", color=cores["PK"], edgecolor='black', linewidth=0.8, alpha=0.9)
-    rects_sig = ax2.bar(x + largura2/2, [s/1024 for s in sig_sizes], largura2, label="Assinatura", color=cores["SIG"], edgecolor='black', linewidth=0.8, alpha=0.9)
+    # Nota sobre SK na base da figura
+    fig.text(0.5, 0.005, NOTA_SK,
+             ha="center", va="bottom",
+             fontsize=8, style="italic", color="#444444",
+             wrap=True)
 
-    ax2.set_ylabel("Tamanho em Kilobytes (KB)", fontsize=12, fontweight='bold')
-    ax2.set_title("Chave Pública vs Assinatura (Escala Linear em KB)", fontsize=13, fontweight='bold', pad=12)
-    ax2.set_xticks(x)
-    ax2.set_xticklabels(algos, fontsize=11, fontweight='bold')
-    ax2.legend(loc='upper left', frameon=True, framealpha=0.95, fontsize=10)
-    ax2.grid(True, ls="--", alpha=0.4)
+    plt.tight_layout(rect=(0, 0.04, 1, 1))
 
-    for rect in rects_pk:
-        height = rect.get_height()
-        ax2.annotate(f"{height:.2f} KB" if height >= 1 else f"{height*1024:.0f} B",
-                    xy=(rect.get_x() + rect.get_width() / 2, height),
-                    xytext=(0, 3),
-                    textcoords="offset points",
-                    ha='center', va='bottom',
-                    fontsize=8, rotation=30)
+    out_path = out_dir / "fig_tamanhos_geral.png"
+    plt.savefig(out_path, dpi=300, bbox_inches="tight")
+    plt.close()
+    print(f"✓ Figura 1 salva em: {out_path}")
+    return out_path
 
-    for rect in rects_sig:
-        height = rect.get_height()
-        ax2.annotate(f"{height:.2f} KB" if height >= 1 else f"{height*1024:.0f} B",
-                    xy=(rect.get_x() + rect.get_width() / 2, height),
-                    xytext=(0, 3),
-                    textcoords="offset points",
-                    ha='center', va='bottom',
-                    fontsize=8, rotation=30)
 
-    plt.suptitle("Comparativo de Tamanhos de Chaves e Assinaturas — Assinaturas Baseadas em Hash", 
-                 fontsize=15, fontweight='bold', y=0.99)
+# ─────────────────────────────────────────────────────────────────────────────
+# Figura 2 — PK vs Assinatura em escala linear
+# ─────────────────────────────────────────────────────────────────────────────
+
+def gerar_figura_pk_vs_sig(algos, pk, sig, out_dir):
+    fig, ax = plt.subplots(figsize=(10, 6), dpi=300)
+
+    x = np.arange(len(algos))
+    largura = 0.36
+
+    pk_kb  = np.array(pk)  / 1024
+    sig_kb = np.array(sig) / 1024
+
+    rects_pk  = ax.bar(x - largura / 2, pk_kb,  largura,
+                       label="Chave Pública (PK)",
+                       color=CORES["PK"],  edgecolor="black", linewidth=0.8)
+    rects_sig = ax.bar(x + largura / 2, sig_kb, largura,
+                       label="Assinatura",
+                       color=CORES["SIG"], edgecolor="black", linewidth=0.8)
+
+    ax.set_ylabel("Tamanho (KB)", fontsize=12, fontweight="bold")
+    ax.set_title("Chave pública vs. tamanho da assinatura",
+                 fontsize=13, fontweight="bold", pad=12)
+    ax.set_xticks(x)
+    ax.set_xticklabels(algos, fontsize=11, fontweight="bold")
+    ax.grid(True, ls="--", alpha=0.4)
+    ax.legend(loc="upper left", frameon=True, framealpha=0.95, fontsize=10)
+
+    # Limite superior com folga para os rótulos
+    ymax = max(pk_kb.max(), sig_kb.max()) * 1.18
+    ax.set_ylim(0, ymax)
+
+    def anotar(rects, valores):
+        for rect, b in zip(rects, valores):
+            h = rect.get_height()
+            ax.annotate(formatar(b),
+                        xy=(rect.get_x() + rect.get_width() / 2, h),
+                        xytext=(0, 3),
+                        textcoords="offset points",
+                        ha="center", va="bottom",
+                        fontsize=8, rotation=30)
+
+    anotar(rects_pk,  pk)
+    anotar(rects_sig, sig)
+
     plt.tight_layout()
 
-    # Salva figura
-    output_dir = Path(__file__).resolve().parent
-    output_path = output_dir / "comparacao_tamanhos_chaves_assinaturas.png"
-    plt.savefig(output_path, dpi=300, bbox_inches='tight')
+    out_path = out_dir / "fig_pk_vs_sig.png"
+    plt.savefig(out_path, dpi=300, bbox_inches="tight")
     plt.close()
+    print(f"✓ Figura 2 salva em: {out_path}")
+    return out_path
 
-    print(f"\n✓ Gráfico gerado com sucesso: {output_path}")
-    return output_path
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Main
+# ─────────────────────────────────────────────────────────────────────────────
+
+def main():
+    aplicar_estilo()
+    algos, sk, pk, sig, _ = carregar_dados()
+
+    out_dir = Path(__file__).resolve().parent
+    gerar_figura_tamanhos_geral(algos, sk, pk, sig, out_dir)
+    gerar_figura_pk_vs_sig(algos, pk, sig, out_dir)
+
+    print("\nTodas as figuras geradas com sucesso.")
+
 
 if __name__ == "__main__":
-    gerar_graficos()
+    main()

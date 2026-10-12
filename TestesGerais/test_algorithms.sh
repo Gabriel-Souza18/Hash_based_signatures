@@ -16,7 +16,7 @@ echo -e "${BLUE}  TESTE DE ALGORITMOS DE ASSINATURA    ${NC}"
 echo -e "${BLUE}  (LOTS, WOTS+, HORS)                  ${NC}"
 echo -e "${BLUE}========================================${NC}"
 
-TESTES=${TESTES:-10}
+TESTES=${TESTES:-200}
 USAR_VALGRIND=${USAR_VALGRIND:-0}
 TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
 RESULTADO_DIR="resultados_metricas"
@@ -201,11 +201,11 @@ testar_hors() {
 }
 
 # ── Loop principal ───────────────────────────────────────────
-TESTES_SEM_ARVORE=${TESTES_SEM_ARVORE:-100}
 
-echo -e "${YELLOW}Iniciando testes (LOTS, WOTS, HORS — $TESTES_SEM_ARVORE execuções)...${NC}"
-for i in $(seq 1 $TESTES_SEM_ARVORE); do
-    echo -e "${YELLOW}=== EXECUÇÃO $i/$TESTES_SEM_ARVORE ===${NC}"
+
+echo -e "${YELLOW}Iniciando testes (LOTS, WOTS, HORS — $TESTES execuções)...${NC}"
+for i in $(seq 1 $TESTES); do
+    echo -e "${YELLOW}=== EXECUÇÃO $i/$TESTES ===${NC}"
     testar_lamport $i
     testar_wots $i
     testar_hors $i

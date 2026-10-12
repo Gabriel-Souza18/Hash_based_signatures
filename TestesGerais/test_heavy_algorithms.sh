@@ -13,7 +13,7 @@ echo -e "${BLUE}========================================${NC}"
 echo -e "${BLUE}  TESTE — HORST, MSS e SPHINCS         ${NC}"
 echo -e "${BLUE}========================================${NC}"
 
-TESTES=${TESTES:-10}
+TESTES=${TESTES:-40}
 USAR_VALGRIND=${USAR_VALGRIND:-0}
 TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
 RESULTADO_DIR="resultados_metricas"
