@@ -4,7 +4,7 @@
 #include <stdint.h>
 
 #define W 16
-#define N 32
+#define PRF_N 32
 
 // Compressão de ADRS (32 bytes → 22 bytes)
 void compressADRS(const unsigned char* ADRS_32bytes, unsigned char* ADRS_22bytes);

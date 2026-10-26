@@ -4,7 +4,7 @@
 #include <math.h>
 
 #define W 16
-#define N 32
+#define WOTS_N 32
 
 // Calculos baseados no FIPS 205
 #define L1 64//(int)ceil((8 * N) / log2(W))  // = 64
@@ -12,20 +12,20 @@
 #define L (L1 + L2)  // = 67
 
 typedef struct {
-    unsigned char Sk[L][N];
+    unsigned char Sk[L][WOTS_N];
 } SecretKeys;
 
 typedef struct {
-    unsigned char PK[L][N];
+    unsigned char PK[L][WOTS_N];
 } PublicKeys;
 
 typedef struct {
-    unsigned char assinatura[L][N];
+    unsigned char assinatura[L][WOTS_N];
 } Assinatura;
 
 // Seeds (adicionar)
-extern unsigned char PK_seed[N];
-extern unsigned char SK_seed[N];
+extern unsigned char PK_seed[WOTS_N];
+extern unsigned char SK_seed[WOTS_N];
 
 void initializeSeeds(void);
 
@@ -36,12 +36,12 @@ Assinatura* mallocAssinatura();
 void generateSKeys(SecretKeys*);
 void generatePKeys(PublicKeys*, SecretKeys*);
 
-void mensageForBlocks(const unsigned char msgHash[N], int* output);
+void mensageForBlocks(const unsigned char msgHash[WOTS_N], int* output);
 void chainFunction(unsigned char* src, int steps, unsigned char* output, unsigned char* ADRS_base, int start_index);
-void chainFunctionWOTSplus(unsigned char* src, int steps, unsigned char* output, unsigned char* ADRS_base, int start_index, const unsigned char masks[W - 1][N]);
+void chainFunctionWOTSplus(unsigned char* src, int steps, unsigned char* output, unsigned char* ADRS_base, int start_index, const unsigned char masks[W - 1][WOTS_N]);
 void calcularChecksum(const int* message_blocks, int* checksum_blocks);
 
-void assinarMensagem(const unsigned char msgHash[N], Assinatura*, SecretKeys*);
-int verificarMensagem(const unsigned char msgHash[N], Assinatura*, PublicKeys*);
+void assinarMensagem(const unsigned char msgHash[WOTS_N], Assinatura*, SecretKeys*);
+int verificarMensagem(const unsigned char msgHash[WOTS_N], Assinatura*, PublicKeys*);
 
 #endif

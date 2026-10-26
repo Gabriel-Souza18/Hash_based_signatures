@@ -3,7 +3,7 @@
 #include <PubSubClient.h>
 #include "soc/soc.h"
 #include "soc/rtc_cntl_reg.h"
-#include "mbedtls/sha256.h"
+#include <sodium.h>
 
 // Configuração da Rede e Broker
 const char* ssid = "Gabriel";
@@ -12,7 +12,8 @@ const char* broker = "192.168.3.105"; // IP do PC rodando o broker Mosquitto
 const int porta = 1883;
 
 const int LED_PIN = 2;
-const int KEY_SIZE = 32;
+const char* TOPICO_ENVIAR = "wots/esp_to_pc";
+const char* MENSAGEM_PADRAO = "Mensagem pré-pronta assinada pelo ESP32 (WOTS+)";
 
 WiFiClient espClient;
 PubSubClient client(espClient);
@@ -23,172 +24,190 @@ extern "C" {
 #include "sha256.h"
 }
 
-// Callback do MQTT para receber e processar o pacote
-void callback(char* topic, byte* payload, unsigned int length) {
-    uint32_t heap_inicio = ESP.getFreeHeap();
+// Empacota mensagem, chave pública e assinatura no formato padrão:
+// [4B tam_msg][msg][4B tam_pk][pk][4B tam_sig][sig]
+uint8_t* empacotarDadosESP(const char *mensagem, const uint8_t *pkey, size_t tamanho_pkey, const uint8_t *assinatura, size_t tamanho_assinatura, size_t *tamanho_pacote) {
+    if (tamanho_pacote == NULL) return NULL;
 
-    Serial.print("\n[MQTT] Pacote recebido no topico [");
-    Serial.print(topic);
-    Serial.print("] com ");
-    Serial.print(length);
+    size_t tamanho_msg = mensagem ? strlen(mensagem) : 0;
+    size_t t_pk = (pkey && tamanho_pkey > 0) ? tamanho_pkey : 0;
+    size_t t_as = (assinatura && tamanho_assinatura > 0) ? tamanho_assinatura : 0;
+
+    *tamanho_pacote = sizeof(uint32_t) + tamanho_msg +
+                      sizeof(uint32_t) + t_pk +
+                      sizeof(uint32_t) + t_as;
+
+    uint8_t *pacote = (uint8_t*)malloc(*tamanho_pacote);
+    if (pacote == NULL) return NULL;
+
+    uint8_t *ptr = pacote;
+
+    // Grava Mensagem
+    uint32_t t_msg_32 = (uint32_t)tamanho_msg;
+    memcpy(ptr, &t_msg_32, sizeof(uint32_t));
+    ptr += sizeof(uint32_t);
+    if (tamanho_msg > 0) {
+        memcpy(ptr, mensagem, tamanho_msg);
+        ptr += tamanho_msg;
+    }
+
+    // Grava Chave Pública
+    uint32_t t_pk_32 = (uint32_t)t_pk;
+    memcpy(ptr, &t_pk_32, sizeof(uint32_t));
+    ptr += sizeof(uint32_t);
+    if (t_pk > 0) {
+        memcpy(ptr, pkey, t_pk);
+        ptr += t_pk;
+    }
+
+    // Grava Assinatura
+    uint32_t t_as_32 = (uint32_t)t_as;
+    memcpy(ptr, &t_as_32, sizeof(uint32_t));
+    ptr += sizeof(uint32_t);
+    if (t_as > 0) {
+        memcpy(ptr, assinatura, t_as);
+    }
+
+    return pacote;
+}
+
+// Gera chaves WOTS+, assina a mensagem pré-pronta e publica via MQTT
+bool gerarEEnviarAssinaturaWOTS() {
+    Serial.println("\n[WOTS+] Iniciando geracao de chaves, assinatura e envio pelo ESP32...");
+
+    uint32_t heap_antes = ESP.getFreeHeap();
+    Serial.print("[WOTS+] Free Heap antes: ");
+    Serial.print(heap_antes);
     Serial.println(" bytes.");
 
-    // O pacote mínimo precisa conter pelo menos os 3 inteiros de tamanho (3 * 4 = 12 bytes)
-    if (length < 12) {
-        Serial.println("Erro: Pacote muito curto.");
-        return;
+    // 1. Inicializa seeds (libsodium)
+    initializeSeeds();
+
+    // 2. Aloca e gera chaves secretas e públicas
+    SecretKeys *sKeys = mallocSkeys();
+    PublicKeys *pKeys = mallocPkeys();
+    if (!sKeys || !pKeys) {
+        Serial.println("[WOTS+] Erro de memoria ao alocar chaves.");
+        if (sKeys) free(sKeys);
+        if (pKeys) free(pKeys);
+        return false;
     }
 
-    const byte *ptr = payload;
+    Serial.println("[WOTS+] Gerando chaves secretas e publicas no ESP32...");
+    uint32_t t0 = micros();
+    generateSKeys(sKeys);
+    generatePKeys(pKeys, sKeys);
+    uint32_t t_keygen = micros() - t0;
+    Serial.print("[WOTS+] Chaves geradas em ");
+    Serial.print(t_keygen / 1000.0);
+    Serial.println(" ms.");
 
-    // 1. Extrai o tamanho da mensagem (4 bytes)
-    uint32_t tamanho_msg;
-    memcpy(&tamanho_msg, ptr, 4);
-    ptr += 4;
-
-    if (4 + tamanho_msg + 4 > length) {
-        Serial.println("Erro: Pacote malformado (tamanho da mensagem excede limite).");
-        return;
-    }
-
-    // Aloca e extrai a mensagem
-    char *mensagem = (char*)malloc(tamanho_msg + 1);
-    if (mensagem == NULL) {
-        Serial.println("Erro de memoria ao alocar mensagem.");
-        return;
-    }
-    memcpy(mensagem, ptr, tamanho_msg);
-    mensagem[tamanho_msg] = '\0';
-    ptr += tamanho_msg;
-
-    // 2. Extrai o tamanho da chave pública (4 bytes)
-    uint32_t tamanho_pkey;
-    memcpy(&tamanho_pkey, ptr, 4);
-    ptr += 4;
-
-    if (4 + tamanho_msg + 4 + tamanho_pkey + 4 > length) {
-        Serial.println("Erro: Pacote malformado (tamanho da pkey excede limite).");
-        free(mensagem);
-        return;
-    }
-
-    // Aloca e extrai a chave pública
-    PublicKeys *pKeys = (PublicKeys*)malloc(tamanho_pkey);
-    if (pKeys == NULL) {
-        Serial.println("Erro de memoria ao alocar chave publica.");
-        free(mensagem);
-        return;
-    }
-    memcpy(pKeys, ptr, tamanho_pkey);
-    ptr += tamanho_pkey;
-
-    // 3. Extrai o tamanho da assinatura (4 bytes)
-    uint32_t tamanho_assinatura;
-    memcpy(&tamanho_assinatura, ptr, 4);
-    ptr += 4;
-
-    if (4 + tamanho_msg + 4 + tamanho_pkey + 4 + tamanho_assinatura != length) {
-        Serial.println("Erro: Tamanho total do pacote nao condiz com a assinatura.");
-        free(mensagem);
-        free(pKeys);
-        return;
-    }
-
-    // Aloca e extrai a assinatura
-    uint8_t (*assinatura)[KEY_SIZE] = (uint8_t (*)[KEY_SIZE])malloc(tamanho_assinatura);
-    if (assinatura == NULL) {
-        Serial.println("Erro de memoria ao alocar assinatura.");
-        free(mensagem);
-        free(pKeys);
-        return;
-    }
-    memcpy(assinatura, ptr, tamanho_assinatura);
-
-    // Calcula a memória RAM alocada para os buffers
-    uint32_t heap_depois_alloc = ESP.getFreeHeap();
-    uint32_t ram_alocada = heap_inicio - heap_depois_alloc;
-
-    // Exibe dados básicos
-    Serial.print("Mensagem: \"");
-    Serial.print(mensagem);
+    // 3. Calcula hash SHA-256 da mensagem pré-pronta
+    const char *msg = MENSAGEM_PADRAO;
+    Serial.print("[WOTS+] Mensagem a assinar: \"");
+    Serial.print(msg);
     Serial.println("\"");
-    Serial.print("Tamanho Chave Publica: ");
-    Serial.print(tamanho_pkey);
-    Serial.println(" bytes.");
-    Serial.print("Tamanho Assinatura: ");
-    Serial.print(tamanho_assinatura);
-    Serial.println(" bytes.");
-    Serial.print("Memória RAM Alocada (Heap): ");
-    Serial.print(ram_alocada);
-    Serial.println(" bytes.");
 
-    // 4. Gera hash SHA-256 local da mensagem recebida
-    uint8_t msgHash[32];
-    sha256_bytes((const uint8_t*)mensagem, strlen(mensagem), msgHash);
+    unsigned char msgHash[WOTS_N];
+    sha256_bytes((const uint8_t*)msg, strlen(msg), msgHash);
 
-    // 5. Verifica a assinatura medindo tempo e hashes
-    Serial.println("[LOTS] Iniciando verificacao da assinatura...");
-    sha256_reset_counter();
-    uint32_t t_inicio = micros();
-    bool resultado = verificarMSG(msgHash, pKeys, assinatura);
-    uint32_t t_fim = micros();
-    uint32_t tempo_op = t_fim - t_inicio;
-    unsigned long long num_hashes = sha256_get_counter();
-
-    if (resultado) {
-        Serial.println("[LOTS] ASSINATURA VALIDA!");
-        // Pisca o LED 3 vezes rapidamente
-        for (int i = 0; i < 3; i++) {
-            digitalWrite(LED_PIN, HIGH);
-            delay(100);
-            digitalWrite(LED_PIN, LOW);
-            delay(100);
-        }
-    } else {
-        Serial.println("[LOTS] ASSINATURA INVALIDA!");
-        // Deixa o LED aceso por 2 segundos para indicar erro
-        digitalWrite(LED_PIN, HIGH);
-        delay(2000);
-        digitalWrite(LED_PIN, LOW);
+    // 4. Assina a mensagem
+    Assinatura *assinatura = mallocAssinatura();
+    if (!assinatura) {
+        Serial.println("[WOTS+] Erro ao alocar memoria para assinatura.");
+        free(pKeys);
+        free(sKeys);
+        return false;
     }
 
-    // 6. Publica as métricas calculadas na placa para o tópico "estat/esp"
+    t0 = micros();
+    assinarMensagem(msgHash, assinatura, sKeys);
+    uint32_t t_sign = micros() - t0;
+    Serial.print("[WOTS+] Mensagem assinada em ");
+    Serial.print(t_sign / 1000.0);
+    Serial.println(" ms.");
+
+    // Calcula uso de RAM no Heap alocado para a operação
+    uint32_t heap_depois = ESP.getFreeHeap();
+    uint32_t ram_alocada = (heap_antes > heap_depois) ? (heap_antes - heap_depois) : 0;
+
+    // Publica as métricas do transmissor ESP32 no tópico "estat/esp"
     char metricas_json[256];
     snprintf(metricas_json, sizeof(metricas_json),
-             "{\"dispositivo\":\"ESP32\",\"algoritmo\":\"LOTS\",\"operacao\":\"verificacao\","
-             "\"tempo_verificacao_us\":%u,\"numero_hashes\":%llu,\"tamanho_assinatura_bytes\":%u,"
-             "\"uso_ram_bytes\":%u,\"resultado\":%d}",
-             tempo_op, num_hashes, tamanho_assinatura, ram_alocada, (resultado ? 1 : 0));
-    
+             "{\"dispositivo\":\"ESP32\",\"algoritmo\":\"WOTS\",\"operacao\":\"assinatura\","
+             "\"tempo_keygen_us\":%u,\"tempo_assinatura_us\":%u,"
+             "\"tamanho_pkey_bytes\":%u,\"tamanho_assinatura_bytes\":%u,"
+             "\"uso_ram_bytes\":%u}",
+             t_keygen, t_sign, (unsigned int)sizeof(PublicKeys), (unsigned int)sizeof(Assinatura), ram_alocada);
+
     if (client.publish("estat/esp", metricas_json)) {
-        Serial.print("[MQTT] Metricas da placa enviadas com sucesso: ");
+        Serial.print("[WOTS+] Metricas enviadas para 'estat/esp': ");
         Serial.println(metricas_json);
     } else {
-        Serial.println("[MQTT] Erro ao enviar metricas da placa.");
+        Serial.println("[WOTS+] Falha ao enviar metricas para 'estat/esp'.");
     }
 
-    // Libera buffers com depuração para encontrar o estouro de heap
-    Serial.print("[Debug] Endereco mensagem: 0x");
-    Serial.println((uint32_t)mensagem, HEX);
-    Serial.print("[Debug] Endereco pKeys: 0x");
-    Serial.println((uint32_t)pKeys, HEX);
-    Serial.print("[Debug] Endereco assinatura: 0x");
-    Serial.println((uint32_t)assinatura, HEX);
+    // 5. Empacota (PK_seed de 32 bytes + SK_seed de 32 bytes + PublicKeys)
+    size_t tamanho_pkey_bundle = 2 * WOTS_N + sizeof(PublicKeys);
+    uint8_t *pkey_bundle = (uint8_t*)malloc(tamanho_pkey_bundle);
+    if (!pkey_bundle) {
+        Serial.println("[WOTS+] Erro ao alocar memoria para pkey_bundle.");
+        free(assinatura);
+        free(pKeys);
+        free(sKeys);
+        return false;
+    }
+    memcpy(pkey_bundle, PK_seed, WOTS_N);
+    memcpy(pkey_bundle + WOTS_N, SK_seed, WOTS_N);
+    memcpy(pkey_bundle + 2 * WOTS_N, pKeys, sizeof(PublicKeys));
 
-    Serial.println("[Debug] Liberando mensagem...");
-    free(mensagem);
-    Serial.println("[Debug] Liberando pKeys...");
-    free(pKeys);
-    Serial.println("[Debug] Liberando assinatura...");
+    size_t tamanho_pacote = 0;
+    uint8_t *pacote = empacotarDadosESP(
+        msg,
+        pkey_bundle, tamanho_pkey_bundle,
+        (const uint8_t*)assinatura, sizeof(Assinatura),
+        &tamanho_pacote
+    );
+    free(pkey_bundle);
+
+    bool enviado = false;
+    if (pacote) {
+        Serial.print("[WOTS+] Publicando pacote (");
+        Serial.print(tamanho_pacote);
+        Serial.print(" bytes) no topico [");
+        Serial.print(TOPICO_ENVIAR);
+        Serial.println("]...");
+
+        enviado = client.publish(TOPICO_ENVIAR, pacote, tamanho_pacote);
+        if (enviado) {
+            Serial.println("[WOTS+] Pacote publicado com sucesso pelo ESP32!");
+            // Pisca o LED 2 vezes para indicar sucesso no envio
+            for (int i = 0; i < 2; i++) {
+                digitalWrite(LED_PIN, HIGH);
+                delay(150);
+                digitalWrite(LED_PIN, LOW);
+                delay(150);
+            }
+        } else {
+            Serial.println("[WOTS+] Falha ao publicar pacote MQTT.");
+        }
+        free(pacote);
+    } else {
+        Serial.println("[WOTS+] Erro ao empacotar pacote.");
+    }
+
+    // Limpeza de recursos
     free(assinatura);
-    Serial.println("[Debug] Todos os buffers liberados com sucesso!");
+    free(pKeys);
+    free(sKeys);
+
+    return enviado;
 }
 
 void reconectar() {
     while (!client.connected()) {
         Serial.print("Tentando conectar ao broker MQTT...");
-        if (client.connect("ESP32_LOTS_Receiver")) {
-            client.subscribe("lots",1);
+        if (client.connect("ESP32_WOTS_Transmitter")) {
             Serial.println(" conectado!");
         } else {
             Serial.print(" falhou, rc=");
@@ -200,21 +219,25 @@ void reconectar() {
 }
 
 void setup() {
-    WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, 0); // Desabilita o detector de Brownout (evita reboots por oscilacao de energia USB)
+    WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, 0); // Desabilita o detector de Brownout
     Serial.begin(115200);
     delay(1000);
-    Serial.println("\nInicializando receptor LOTS...");
+    Serial.println("\n========================================");
+    Serial.println("Inicializando transmissor WOTS+ (ESP32)...");
+    Serial.println("========================================");
     pinMode(LED_PIN, OUTPUT);
-    
+
     WiFi.begin(ssid, password);
     while (WiFi.status() != WL_CONNECTED) {
         delay(500);
         Serial.print(".");
     }
     Serial.println("\nWiFi conectado!");
+    Serial.print("IP da ESP32: ");
+    Serial.println(WiFi.localIP());
 
     client.setServer(broker, porta);
-    client.setCallback(callback);
+    client.setBufferSize(30000); // Garante buffer suficiente para o pacote WOTS+ (~5KB)
 }
 
 void loop() {
@@ -222,4 +245,11 @@ void loop() {
         reconectar();
     }
     client.loop();
+
+    // Gera e envia a cada 10 segundos
+    static unsigned long ultimo_envio = 0;
+    if (millis() - ultimo_envio > 10000 || ultimo_envio == 0) {
+        ultimo_envio = millis();
+        gerarEEnviarAssinaturaWOTS();
+    }
 }

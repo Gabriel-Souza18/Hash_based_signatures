@@ -61,7 +61,7 @@
 - [x] Testar ESP
 - [x] Criar comunicação MQTT pc -ESP
 - [x] LOTS
-- [] WOTS
+- [x] WOTS
 - [] MSS
 - [] HORS
 - [] HORST
@@ -70,11 +70,15 @@
 ---
 
 ## Falar na próxima reunião
-Vou pegar o sensor de 
+Vou pegar o sensor de corrente com a milene
+Perguntar sobre capitulo de Resultados no PC(colocar na metodoologia umae etpar preliminar de testes e dapois isso decidi conitnuar os testes no hardware)
+WOTS concluido na ESP e testado.
 
 
 
+Mudar o template novo 
 
+Posivel banca: Milene e Elverton
 ---
 
 ## Anotações reunião

@@ -8,20 +8,19 @@ BROKER = "localhost"
 PORT = 1883
 TOPICS = [("estat/#", 0)]
 
-pc_metrics = None  # Armazenamento temporário para as métricas do PC
+pc_metrics = None   # Armazenamento temporário para as métricas do PC
+esp_metrics = None  # Armazenamento temporário para as métricas da ESP32
 
-def save_json(esp_data):
-    global pc_metrics
+def save_json(algo="algoritmo"):
+    global pc_metrics, esp_metrics
     
-    # Extrai o nome do algoritmo e gera o timestamp
-    algo = esp_data.get("algoritmo", "algoritmo").lower()
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     filename = f"{algo}_{timestamp}.json"
     
     # Consolida os dados do PC e da ESP32 em um único JSON
     consolidated = {
         "pc": pc_metrics if pc_metrics else {},
-        "esp": esp_data
+        "esp": esp_metrics if esp_metrics else {}
     }
     
     # Salva o arquivo na mesma pasta do script
@@ -34,8 +33,9 @@ def save_json(esp_data):
     print(f"\n[LOGGER] JSON salvo com sucesso em: {file_path}")
     print(json.dumps(consolidated, indent=2))
     
-    # Reseta o buffer temporário
+    # Reseta os buffers temporários
     pc_metrics = None
+    esp_metrics = None
 
 def on_connect(client, userdata, flags, rc):
     if rc == 0:
@@ -46,7 +46,7 @@ def on_connect(client, userdata, flags, rc):
         print(f"[LOGGER] Erro ao conectar ao broker. Código: {rc}")
 
 def on_message(client, userdata, msg):
-    global pc_metrics
+    global pc_metrics, esp_metrics
     
     try:
         data = json.loads(msg.payload.decode())
@@ -57,10 +57,20 @@ def on_message(client, userdata, msg):
     if msg.topic == "estat/pc":
         pc_metrics = data
         print("[LOGGER] Recebidas métricas do PC.")
+        # Se as métricas da ESP já chegaram (ESP assina -> PC verifica), consolida e salva
+        if esp_metrics:
+            algo = esp_metrics.get("algoritmo", data.get("algoritmo", "algoritmo")).lower()
+            print("[LOGGER] Ambas as metricas recebidas. Gravando JSON...")
+            save_json(algo)
         
     elif msg.topic == "estat/esp":
-        print("[LOGGER] Recebidas métricas da ESP32. Gravando JSON...")
-        save_json(data)
+        esp_metrics = data
+        print("[LOGGER] Recebidas métricas da ESP32.")
+        # Se as métricas do PC já estavam aguardando (caso clássico PC assina -> ESP verifica)
+        if pc_metrics and pc_metrics.get("operacao") == "assinatura":
+            algo = esp_metrics.get("algoritmo", "algoritmo").lower()
+            print("[LOGGER] Gravando JSON...")
+            save_json(algo)
 
 def main():
     client = mqtt.Client()

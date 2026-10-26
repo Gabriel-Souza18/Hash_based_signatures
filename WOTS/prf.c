@@ -161,12 +161,12 @@ void F_function(unsigned char* output, const unsigned char* PK_seed,
     int pos = 0;
     
     // PK.seed
-    memcpy(buffer + pos, PK_seed, N);
-    pos += N;
+    memcpy(buffer + pos, PK_seed, PRF_N);
+    pos += PRF_N;
     
-    // Zeros (64 - N = 32)
-    memset(buffer + pos, 0, 64 - N);
-    pos += (64 - N);
+    // Zeros (64 - PRF_N = 32)
+    memset(buffer + pos, 0, 64 - PRF_N);
+    pos += (64 - PRF_N);
     
     // ADRS comprimido
     unsigned char ADRS_compressed[22];
@@ -175,12 +175,12 @@ void F_function(unsigned char* output, const unsigned char* PK_seed,
     pos += 22;
     
     // Input (M1)
-    memcpy(buffer + pos, input, N);
-    pos += N;
+    memcpy(buffer + pos, input, PRF_N);
+    pos += PRF_N;
     
     // Calcular SHA-256
     unsigned char hash[SHA256_BYTES_SIZE];
     sha256_bytes(buffer, pos, hash);
     
-    memcpy(output, hash, N);
+    memcpy(output, hash, PRF_N);
 }
