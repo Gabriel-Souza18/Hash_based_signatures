@@ -12,21 +12,24 @@ Serial.
 - Botão ligado ao GPIO34;
 - Resistor externo de aproximadamente 10 kΩ entre GPIO34 e GND.
 
-O GPIO34 é somente entrada e não possui pull-up/pull-down interno. O botão
-deve aplicar 3,3 V ao GPIO34 quando pressionado.
+O GPIO34 é somente entrada e não possui pull-up/pull-down interno. Use um
+resistor externo de 10 kΩ entre GPIO34 e GND, e faça o botão aplicar 3,3 V ao
+GPIO34 quando pressionado. Sem esse resistor, o pino fica flutuante e pode ser
+interpretado como permanentemente pressionado.
 
 ## Fluxo pelo botão
 
 O botão continua ativo em todos os ambientes:
 
 1. Ao ligar a placa, o LED vermelho indica que o benchmark está aguardando;
-2. O Serial informa `Pressione o botão para iniciar o benchmark...`;
-3. Ao pressionar o botão, o LED vermelho apaga e o LED verde acende;
-4. O benchmark selecionado é executado cinco vezes (`BENCH_RUNS=5`);
+2. Ao pressionar o botão, o LED vermelho apaga e o LED verde acende;
+4. O benchmark selecionado é executado `BENCH_RUNS` vezes (atualmente 100);
 5. Os resultados de keygen, assinatura e verificação são enviados ao Serial;
-6. Ao terminar, o LED verde apaga, o vermelho acende novamente e a placa
+6. Cada repetição conclui o ciclo de geração, assinatura e verificação antes
+   de liberar as estruturas temporárias;
+7. Ao terminar, o LED verde apaga, o vermelho acende novamente e a placa
    aguarda o botão ser liberado;
-7. Um novo benchmark pode ser iniciado pressionando o botão novamente.
+8. Um novo benchmark pode ser iniciado pressionando o botão novamente.
 
 Pinos utilizados:
 
@@ -136,25 +139,24 @@ os módulos originais XMSS, HORST, WOTS+ e SHA-256.
 
 ## Saída no Serial
 
-Configure o monitor em **115200 baud**. Cada execução informa:
+Configure o monitor em **115200 baud**. Cada execução informa somente:
 
-- algoritmo e parâmetros;
-- informações do chip;
-- número da repetição;
+- algoritmo;
+- operação;
+- número da execução;
 - tempo em microssegundos;
 - número de hashes contados;
 - RAM consumida;
-- média das repetições;
 - resultado da verificação (`VALIDA` ou `INVALIDA`).
 
 Exemplo de início de execução:
 
 ```text
-Pressione o botão para iniciar o benchmark...
-Botão pressionado! Iniciando benchmark...
-*  BENCH_ESP — Benchmark de assinaturas hash na ESP32   *
+ALGORITMO=SPHINCS
+OPERACAO=KEYGEN EXECUCAO=1 TEMPO_US=... HASHES=... RAM_BYTES=...
 ```
 
-Para repetir o teste do mesmo algoritmo, não é necessário fazer novo upload:
+No LOTS, as quatro operações de cada repetição usam o mesmo
+`EXECUCAO=<n>`. Para repetir o teste do mesmo algoritmo, não é necessário fazer
+novo upload:
 libere o botão e pressione-o novamente.
-

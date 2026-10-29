@@ -23,6 +23,27 @@
 #include "soc/soc.h"
 #include "soc/rtc_cntl_reg.h"
 
+extern "C" int __wrap_printf(const char *, ...) {
+    return 0;
+}
+
+class BenchSerialSilencer {
+public:
+    void begin(unsigned long) {}
+
+    template <typename T>
+    void print(const T &) {}
+
+    template <typename T>
+    void println(const T &) {}
+
+    void println() {}
+};
+
+static HardwareSerial &BenchOutputSerial = Serial;
+static BenchSerialSilencer BenchSerial;
+#define Serial BenchSerial
+
 // ─── Pinos para Botão e LEDs ─────────────────────────────────────────────────
 const int BUTTON_PIN = 34;
 const int LED_RED_PIN = 12;
@@ -58,10 +79,13 @@ extern "C" {
 
 // ─── Constantes ──────────────────────────────────────────────────────────────
 #ifndef BENCH_RUNS
-    #define BENCH_RUNS 10       // Número de repetições para cada operação
+    #define BENCH_RUNS 100       // Número de repetições para cada operação
 #endif
 
 static const char *MENSAGEM_TESTE = "Benchmark ESP32 Hash-Based Signatures";
+static const char *g_operacao = "OPERACAO";
+static unsigned int g_execucao = 0;
+static bool g_execucao_compartilhada = false;
 
 // ─── Estrutura de resultado de uma operação ──────────────────────────────────
 struct BenchResult {
@@ -78,37 +102,31 @@ static void printSeparador(char c = '-', int n = 60) {
 }
 
 static void printResultado(const char *nome, const BenchResult &r) {
-    Serial.print("  ");
-    Serial.print(nome);
-    Serial.print(": tempo=");
-    Serial.print(r.tempo_us);
-    Serial.print(" us  hashes=");
-    // %llu não funciona em todos os cores Arduino; usamos impressão manual
-    Serial.print((uint32_t)(r.num_hashes >> 32));   // parte alta (geralmente 0)
-    Serial.print((uint32_t)(r.num_hashes & 0xFFFFFFFF));
-    Serial.print("  ram=");
-    Serial.print(r.ram_bytes);
-    Serial.println(" B");
+    (void)nome;
+    BenchOutputSerial.print("OPERACAO=");
+    BenchOutputSerial.print(g_operacao);
+    BenchOutputSerial.print(" EXECUCAO=");
+    BenchOutputSerial.print(g_execucao_compartilhada ? g_execucao : ++g_execucao);
+    BenchOutputSerial.print(" TEMPO_US=");
+    BenchOutputSerial.print(r.tempo_us);
+    BenchOutputSerial.print(" HASHES=");
+    BenchOutputSerial.print((uint32_t)(r.num_hashes >> 32));
+    BenchOutputSerial.print((uint32_t)(r.num_hashes & 0xFFFFFFFF));
+    BenchOutputSerial.print(" RAM_BYTES=");
+    BenchOutputSerial.println(r.ram_bytes);
 }
 
 static void printMedia(const char *nome, BenchResult runs[], int n) {
-    uint64_t soma_t = 0;
-    uint64_t soma_h = 0;
-    uint64_t soma_r = 0;
-    for (int i = 0; i < n; i++) {
-        soma_t += runs[i].tempo_us;
-        soma_h += runs[i].num_hashes;
-        soma_r += runs[i].ram_bytes;
-    }
-    Serial.print("  MEDIA ");
-    Serial.print(nome);
-    Serial.print(": tempo=");
-    Serial.print((uint32_t)(soma_t / n));
-    Serial.print(" us  hashes=");
-    Serial.print((uint32_t)(soma_h / n));
-    Serial.print("  ram=");
-    Serial.print((uint32_t)(soma_r / n));
-    Serial.println(" B");
+    (void)nome;
+    (void)runs;
+    (void)n;
+}
+
+static void printValidacao(bool valida) {
+    BenchOutputSerial.print("RESULTADO_EXECUCAO=");
+    BenchOutputSerial.print(g_execucao);
+    BenchOutputSerial.print(" RESULTADO=");
+    BenchOutputSerial.println(valida ? "VALIDA" : "INVALIDA");
 }
 
 // ─── Macro de medição ─────────────────────────────────────────────────────────
@@ -132,115 +150,51 @@ static void printMedia(const char *nome, BenchResult runs[], int n) {
 #if defined(BENCH_LOTS)
 
 static void bench_lots() {
-    Serial.println();
-    printSeparador('=');
-    Serial.println("  BENCHMARK: LOTS");
-    printSeparador('=');
-
-    // Tamanhos de estrutura
-    Serial.print("  sizeof(SecretKeys) = ");
-    Serial.print(sizeof(SecretKeys));
-    Serial.println(" B");
-    Serial.print("  sizeof(PublicKeys)  = ");
-    Serial.print(sizeof(PublicKeys));
-    Serial.println(" B");
-    // Assinatura LOTS: uint8_t[256][KEY_SIZE] = 256 * 32 = 8192 B
-    Serial.print("  sizeof(assinatura)  = ");
-    Serial.print(256 * 32);
-    Serial.println(" B (uint8_t[256][32])");
-    Serial.print("  Heap livre antes do benchmark: ");
-    Serial.print(ESP.getFreeHeap());
-    Serial.println(" B");
-    printSeparador();
-
-    // Aloca estruturas fora do laço de medição para controlar o que é medido
-    SecretKeys *sKeys = nullptr;
-    PublicKeys *pKeys = nullptr;
-    uint8_t (*assinatura)[32] = nullptr;
     uint8_t msgHash[32] = {0};
-
-    // Pré-calcula o hash da mensagem de teste (não conta no benchmark)
     sha256_bytes(MENSAGEM_TESTE, strlen(MENSAGEM_TESTE), msgHash);
-
-    // ── 1. GenSK ──────────────────────────────────────────────────────────────
-    Serial.println("[ 1/4 ] Geracao de Chaves Secretas (GenSK)");
-    BenchResult res_gensk[BENCH_RUNS];
+    g_execucao_compartilhada = true;
     for (int r = 0; r < BENCH_RUNS; r++) {
-        if (sKeys) { free(sKeys); sKeys = nullptr; }
+        g_execucao = (unsigned int)(r + 1);
+        SecretKeys *sKeys = nullptr;
+        PublicKeys *pKeys = nullptr;
+        uint8_t (*assinatura)[32] = nullptr;
+        BenchResult resultado;
 
-        MEDIR(res_gensk[r], {
+        g_operacao = "GEN_SK";
+        MEDIR(resultado, {
             sKeys = malloc_Skeys();
-            generateSecretKeys(sKeys);
+            if (sKeys) generateSecretKeys(sKeys);
         });
+        printResultado("run", resultado);
 
-        printResultado("run", res_gensk[r]);
-        delay(50);
-    }
-    printMedia("GenSK", res_gensk, BENCH_RUNS);
-    printSeparador();
-
-    // ── 2. GenPK ──────────────────────────────────────────────────────────────
-    Serial.println("[ 2/4 ] Geracao de Chaves Publicas (GenPK)");
-    BenchResult res_genpk[BENCH_RUNS];
-    for (int r = 0; r < BENCH_RUNS; r++) {
-        if (pKeys) { free(pKeys); pKeys = nullptr; }
-
-        MEDIR(res_genpk[r], {
+        g_operacao = "GEN_PK";
+        MEDIR(resultado, {
             pKeys = malloc_Pkeys();
-            generatePublicKeys(pKeys, sKeys);
+            if (pKeys && sKeys) generatePublicKeys(pKeys, sKeys);
         });
+        printResultado("run", resultado);
 
-        printResultado("run", res_genpk[r]);
-        delay(50);
-    }
-    printMedia("GenPK", res_genpk, BENCH_RUNS);
-    printSeparador();
-
-    // ── 3. Sign ───────────────────────────────────────────────────────────────
-    Serial.println("[ 3/4 ] Assinatura (Sign)");
-    BenchResult res_sign[BENCH_RUNS];
-    for (int r = 0; r < BENCH_RUNS; r++) {
-        if (assinatura) { free(assinatura); assinatura = nullptr; }
-
-        MEDIR(res_sign[r], {
+        g_operacao = "ASSINATURA";
+        MEDIR(resultado, {
             assinatura = (uint8_t (*)[32])malloc(256 * 32);
-            assinarMSG(msgHash, sKeys, assinatura);
+            if (assinatura && sKeys) assinarMSG(msgHash, sKeys, assinatura);
         });
+        printResultado("run", resultado);
 
-        printResultado("run", res_sign[r]);
+        bool valida = false;
+        g_operacao = "VERIFICACAO";
+        MEDIR(resultado, {
+            if (pKeys && assinatura) valida = verificarMSG(msgHash, pKeys, assinatura);
+        });
+        printResultado("run", resultado);
+        printValidacao(valida);
+
+        free(assinatura);
+        free(pKeys);
+        free(sKeys);
         delay(50);
     }
-    printMedia("Sign", res_sign, BENCH_RUNS);
-    printSeparador();
-
-    // ── 4. Verify ─────────────────────────────────────────────────────────────
-    Serial.println("[ 4/4 ] Verificacao (Verify)");
-    BenchResult res_verify[BENCH_RUNS];
-    for (int r = 0; r < BENCH_RUNS; r++) {
-        bool resultado = false;
-
-        MEDIR(res_verify[r], {
-            resultado = verificarMSG(msgHash, pKeys, assinatura);
-        });
-
-        printResultado("run", res_verify[r]);
-        Serial.print("    resultado=");
-        Serial.println(resultado ? "VALIDA" : "INVALIDA");
-        delay(50);
-    }
-    printMedia("Verify", res_verify, BENCH_RUNS);
-    printSeparador();
-
-    // Libera
-    if (assinatura) free(assinatura);
-    if (pKeys)      free(pKeys);
-    if (sKeys)      free(sKeys);
-
-    printSeparador('=');
-    Serial.print("  Heap livre apos benchmark: ");
-    Serial.print(ESP.getFreeHeap());
-    Serial.println(" B");
-    printSeparador('=');
+    g_execucao_compartilhada = false;
 }
 
 #endif // BENCH_LOTS
@@ -264,6 +218,39 @@ static void inicializar_seeds_deterministico() {
 }
 
 static void bench_wots() {
+    inicializar_seeds_deterministico();
+    uint8_t msgHash[WOTS_N] = {0};
+    sha256_bytes(MENSAGEM_TESTE, strlen(MENSAGEM_TESTE), msgHash);
+    g_execucao_compartilhada = true;
+    for (int r = 0; r < BENCH_RUNS; r++) {
+        g_execucao = (unsigned int)(r + 1);
+        SecretKeys *sKeys = nullptr;
+        PublicKeys *pKeys = nullptr;
+        Assinatura *assinatura = nullptr;
+        BenchResult resultado;
+        g_operacao = "GEN_SK";
+        MEDIR(resultado, { sKeys = mallocSkeys(); if (sKeys) generateSKeys(sKeys); });
+        printResultado("run", resultado);
+        g_operacao = "GEN_PK";
+        MEDIR(resultado, { pKeys = mallocPkeys(); if (pKeys && sKeys) generatePKeys(pKeys, sKeys); });
+        printResultado("run", resultado);
+        g_operacao = "ASSINATURA";
+        MEDIR(resultado, { assinatura = mallocAssinatura(); if (assinatura && sKeys) assinarMensagem(msgHash, assinatura, sKeys); });
+        printResultado("run", resultado);
+        int valida = 0;
+        g_operacao = "VERIFICACAO";
+        MEDIR(resultado, { if (assinatura && pKeys) valida = verificarMensagem(msgHash, assinatura, pKeys); });
+        printResultado("run", resultado);
+        printValidacao(valida);
+        free(assinatura);
+        free(pKeys);
+        free(sKeys);
+        delay(50);
+    }
+    g_execucao_compartilhada = false;
+}
+
+static void bench_wots_legacy() {
     Serial.println();
     printSeparador('=');
     Serial.println("  BENCHMARK: WOTS+");
@@ -300,7 +287,7 @@ static void bench_wots() {
     sha256_bytes(MENSAGEM_TESTE, strlen(MENSAGEM_TESTE), msgHash);
 
     // ── 1. GenSK ──────────────────────────────────────────────────────────────
-    Serial.println("[ 1/4 ] Geracao de Chaves Secretas (GenSK)");
+    g_operacao = "GEN_SK";
     BenchResult res_gensk[BENCH_RUNS];
     for (int r = 0; r < BENCH_RUNS; r++) {
         if (sKeys) { free(sKeys); sKeys = nullptr; }
@@ -317,7 +304,7 @@ static void bench_wots() {
     printSeparador();
 
     // ── 2. GenPK ──────────────────────────────────────────────────────────────
-    Serial.println("[ 2/4 ] Geracao de Chaves Publicas (GenPK)");
+    g_operacao = "GEN_PK";
     BenchResult res_genpk[BENCH_RUNS];
     for (int r = 0; r < BENCH_RUNS; r++) {
         if (pKeys) { free(pKeys); pKeys = nullptr; }
@@ -334,7 +321,7 @@ static void bench_wots() {
     printSeparador();
 
     // ── 3. Sign ───────────────────────────────────────────────────────────────
-    Serial.println("[ 3/4 ] Assinatura (Sign)");
+    g_operacao = "ASSINATURA";
     BenchResult res_sign[BENCH_RUNS];
     for (int r = 0; r < BENCH_RUNS; r++) {
         if (assinatura) { free(assinatura); assinatura = nullptr; }
@@ -351,7 +338,7 @@ static void bench_wots() {
     printSeparador();
 
     // ── 4. Verify ─────────────────────────────────────────────────────────────
-    Serial.println("[ 4/4 ] Verificacao (Verify)");
+    g_operacao = "VERIFICACAO";
     BenchResult res_verify[BENCH_RUNS];
     for (int r = 0; r < BENCH_RUNS; r++) {
         int resultado = 0;
@@ -361,8 +348,7 @@ static void bench_wots() {
         });
 
         printResultado("run", res_verify[r]);
-        Serial.print("    resultado=");
-        Serial.println(resultado ? "VALIDA" : "INVALIDA");
+        printValidacao(resultado);
         delay(50);
     }
     printMedia("Verify", res_verify, BENCH_RUNS);
@@ -388,6 +374,36 @@ static void bench_wots() {
 #if defined(BENCH_HORS)
 
 static void bench_hors() {
+    g_execucao_compartilhada = true;
+    for (int r = 0; r < BENCH_RUNS; r++) {
+        g_execucao = (unsigned int)(r + 1);
+        Keys *keys = nullptr;
+        Assinatura *assinatura = nullptr;
+        BenchResult resultado;
+        g_operacao = "GEN_KEYS";
+        MEDIR(resultado, { keys = (Keys *)malloc(sizeof(Keys)); if (keys) gerarKeys(keys); });
+        printResultado("run", resultado);
+        g_operacao = "ASSINATURA";
+        MEDIR(resultado, {
+            assinatura = (Assinatura *)malloc(sizeof(Assinatura));
+            if (assinatura && keys) assinarMensagem(MENSAGEM_TESTE, strlen(MENSAGEM_TESTE), assinatura, keys->SKeys);
+        });
+        printResultado("run", resultado);
+        int valida = 0;
+        g_operacao = "VERIFICACAO";
+        MEDIR(resultado, {
+            if (assinatura && keys) valida = verificarAssinatura(MENSAGEM_TESTE, strlen(MENSAGEM_TESTE), assinatura, keys->PKeys);
+        });
+        printResultado("run", resultado);
+        printValidacao(valida);
+        free(assinatura);
+        free(keys);
+        delay(50);
+    }
+    g_execucao_compartilhada = false;
+}
+
+static void bench_hors_legacy() {
     Serial.println();
     printSeparador('=');
     Serial.println("  BENCHMARK: HORS");
@@ -411,7 +427,7 @@ static void bench_hors() {
     Assinatura *assinatura = nullptr;
 
     // O algoritmo HORS gera as chaves secretas e públicas em uma única rotina.
-    Serial.println("[ 1/3 ] Geracao de Chaves (GenKeys)");
+    g_operacao = "GEN_KEYS";
     BenchResult res_genkeys[BENCH_RUNS];
     for (int r = 0; r < BENCH_RUNS; r++) {
         if (keys) { free(keys); keys = nullptr; }
@@ -427,7 +443,7 @@ static void bench_hors() {
     printMedia("GenKeys", res_genkeys, BENCH_RUNS);
     printSeparador();
 
-    Serial.println("[ 2/3 ] Assinatura (Sign)");
+    g_operacao = "ASSINATURA";
     BenchResult res_sign[BENCH_RUNS];
     for (int r = 0; r < BENCH_RUNS; r++) {
         if (assinatura) { free(assinatura); assinatura = nullptr; }
@@ -446,7 +462,7 @@ static void bench_hors() {
     printMedia("Sign", res_sign, BENCH_RUNS);
     printSeparador();
 
-    Serial.println("[ 3/3 ] Verificacao (Verify)");
+    g_operacao = "VERIFICACAO";
     BenchResult res_verify[BENCH_RUNS];
     for (int r = 0; r < BENCH_RUNS; r++) {
         int resultado = 0;
@@ -460,8 +476,7 @@ static void bench_hors() {
         });
 
         printResultado("run", res_verify[r]);
-        Serial.print("    resultado=");
-        Serial.println(resultado ? "VALIDA" : "INVALIDA");
+        printValidacao(resultado);
         delay(50);
     }
     printMedia("Verify", res_verify, BENCH_RUNS);
@@ -485,6 +500,36 @@ static void bench_hors() {
 #if defined(BENCH_HORST)
 
 static void bench_horst() {
+    g_execucao_compartilhada = true;
+    for (int r = 0; r < BENCH_RUNS; r++) {
+        g_execucao = (unsigned int)(r + 1);
+        Keys *keys = nullptr;
+        Assinatura *assinatura = nullptr;
+        BenchResult resultado;
+        g_operacao = "GEN_KEYS";
+        MEDIR(resultado, { keys = (Keys *)malloc(sizeof(Keys)); if (keys) gerarKeys(keys); });
+        printResultado("run", resultado);
+        g_operacao = "ASSINATURA";
+        MEDIR(resultado, {
+            assinatura = (Assinatura *)malloc(sizeof(Assinatura));
+            if (assinatura && keys) assinarMensagem(MENSAGEM_TESTE, strlen(MENSAGEM_TESTE), assinatura, keys->SKeys);
+        });
+        printResultado("run", resultado);
+        int valida = 0;
+        g_operacao = "VERIFICACAO";
+        MEDIR(resultado, {
+            if (assinatura && keys) valida = verificarAssinatura(MENSAGEM_TESTE, strlen(MENSAGEM_TESTE), assinatura, &keys->PKey);
+        });
+        printResultado("run", resultado);
+        printValidacao(valida);
+        free(assinatura);
+        free(keys);
+        delay(50);
+    }
+    g_execucao_compartilhada = false;
+}
+
+static void bench_horst_legacy() {
     Serial.println();
     printSeparador('=');
     Serial.println("  BENCHMARK: HORST");
@@ -508,7 +553,7 @@ static void bench_horst() {
     Keys *keys = nullptr;
     Assinatura *assinatura = nullptr;
 
-    Serial.println("[ 1/3 ] Geracao de Chaves (GenKeys)");
+    g_operacao = "GEN_KEYS";
     BenchResult res_genkeys[BENCH_RUNS];
     for (int r = 0; r < BENCH_RUNS; r++) {
         if (keys) { free(keys); keys = nullptr; }
@@ -524,7 +569,7 @@ static void bench_horst() {
     printMedia("GenKeys", res_genkeys, BENCH_RUNS);
     printSeparador();
 
-    Serial.println("[ 2/3 ] Assinatura (Sign)");
+    g_operacao = "ASSINATURA";
     BenchResult res_sign[BENCH_RUNS];
     for (int r = 0; r < BENCH_RUNS; r++) {
         if (assinatura) { free(assinatura); assinatura = nullptr; }
@@ -543,7 +588,7 @@ static void bench_horst() {
     printMedia("Sign", res_sign, BENCH_RUNS);
     printSeparador();
 
-    Serial.println("[ 3/3 ] Verificacao (Verify)");
+    g_operacao = "VERIFICACAO";
     BenchResult res_verify[BENCH_RUNS];
     for (int r = 0; r < BENCH_RUNS; r++) {
         int resultado = 0;
@@ -557,8 +602,7 @@ static void bench_horst() {
         });
 
         printResultado("run", res_verify[r]);
-        Serial.print("    resultado=");
-        Serial.println(resultado ? "VALIDA" : "INVALIDA");
+        printValidacao(resultado);
         delay(50);
     }
     printMedia("Verify", res_verify, BENCH_RUNS);
@@ -616,7 +660,7 @@ static void bench_mss() {
     No *raiz = nullptr;
     AssinaturaMSS *assinatura = nullptr;
 
-    Serial.println("[ 1/3 ] Geracao de Chaves e Arvore (GenKeys)");
+    g_operacao = "GEN_KEYS_ARVORE";
     BenchResult res_genkeys[BENCH_RUNS];
     for (int r = 0; r < BENCH_RUNS; r++) {
         liberar_contexto_mss(raiz, folhas);
@@ -641,7 +685,7 @@ static void bench_mss() {
     printMedia("GenKeys", res_genkeys, BENCH_RUNS);
     printSeparador();
 
-    Serial.println("[ 2/3 ] Assinatura (Sign)");
+    g_operacao = "ASSINATURA";
     BenchResult res_sign[BENCH_RUNS];
     for (int r = 0; r < BENCH_RUNS; r++) {
         if (assinatura) {
@@ -665,7 +709,7 @@ static void bench_mss() {
     printMedia("Sign", res_sign, BENCH_RUNS);
     printSeparador();
 
-    Serial.println("[ 3/3 ] Verificacao (Verify)");
+    g_operacao = "VERIFICACAO";
     BenchResult res_verify[BENCH_RUNS];
     for (int r = 0; r < BENCH_RUNS; r++) {
         int resultado = 0;
@@ -677,8 +721,7 @@ static void bench_mss() {
         });
 
         printResultado("run", res_verify[r]);
-        Serial.print("    resultado=");
-        Serial.println(resultado ? "VALIDA" : "INVALIDA");
+        printValidacao(resultado);
         delay(50);
     }
     printMedia("Verify", res_verify, BENCH_RUNS);
@@ -736,7 +779,7 @@ static void bench_sphincs() {
         return;
     }
 
-    Serial.println("[ 1/3 ] Geracao de Chaves (Keygen)");
+    g_operacao = "KEYGEN";
     BenchResult res_keygen[BENCH_RUNS];
     for (int r = 0; r < BENCH_RUNS; r++) {
         MEDIR(res_keygen[r], {
@@ -749,7 +792,7 @@ static void bench_sphincs() {
     printMedia("Keygen", res_keygen, BENCH_RUNS);
     printSeparador();
 
-    Serial.println("[ 2/3 ] Assinatura (Sign)");
+    g_operacao = "ASSINATURA";
     BenchResult res_sign[BENCH_RUNS];
     for (int r = 0; r < BENCH_RUNS; r++) {
         MEDIR(res_sign[r], {
@@ -764,7 +807,7 @@ static void bench_sphincs() {
     printMedia("Sign", res_sign, BENCH_RUNS);
     printSeparador();
 
-    Serial.println("[ 3/3 ] Verificacao (Verify)");
+    g_operacao = "VERIFICACAO";
     BenchResult res_verify[BENCH_RUNS];
     for (int r = 0; r < BENCH_RUNS; r++) {
         int resultado = 0;
@@ -779,8 +822,7 @@ static void bench_sphincs() {
         });
 
         printResultado("run", res_verify[r]);
-        Serial.print("    resultado=");
-        Serial.println(resultado ? "VALIDA" : "INVALIDA");
+        printValidacao(resultado);
         delay(50);
     }
     printMedia("Verify", res_verify, BENCH_RUNS);
@@ -803,38 +845,27 @@ static void bench_sphincs() {
 //  FUNÇÃO DE BENCHMARK
 // ═══════════════════════════════════════════════════════════════════════════════
 void runBenchmark() {
-    Serial.println();
-    printSeparador('*');
-    Serial.println("*  BENCH_ESP — Benchmark de assinaturas hash na ESP32   *");
-    printSeparador('*');
-    Serial.print("  Chip:      "); Serial.println(ESP.getChipModel());
-    Serial.print("  CPU freq:  "); Serial.print(ESP.getCpuFreqMHz()); Serial.println(" MHz");
-    Serial.print("  Heap tot:  "); Serial.print(ESP.getHeapSize());   Serial.println(" B");
-    Serial.print("  Heap free: "); Serial.print(ESP.getFreeHeap());   Serial.println(" B");
-    Serial.print("  Runs:      "); Serial.println(BENCH_RUNS);
+    g_execucao = 0;
 
 #if defined(BENCH_LOTS)
-    Serial.println("  Algoritmo: LOTS");
+    BenchOutputSerial.println("ALGORITMO=LOTS");
     bench_lots();
 #elif defined(BENCH_WOTS)
-    Serial.println("  Algoritmo: WOTS+");
+    BenchOutputSerial.println("ALGORITMO=WOTS+");
     bench_wots();
 #elif defined(BENCH_HORS)
-    Serial.println("  Algoritmo: HORS");
+    BenchOutputSerial.println("ALGORITMO=HORS");
     bench_hors();
 #elif defined(BENCH_HORST)
-    Serial.println("  Algoritmo: HORST");
+    BenchOutputSerial.println("ALGORITMO=HORST");
     bench_horst();
 #elif defined(BENCH_MSS)
-    Serial.println("  Algoritmo: MSS");
+    BenchOutputSerial.println("ALGORITMO=MSS");
     bench_mss();
 #elif defined(BENCH_SPHINCS)
-    Serial.println("  Algoritmo: SPHINCS");
+    BenchOutputSerial.println("ALGORITMO=SPHINCS");
     bench_sphincs();
 #endif
-
-    Serial.println();
-    Serial.println(">>> Benchmark concluido. Reinicie para repetir. <<<");
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -845,7 +876,7 @@ void setup() {
     // Desabilita detector de Brownout (evita reboot por oscilação de tensão USB)
     WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, 0);
 
-    Serial.begin(115200);
+    BenchOutputSerial.begin(115200);
     delay(200); // Aguarda a inicializacao da Serial
 
     // GPIO34 é somente entrada e não possui pull-up/pull-down interno.
@@ -857,13 +888,29 @@ void setup() {
     analogWrite(LED_RED_PIN, LED_RED_BRIGHTNESS); // Aguardando o botao
     analogWrite(LED_GREEN_PIN, 0);
 
-    Serial.println("Pressione o botão para iniciar o benchmark...");
 }
 
 void loop() {
-    if (digitalRead(BUTTON_PIN) == HIGH) {
-        // Botão pressionado, iniciar benchmark
-        Serial.println("Botão pressionado! Iniciando benchmark...");
+    static bool leituraAnterior = digitalRead(BUTTON_PIN) == HIGH;
+    static bool estadoEstavel = leituraAnterior;
+    static unsigned long ultimaMudanca = millis();
+    bool leituraAtual = digitalRead(BUTTON_PIN) == HIGH;
+
+    if (leituraAtual != leituraAnterior) {
+        leituraAnterior = leituraAtual;
+        ultimaMudanca = millis();
+    }
+
+    if (leituraAtual != estadoEstavel &&
+        millis() - ultimaMudanca >= 50) {
+        estadoEstavel = leituraAtual;
+    }
+
+    static bool estadoAnterior = estadoEstavel;
+    bool pressionado = estadoEstavel && !estadoAnterior;
+    estadoAnterior = estadoEstavel;
+
+    if (pressionado) {
         analogWrite(LED_RED_PIN, 0);                  // Desliga LED vermelho
         analogWrite(LED_GREEN_PIN, LED_GREEN_BRIGHTNESS); // Benchmark rodando
 
@@ -871,13 +918,6 @@ void loop() {
 
         analogWrite(LED_RED_PIN, LED_RED_BRIGHTNESS); // Concluido/ocioso
         analogWrite(LED_GREEN_PIN, 0);
-        Serial.println("Benchmark concluído. Aguardando novo botão...");
-
-        // Debounce e espera o botão ser solto
-        while (digitalRead(BUTTON_PIN) == HIGH) {
-            delay(10);
-        }
-        delay(50); // Pequeno atraso para evitar multiplos disparos
     }
-    delay(20); // Pequeno atraso para evitar busy-waiting
+    delay(10);
 }
