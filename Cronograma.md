@@ -69,6 +69,15 @@
 - [] Testar algoritimos na ESP
 ---
 
+
+### TESTE ESP
+- [x] LOTS
+- [x] WOTS
+- [] MSS
+- [] HORS
+- [] HORST
+- [] SPHINCS
+
 ## Falar na próxima reunião
 Vou pegar o sensor de corrente com a milene
 Perguntar sobre capitulo de Resultados no PC(colocar na metodoologia umae etpar preliminar de testes e dapois isso decidi conitnuar os testes no hardware)

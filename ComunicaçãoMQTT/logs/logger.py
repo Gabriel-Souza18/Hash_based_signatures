@@ -67,7 +67,7 @@ def on_message(client, userdata, msg):
         esp_metrics = data
         print("[LOGGER] Recebidas métricas da ESP32.")
         # Se as métricas do PC já estavam aguardando (caso clássico PC assina -> ESP verifica)
-        if pc_metrics and pc_metrics.get("operacao") == "assinatura":
+        if pc_metrics and pc_metrics.get("operacao") in ("assinatura", "verificacao"):
             algo = esp_metrics.get("algoritmo", "algoritmo").lower()
             print("[LOGGER] Gravando JSON...")
             save_json(algo)

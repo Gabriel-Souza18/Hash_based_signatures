@@ -8,10 +8,16 @@
 // Configuração da Rede e Broker
 const char* ssid = "Gabriel";
 const char* password = "@tamara12";
-const char* broker = "192.168.3.105"; // IP do PC rodando o broker Mosquitto
+const char* broker = "10.245.80.109"; // IP do PC rodando o broker Mosquitto
 const int porta = 1883;
 
-const int LED_PIN = 2;
+// Pinos de hardware
+// ATENÇÃO: GPIO34 é input-only — sem pull-up/down interno. Use resistor de pull-down
+// externo de ~10kΩ entre P34 e GND para evitar leitura flutuante quando botão solto.
+const int BOTAO_PIN    = 34; // Botão: 3V3 → P34 (pull-down externo necessário)
+const int LED_VERDE    = 14; // LED verde: acende ~500ms ao enviar com sucesso
+const int LED_VERMELHO = 12; // LED vermelho: acende ~500ms em caso de erro
+
 const char* TOPICO_ENVIAR = "lots/esp_to_pc";
 const char* MENSAGEM_PADRAO = "Mensagem pré-pronta assinada pelo ESP32 (LOTS)";
 
@@ -162,15 +168,16 @@ bool gerarEEnviarAssinaturaLOTS() {
         enviado = client.publish(TOPICO_ENVIAR, pacote, tamanho_pacote);
         if (enviado) {
             Serial.println("[LOTS] Pacote publicado com sucesso pelo ESP32!");
-            // Pisca o LED 2 vezes para indicar sucesso no envio
-            for (int i = 0; i < 2; i++) {
-                digitalWrite(LED_PIN, HIGH);
-                delay(150);
-                digitalWrite(LED_PIN, LOW);
-                delay(150);
-            }
+            // Acende LED verde por 500ms para indicar sucesso no envio
+            digitalWrite(LED_VERDE, HIGH);
+            delay(500);
+            digitalWrite(LED_VERDE, LOW);
         } else {
             Serial.println("[LOTS] Falha ao publicar pacote MQTT.");
+            // Acende LED vermelho por 500ms para indicar falha no envio
+            digitalWrite(LED_VERMELHO, HIGH);
+            delay(500);
+            digitalWrite(LED_VERMELHO, LOW);
         }
         free(pacote);
     } else {
@@ -189,11 +196,18 @@ void reconectar() {
         Serial.print("Tentando conectar ao broker MQTT...");
         if (client.connect("ESP32_LOTS_Transmitter")) {
             Serial.println(" conectado!");
+            digitalWrite(LED_VERDE, HIGH);
+            delay(500);
+            digitalWrite(LED_VERDE, LOW);
         } else {
             Serial.print(" falhou, rc=");
             Serial.print(client.state());
             Serial.println(". Tentando novamente em 5 segundos...");
-            delay(5000);
+            
+            digitalWrite(LED_VERMELHO, HIGH);
+            delay(1000);
+            digitalWrite(LED_VERMELHO, LOW);
+            delay(1000);
         }
     }
 }
@@ -205,7 +219,9 @@ void setup() {
     Serial.println("\n========================================");
     Serial.println("Inicializando transmissor LOTS (ESP32)...");
     Serial.println("========================================");
-    pinMode(LED_PIN, OUTPUT);
+    pinMode(BOTAO_PIN, INPUT);       // GPIO34: input-only, pull-down externo
+    pinMode(LED_VERDE, OUTPUT);
+    pinMode(LED_VERMELHO, OUTPUT);
 
     // Inicializa libsodium na ESP32 (usado por generateSecretKeys)
     if (sodium_init() < 0) {
@@ -231,10 +247,29 @@ void loop() {
     }
     client.loop();
 
-    // Gera e envia a cada 10 segundos
-    static unsigned long ultimo_envio = 0;
-    if (millis() - ultimo_envio > 10000 || ultimo_envio == 0) {
-        ultimo_envio = millis();
-        gerarEEnviarAssinaturaLOTS();
+    // Aguarda botão (GPIO34) ser pressionado para disparar envio.
+    // Lógica: HIGH = pressionado (3V3 → P34), LOW = solto (pull-down externo).
+    // Debounce por software: confirma estado HIGH por 50ms antes de agir.
+    static bool botao_anterior = false;
+    static unsigned long t_borda = 0;
+
+    bool botao_atual = (digitalRead(BOTAO_PIN) == HIGH);
+
+    if (botao_atual && !botao_anterior) {
+        // Borda de subida detectada — inicia contagem para debounce
+        t_borda = millis();
     }
+
+    if (botao_atual && botao_anterior && (millis() - t_borda >= 50)) {
+        // Botão mantido HIGH por 50ms — disparo confirmado
+        Serial.println("[LOTS] Botao pressionado — iniciando assinatura e envio...");
+        gerarEEnviarAssinaturaLOTS();
+        // Aguarda soltar o botão para evitar múltiplos disparos
+        while (digitalRead(BOTAO_PIN) == HIGH) {
+            client.loop();
+            delay(10);
+        }
+    }
+
+    botao_anterior = botao_atual;
 }

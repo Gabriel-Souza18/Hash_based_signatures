@@ -26,13 +26,65 @@ Contém as implementações da comunicação MQTT integradas com cada algoritmo 
 Esquemas/
 ├── LOTS/       ← Lamport OTS (implementado)
 ├── WOTS/       ← Winternitz OTS (base)
-├── HORS/       ← Hash to Obtain Random Subset (base)
+├── HORS/       ← Hash to Obtain Random Subset (publisher PC + publisher ESP32)
 ├── HORST/      ← HORS with Trees (base)
-├── MSS/        ← Merkle Signature Scheme (base)
+├── MSS/        ← Merkle Signature Scheme (publisher PC + publisher ESP32)
 └── SPHINCS/    ← SPHINCS (base)
 ```
 
 > Pastas marcadas como **(base)** contêm apenas o projeto mínimo copiado de `Teste placa/`, sem implementação do algoritmo ainda.
+
+### MSS com métricas
+
+O MSS usa o mesmo formato binário de transporte de LOTS/WOTS:
+`[tamanho da mensagem][mensagem][tamanho da chave pública][raiz MSS][tamanho da assinatura][assinatura MSS serializada]`.
+O publisher da ESP32 assina uma mensagem ao pressionar o botão e publica em `mss/esp_to_pc`.
+O programa do PC funciona como receptor/verificador por padrão e como publisher para a ESP32 com `--send`.
+
+```bash
+# PC: compilar e executar o receptor/verificador
+cd ComunicaçãoMQTT/EsquemasPC/MSS
+make
+./publisherMss
+
+# PC: publicar uma assinatura MSS para a ESP32
+./publisherMss --send
+
+# ESP32: compilar/uploadar o publisher MSS
+cd ComunicaçãoMQTT/EsquemasESP/MSS
+pio run --target upload
+pio device monitor
+```
+
+As métricas MSS são publicadas em `estat/pc` e `estat/esp` e consolidadas pelo
+[`logger.py`](logs/logger.py), como nos esquemas LOTS e WOTS.
+
+### HORS com métricas
+
+O HORS utiliza `HORS_T=1024` e `HORS_K=26`. A chave pública tem 32.768 bytes,
+portanto o projeto usa `MQTT_MAX_PACKET_SIZE=40000`.
+
+O formato do pacote é:
+`[tamanho da mensagem][mensagem][tamanho da chave pública][PKeys HORS][tamanho da assinatura][assinatura HORS]`.
+
+```bash
+# PC: compilar e executar o receptor/verificador
+cd ComunicaçãoMQTT/EsquemasPC/HORS
+make
+./publisherHors
+
+# PC: publicar uma assinatura HORS para a ESP32
+./publisherHors --send
+
+# ESP32: compilar/uploadar o publisher HORS
+cd ComunicaçãoMQTT/EsquemasESP/HORS
+pio run --target upload
+pio device monitor
+```
+
+O publisher da ESP32 assina a mensagem ao pressionar o botão e publica em
+`hors/esp_to_pc`. As métricas são enviadas para `estat/esp`; o receptor PC
+publica os dados de verificação em `estat/pc`.
 
 ---
 
@@ -110,3 +162,15 @@ As métricas são salvas automaticamente na pasta `ComunicaçãoMQTT/` como arqu
 {algoritmo}_{YYYYMMDD_HHMMSS}.json
 ```
 Exemplo: `lots_20260803_201500.json`
+
+
+
+
+
+## BENCH 
+pio run -e esp32dev_bench_lots -t upload
+pio device monitor -b 115200
+
+pio run -e esp32dev_bench_wots -t upload
+pio device monitor -b 115200
+
