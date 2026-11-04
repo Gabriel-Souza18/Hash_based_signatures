@@ -25,7 +25,8 @@ O botão continua ativo em todos os ambientes:
 2. Ao pressionar o botão, o LED vermelho apaga e o LED verde acende;
 4. O benchmark selecionado é executado `BENCH_RUNS` vezes (atualmente 100);
 5. Os resultados de keygen, assinatura e verificação são enviados ao Serial;
-6. Cada repetição conclui o ciclo de geração, assinatura e verificação antes
+6. Cada repetição conclui o ciclo de geração de chaves, assinatura e
+   verificação antes
    de liberar as estruturas temporárias;
 7. Ao terminar, o LED verde apaga, o vermelho acende novamente e a placa
    aguarda o botão ser liberado;
@@ -156,7 +157,26 @@ ALGORITMO=SPHINCS
 OPERACAO=KEYGEN EXECUCAO=1 TEMPO_US=... HASHES=... RAM_BYTES=...
 ```
 
-No LOTS, as quatro operações de cada repetição usam o mesmo
-`EXECUCAO=<n>`. Para repetir o teste do mesmo algoritmo, não é necessário fazer
-novo upload:
+Em todos os algoritmos, as operações de cada repetição usam o mesmo
+`EXECUCAO=<n>`, e as estruturas temporárias são liberadas antes da próxima
+repetição. Para repetir o teste do mesmo algoritmo, não é necessário fazer novo
+upload:
 libere o botão e pressione-o novamente.
+
+## Leitor dos resultados LOTS
+
+Salve a saída do monitor Serial em `ResultadosLOTS.txt` e execute:
+
+```bash
+python3 reader.py
+```
+
+Também é possível informar outro arquivo:
+
+```bash
+python3 reader.py caminho/para/resultados.txt
+```
+
+O leitor considera somente as operações `GEN_SK`, `GEN_PK`, `ASSINATURA` e
+`VERIFICACAO` do LOTS e exibe as médias de tempo, hashes e RAM, além da
+quantidade de validações válidas e inválidas.

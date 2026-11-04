@@ -641,6 +641,49 @@ static void liberar_contexto_mss(No *raiz, Folha *folhas) {
 }
 
 static void bench_mss() {
+    g_execucao_compartilhada = true;
+    for (int r = 0; r < BENCH_RUNS; r++) {
+        g_execucao = (unsigned int)(r + 1);
+        Folha *folhas = nullptr;
+        No *raiz = nullptr;
+        AssinaturaMSS *assinatura = nullptr;
+        BenchResult resultado;
+        g_operacao = "GEN_KEYS_ARVORE";
+        MEDIR(resultado, {
+            folhas = (Folha *)calloc(MSS_BENCH_LEAVES, sizeof(Folha));
+            if (folhas) {
+                for (int i = 0; i < MSS_BENCH_LEAVES; i++) {
+                    folhas[i].Skeys = mallocSkeys();
+                    folhas[i].Pkeys = mallocPkeys();
+                }
+                criarFolhas(folhas, MSS_BENCH_LEAVES);
+                raiz = mssBenchmarkTree(folhas);
+            }
+        });
+        printResultado("run", resultado);
+        g_operacao = "ASSINATURA";
+        MEDIR(resultado, {
+            assinatura = alocarAssinatura();
+            if (assinatura && raiz && folhas) {
+                criarAssinatura(assinatura, raiz, &folhas[0], 0, MSS_BENCH_LEAVES, (char *)MENSAGEM_TESTE);
+            }
+        });
+        printResultado("run", resultado);
+        int valida = 0;
+        g_operacao = "VERIFICACAO";
+        MEDIR(resultado, {
+            if (assinatura && raiz) valida = verificarAssinatura(assinatura, raiz->hash, NULL);
+        });
+        printResultado("run", resultado);
+        printValidacao(valida);
+        if (assinatura) liberarAssinatura(assinatura);
+        liberar_contexto_mss(raiz, folhas);
+        delay(50);
+    }
+    g_execucao_compartilhada = false;
+}
+
+static void bench_mss_legacy() {
     Serial.println();
     printSeparador('=');
     Serial.println("  BENCHMARK: MSS");
@@ -745,6 +788,44 @@ static void bench_mss() {
 #if defined(BENCH_SPHINCS)
 
 static void bench_sphincs() {
+    g_execucao_compartilhada = true;
+    for (int r = 0; r < BENCH_RUNS; r++) {
+        g_execucao = (unsigned int)(r + 1);
+        SphincsSecretKey *sk = (SphincsSecretKey *)malloc(sizeof(SphincsSecretKey));
+        SphincsPublicKey *pk = (SphincsPublicKey *)malloc(sizeof(SphincsPublicKey));
+        SphincsSignature *sig = (SphincsSignature *)malloc(sizeof(SphincsSignature));
+        BenchResult resultado;
+        if (!sk || !pk || !sig) {
+            free(sig);
+            free(pk);
+            free(sk);
+            Serial.println("ERRO=FALHA_ALOCACAO");
+            break;
+        }
+        g_operacao = "KEYGEN";
+        MEDIR(resultado, { sphincs_keygen(pk, sk); });
+        printResultado("run", resultado);
+        g_operacao = "ASSINATURA";
+        MEDIR(resultado, {
+            sphincs_sign(sig, (const unsigned char *)MENSAGEM_TESTE, strlen(MENSAGEM_TESTE), sk);
+        });
+        printResultado("run", resultado);
+        int valida = 0;
+        g_operacao = "VERIFICACAO";
+        MEDIR(resultado, {
+            valida = sphincs_verify(sig, (const unsigned char *)MENSAGEM_TESTE, strlen(MENSAGEM_TESTE), pk, sk->SK_seed);
+        });
+        printResultado("run", resultado);
+        printValidacao(valida);
+        free(sig);
+        free(pk);
+        free(sk);
+        delay(50);
+    }
+    g_execucao_compartilhada = false;
+}
+
+static void bench_sphincs_legacy() {
     Serial.println();
     printSeparador('=');
     Serial.println("  BENCHMARK: SPHINCS");
