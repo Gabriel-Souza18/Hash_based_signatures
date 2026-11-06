@@ -174,3 +174,6 @@ pio device monitor -b 115200
 pio run -e esp32dev_bench_wots -t upload
 pio device monitor -b 115200
 
+pio run -t upload
+pio device monitor -b 115200
+
